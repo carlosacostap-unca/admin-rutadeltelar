@@ -11,6 +11,9 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
   error: string | null;
+  activeRole: string | null;
+  setActiveRole: (role: string) => void;
+  allRoles: string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,7 +22,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeRole, setActiveRoleState] = useState<string | null>(null);
   const router = useRouter();
+
+  const setActiveRole = (role: string) => {
+    setActiveRoleState(role);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('activeRole', role);
+    }
+  };
 
   useEffect(() => {
     // Verificar si el usuario actual cumple con las condiciones (estar activo)
@@ -31,14 +42,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Nota: si tu PocketBase requiere que 'active' sea estrictamente true,
           // cambia la condición a: model.active === true
           setUser(model);
+          
+          if (model.roles && model.roles.length > 0) {
+            const savedRole = typeof window !== 'undefined' ? localStorage.getItem('activeRole') : null;
+            if (savedRole && model.roles.includes(savedRole)) {
+              setActiveRoleState(savedRole);
+            } else {
+              setActiveRoleState(model.roles[0]);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('activeRole', model.roles[0]);
+              }
+            }
+          } else {
+            setActiveRoleState(null);
+          }
         } else {
           // El usuario existe pero está inactivo
           pb.authStore.clear();
           setUser(null);
+          setActiveRoleState(null);
           setError('Tu usuario está inactivo. Contacta a un administrador.');
         }
       } else {
         setUser(null);
+        setActiveRoleState(null);
       }
     };
 
@@ -98,8 +125,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
+  const userWithActiveRole = React.useMemo(() => {
+    if (!user) return null;
+    return {
+      ...user,
+      roles: activeRole ? [activeRole] : user.roles,
+      allRoles: user.roles // Keep the original roles in case it's needed
+    } as AuthModel;
+  }, [user, activeRole]);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, loginWithGoogle, logout, error }}>
+    <AuthContext.Provider value={{ 
+      user: userWithActiveRole, 
+      isLoading, 
+      loginWithGoogle, 
+      logout, 
+      error, 
+      activeRole, 
+      setActiveRole,
+      allRoles: user?.roles || []
+    }}>
       {children}
     </AuthContext.Provider>
   );

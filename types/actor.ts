@@ -10,6 +10,8 @@ export interface Actor {
   contacto_telefono?: string;
   contacto_email?: string;
   ubicacion?: string; // Dirección o georreferenciación
+  latitud?: number;
+  longitud?: number;
   estado: ActorEstado;
   observaciones_revision?: string;
   
@@ -55,7 +57,7 @@ export interface Actor {
   observaciones?: string; // Observaciones internas
   
   // Multimedia
-  // fotos?: string[]; // Para cuando se implementen archivos en PocketBase
+  fotos?: string[]; // Para cuando se implementen archivos en PocketBase
   
   created: string;
   updated: string;

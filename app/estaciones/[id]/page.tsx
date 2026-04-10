@@ -4,15 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
-import ActoresTab from '@/components/estaciones/ActoresTab';
-import ProductosTab from '@/components/estaciones/ProductosTab';
-import ExperienciasTab from '@/components/estaciones/ExperienciasTab';
-import ImperdiblesTab from '@/components/estaciones/ImperdiblesTab';
 import ContentStatusManager from '@/components/ContentStatusManager';
+import Map from '@/components/Map';
 
 export default function EstacionDetailPage() {
   const { user, isLoading } = useAuth();
@@ -21,9 +17,9 @@ export default function EstacionDetailPage() {
   const id = params.id as string;
   
   const [estacion, setEstacion] = useState<Estacion | null>(null);
+  const [counts, setCounts] = useState({ actores: 0, productos: 0, experiencias: 0, imperdibles: 0 });
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('general');
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -41,6 +37,27 @@ export default function EstacionDetailPage() {
           expand: 'created_by,updated_by',
         });
         setEstacion(record);
+
+        // Fetch counts for related collections
+        const [
+          actoresRes,
+          productosRes,
+          experienciasRes,
+          imperdiblesRes
+        ] = await Promise.all([
+          pb.collection('actores').getFullList({ filter: `estacion_id = "${id}"`, fields: 'id', requestKey: null }),
+          pb.collection('productos').getFullList({ filter: `estacion_id = "${id}"`, fields: 'id', requestKey: null }),
+          pb.collection('experiencias').getFullList({ filter: `estacion_id = "${id}"`, fields: 'id', requestKey: null }),
+          pb.collection('imperdibles').getFullList({ filter: `estacion_id = "${id}"`, fields: 'id', requestKey: null })
+        ]);
+
+        setCounts({
+          actores: actoresRes.length,
+          productos: productosRes.length,
+          experiencias: experienciasRes.length,
+          imperdibles: imperdiblesRes.length
+        });
+
       } catch (err) {
         console.error('Error fetching estacion:', err);
         setError('No se pudo cargar la estación. Es posible que no exista.');
@@ -67,7 +84,7 @@ export default function EstacionDetailPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
@@ -75,27 +92,15 @@ export default function EstacionDetailPage() {
 
   const canEdit = canEditContent(user as any);
 
-  const tabs = [
-    { id: 'general', label: 'Información general' },
-    { id: 'actores', label: 'Actores' },
-    { id: 'productos', label: 'Productos' },
-    { id: 'experiencias', label: 'Experiencias' },
-    { id: 'imperdibles', label: 'Imperdibles' },
-    { id: 'historial', label: 'Historial' },
-  ];
-
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-5xl">
-        <div className="mb-6 flex items-center gap-4">
-          <Link href="/estaciones" className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]">
-            &larr; Volver al listado
-          </Link>
+    <div className="h-full bg-[var(--color-surface)]">
+      <main className="mx-auto px-6 py-8">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
         </div>
 
         {loadingData ? (
-          <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-sm text-center">
+          <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px] shadow-sm text-center">
             Cargando datos...
           </div>
         ) : error ? (
@@ -105,7 +110,7 @@ export default function EstacionDetailPage() {
         ) : estacion ? (
           <>
             {/* Encabezado */}
-            <div className={`bg-[var(--color-surface-container-lowest)] p-8 rounded-t-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] mb-1 ${estacion.estado === 'inactivo' ? 'opacity-80 bg-gray-50 border-l-4 border-red-500' : ''}`}>
+            <div className={`bg-[var(--color-surface-container)] p-8 rounded-t-[8px]  mb-1 ${estacion.estado === 'inactivo' ? 'opacity-80 bg-gray-50 border-l-4 border-red-500' : ''}`}>
               <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
@@ -154,114 +159,86 @@ export default function EstacionDetailPage() {
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="bg-[var(--color-surface-container-lowest)] px-8 pt-4 border-b border-[var(--color-outline-variant)] shadow-[0_4px_12px_-4px_rgba(23,28,31,0.06)]">
-              <div className="flex gap-6 overflow-x-auto pb-[-1px]">
-                {tabs.map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`pb-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                      activeTab === tab.id 
-                        ? 'border-[var(--color-primary)] text-[var(--color-primary)]' 
-                        : 'border-transparent text-[var(--color-secondary)] hover:text-[var(--color-on-surface)]'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Contenido de la Tab */}
-            <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-b-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] min-h-[300px]">
-              {activeTab === 'general' && (
-                <div className="space-y-8">
-                  <div>
-                    <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-2 uppercase tracking-wider">
-                      Descripción General
-                    </h3>
-                    <p className="text-[var(--color-on-surface)] whitespace-pre-wrap">
-                      {estacion.descripcion_general || 'No hay descripción disponible.'}
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                      <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-2 uppercase tracking-wider">
-                        Mapas / Referencias
-                      </h3>
-                      {estacion.mapas_referencias ? (
-                        <a 
-                          href={estacion.mapas_referencias.startsWith('http') ? estacion.mapas_referencias : `https://${estacion.mapas_referencias}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-[var(--color-primary)] hover:underline break-all"
-                        >
-                          {estacion.mapas_referencias}
-                        </a>
-                      ) : (
-                        <p className="text-[var(--color-outline)]">No especificado</p>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-2 uppercase tracking-wider">
-                        Coordenadas Generales
-                      </h3>
-                      <p className="text-[var(--color-on-surface)]">
-                        {estacion.coordenadas_generales || <span className="text-[var(--color-outline)]">No especificadas</span>}
+            {/* Contenido General - Dashboard */}
+            <div className="bg-[var(--color-surface-container)] p-8 rounded-b-[8px] min-h-[300px] flex flex-col gap-12">
+              
+              {/* Información General */}
+              <section className="space-y-8">
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-3 uppercase tracking-[0.05em]">
+                    Descripción General
+                  </h3>
+                  <p className="text-[var(--color-on-surface)] whitespace-pre-wrap">
+                    {estacion.descripcion_general || 'No hay descripción disponible.'}
+                  </p>
+                </div>
+                
+                <div className="mt-8">
+                  <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-3 uppercase tracking-[0.05em]">
+                    Ubicación
+                  </h3>
+                  {estacion.latitud !== undefined && estacion.latitud !== null && estacion.longitud !== undefined && estacion.longitud !== null ? (
+                    <div className="w-full">
+                      <Map lat={estacion.latitud} lng={estacion.longitud} label={estacion.nombre} />
+                      <p className="text-xs text-[var(--color-outline)] mt-2">
+                        Latitud: {estacion.latitud} | Longitud: {estacion.longitud}
                       </p>
                     </div>
-                  </div>
+                  ) : (
+                    <p className="text-[var(--color-outline)]">Coordenadas no especificadas</p>
+                  )}
                 </div>
-              )}
-              
-              {activeTab === 'historial' && (
-                <div className="space-y-6">
-                  <div className="bg-[var(--color-surface-container-low)] rounded-md border border-[var(--color-outline-variant)] overflow-hidden">
-                    <div className="bg-[var(--color-surface-container-highest)] px-4 py-3 border-b border-[var(--color-outline-variant)]">
-                      <h3 className="text-sm font-medium text-[var(--color-on-surface)] flex items-center gap-2">
-                        <svg className="w-4 h-4 text-[var(--color-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Historial Básico
-                      </h3>
-                    </div>
-                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="block text-[var(--color-outline)] text-xs mb-1 uppercase tracking-wider font-semibold">Creado el</span>
-                        <span className="text-[var(--color-on-surface-variant)]">{new Date(estacion.created).toLocaleString()}</span>
-                        {estacion.expand?.created_by && (
-                          <span className="block mt-1 text-xs text-[var(--color-outline)]">Por: {estacion.expand.created_by.name || estacion.expand.created_by.email}</span>
-                        )}
+              </section>
+
+              <hr className="border-[var(--color-outline-variant)]" />
+
+              <div className="mt-8">
+                <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
+                  Fotos
+                </h3>
+                {estacion.fotos && estacion.fotos.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {estacion.fotos.map((foto, index) => (
+                      <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
+                        <img 
+                          src={pb.files.getURL(estacion, foto)} 
+                          alt={`Foto de ${estacion.nombre}`}
+                          className="object-contain w-full h-full p-1"
+                        />
                       </div>
-                      <div>
-                        <span className="block text-[var(--color-outline)] text-xs mb-1 uppercase tracking-wider font-semibold">Última actualización</span>
-                        <span className="text-[var(--color-on-surface-variant)]">{new Date(estacion.updated).toLocaleString()}</span>
-                        {estacion.expand?.updated_by && (
-                          <span className="block mt-1 text-xs text-[var(--color-outline)]">Por: {estacion.expand.updated_by.name || estacion.expand.updated_by.email}</span>
-                        )}
-                      </div>
-                    </div>
+                    ))}
                   </div>
+                ) : (
+                  <p className="text-[var(--color-on-surface-variant)] italic">
+                    No hay fotos disponibles para esta estación.
+                  </p>
+                )}
+              </div>
+
+              <hr className="border-[var(--color-outline-variant)]" />
+
+              {/* Resumen */}
+              <section>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Link href={`/actores?estacion_id=${estacion.id}`} className="block bg-[var(--color-surface)] border border-[var(--color-outline-variant)] rounded-lg p-6 text-center shadow-sm hover:shadow-md hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-variant)] transition-all cursor-pointer">
+                    <p className="text-[var(--color-outline)] text-xs font-bold uppercase tracking-wider mb-2">Actores</p>
+                    <p className="text-4xl font-display font-bold text-[var(--color-primary)]">{counts.actores}</p>
+                  </Link>
+                  <Link href={`/productos?estacion_id=${estacion.id}`} className="block bg-[var(--color-surface)] border border-[var(--color-outline-variant)] rounded-lg p-6 text-center shadow-sm hover:shadow-md hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-variant)] transition-all cursor-pointer">
+                    <p className="text-[var(--color-outline)] text-xs font-bold uppercase tracking-wider mb-2">Productos</p>
+                    <p className="text-4xl font-display font-bold text-[var(--color-primary)]">{counts.productos}</p>
+                  </Link>
+                  <Link href={`/experiencias?estacion_id=${estacion.id}`} className="block bg-[var(--color-surface)] border border-[var(--color-outline-variant)] rounded-lg p-6 text-center shadow-sm hover:shadow-md hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-variant)] transition-all cursor-pointer">
+                    <p className="text-[var(--color-outline)] text-xs font-bold uppercase tracking-wider mb-2">Experiencias</p>
+                    <p className="text-4xl font-display font-bold text-[var(--color-primary)]">{counts.experiencias}</p>
+                  </Link>
+                  <Link href={`/imperdibles?estacion_id=${estacion.id}`} className="block bg-[var(--color-surface)] border border-[var(--color-outline-variant)] rounded-lg p-6 text-center shadow-sm hover:shadow-md hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-variant)] transition-all cursor-pointer">
+                    <p className="text-[var(--color-outline)] text-xs font-bold uppercase tracking-wider mb-2">Imperdibles</p>
+                    <p className="text-4xl font-display font-bold text-[var(--color-primary)]">{counts.imperdibles}</p>
+                  </Link>
                 </div>
-              )}
+              </section>
 
-              {activeTab === 'actores' && (
-                <ActoresTab estacionId={estacion.id} user={user} />
-              )}
-
-              {activeTab === 'productos' && (
-                <ProductosTab estacionId={estacion.id} user={user} />
-              )}
-
-              {activeTab === 'experiencias' && (
-                <ExperienciasTab estacionId={estacion.id} user={user} />
-              )}
-
-              {activeTab === 'imperdibles' && (
-                <ImperdiblesTab estacionId={estacion.id} user={user} />
-              )}
             </div>
           </>
         ) : null}

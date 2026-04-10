@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
@@ -32,6 +31,7 @@ export default function EditExperienciaPage() {
   const [responsable, setResponsable] = useState('');
   const [estado, setEstado] = useState<ExperienciaEstado>('borrador');
   const [fotos, setFotos] = useState<FileList | null>(null);
+  const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,9 +128,15 @@ export default function EditExperienciaPage() {
       if (responsable) formData.append('responsable', responsable);
       else formData.append('responsable', '');
       
+      if (fotosParaEliminar.length > 0) {
+        fotosParaEliminar.forEach(filename => {
+          formData.append('fotos-', filename);
+        });
+      }
+
       if (fotos && fotos.length > 0) {
         for (let i = 0; i < fotos.length; i++) {
-          formData.append('fotos', fotos[i]);
+          formData.append('fotos+', fotos[i]);
         }
       }
       
@@ -160,7 +166,7 @@ export default function EditExperienciaPage() {
 
   if (isLoading || !user || !canEditContent(user as any) || loadingData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
@@ -168,26 +174,23 @@ export default function EditExperienciaPage() {
 
   if (!experiencia && !loadingData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Experiencia no encontrada.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-3xl">
-        <div className="mb-6 flex items-center gap-4">
-          <Link href={`/experiencias/${id}`} className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]">
-            &larr; Volver
-          </Link>
+    <div className="h-full bg-[var(--color-surface)] flex flex-col">
+      <main className="mx-auto px-6 py-8 flex-1 w-full">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
           <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
             Editar Experiencia
           </h2>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+        <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px]">
           {error && (
             <div className="mb-6 p-4 bg-[var(--color-error-container)] text-[var(--color-on-error-container)] rounded-md text-sm">
               {error}
@@ -223,27 +226,27 @@ export default function EditExperienciaPage() {
           <form className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Título *
                 </label>
                 <input
                   type="text"
                   value={titulo}
                   onChange={(e) => setTitulo(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   placeholder="Ej. Taller de Telar de Cintura"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Categoría *
                 </label>
                 <select
                   value={categoria}
                   onChange={(e) => setCategoria(e.target.value as ExperienciaCategoria)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   required
                 >
                   <option value="" disabled>Seleccionar Categoría...</option>
@@ -258,7 +261,7 @@ export default function EditExperienciaPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Estación *
               </label>
               <select
@@ -272,7 +275,7 @@ export default function EditExperienciaPage() {
                     }
                   }
                 }}
-                className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                className="input-field w-full"
                 required
               >
                 <option value="" disabled>Seleccionar Estación...</option>
@@ -285,66 +288,66 @@ export default function EditExperienciaPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Descripción
               </label>
               <textarea
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px] resize-y"
+                className="input-field w-full min-h-[100px] resize-y"
                 placeholder="Descripción de la experiencia..."
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Duración
                 </label>
                 <input
                   type="text"
                   value={duracion}
                   onChange={(e) => setDuracion(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   placeholder="Ej. 2 horas, Medio día"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Ubicación
                 </label>
                 <input
                   type="text"
                   value={ubicacion}
                   onChange={(e) => setUbicacion(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   placeholder="Ej. Taller principal, Plaza central"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Recomendaciones
               </label>
               <textarea
                 value={recomendaciones}
                 onChange={(e) => setRecomendaciones(e.target.value)}
-                className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[80px] resize-y"
+                className="input-field w-full min-h-[80px] resize-y"
                 placeholder="Recomendaciones para los visitantes (ropa cómoda, etc.)..."
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Estado
                 </label>
                 <select
                   value={estado}
                   onChange={(e) => setEstado(e.target.value as ExperienciaEstado)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                 >
                   <option value="borrador">Borrador</option>
                   <option value="en_revision">En Revisión</option>
@@ -354,13 +357,13 @@ export default function EditExperienciaPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Responsable (opcional)
                 </label>
                 <select
                   value={responsable}
                   onChange={(e) => setResponsable(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   disabled={!estacionId || actoresFiltrados.length === 0}
                 >
                   <option value="">Ninguno</option>
@@ -379,26 +382,113 @@ export default function EditExperienciaPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
-                Fotos (Opcional - Nuevas imágenes se agregarán a las existentes)
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Fotos Actuales
               </label>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => setFotos(e.target.files)}
-                className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
-              />
-              <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">
-                Selecciona imágenes si deseas subir nuevas fotos para esta experiencia.
+              {experiencia?.fotos && experiencia.fotos.length > 0 && experiencia.fotos.filter(f => !fotosParaEliminar.includes(f)).length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                  {experiencia.fotos.filter(f => !fotosParaEliminar.includes(f)).map((foto, index) => (
+                    <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                      <img 
+                        src={pb.files.getURL(experiencia, foto)} 
+                        alt={`Foto de ${experiencia.titulo}`}
+                        className="object-contain w-full h-full p-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFotosParaEliminar([...fotosParaEliminar, foto])}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Eliminar foto"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[var(--color-on-surface-variant)] text-sm italic">
+                  No hay fotos guardadas para esta experiencia.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Añadir Nuevas Fotos (Opcional)
+              </label>
+              <div className="flex flex-col gap-4">
+                {fotos && fotos.length > 0 && (
+                  <div className="flex flex-wrap gap-4">
+                    {Array.from(fotos).map((foto, index) => (
+                      <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                        <img 
+                          src={URL.createObjectURL(foto)} 
+                          alt={`Nueva foto ${index + 1}`}
+                          className="object-contain w-full h-full p-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dt = new DataTransfer();
+                            Array.from(fotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
+                            setFotos(dt.files.length > 0 ? dt.files : null);
+                          }}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Eliminar nueva foto"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => {
+                      const currentFotosCount = (experiencia?.fotos?.length || 0) - fotosParaEliminar.length;
+                      const existingNewFotosCount = fotos?.length || 0;
+                      const newFotosCount = e.target.files?.length || 0;
+                      
+                      if (currentFotosCount + existingNewFotosCount + newFotosCount > 5) {
+                        alert(`Puedes tener un máximo de 5 imágenes por experiencia. Te quedan ${5 - (currentFotosCount + existingNewFotosCount)} espacios.`);
+                      } else {
+                        const dt = new DataTransfer();
+                        if (fotos) {
+                          Array.from(fotos).forEach(f => dt.items.add(f));
+                        }
+                        if (e.target.files) {
+                          Array.from(e.target.files).forEach(f => dt.items.add(f));
+                        }
+                        setFotos(dt.files);
+                      }
+                      e.target.value = '';
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    className="btn-secondary px-4 py-2 text-sm shadow-sm"
+                  >
+                    + Añadir foto
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                Selecciona imágenes si deseas subir nuevas fotos para esta experiencia. Puedes tener hasta 5 imágenes en total.
               </p>
             </div>
 
-            <div className="pt-6 flex items-center justify-end gap-4 border-t border-[var(--color-outline-variant)]">
+            <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
               <button
                 type="button"
                 onClick={() => router.push(`/experiencias/${id}`)}
-                className="px-6 py-2 border border-[var(--color-outline)] rounded-full text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)] transition-colors font-medium text-sm"
+                className="btn-secondary px-6 py-2 text-sm shadow-sm text-center w-full md:w-auto"
               >
                 Cancelar
               </button>
@@ -407,21 +497,10 @@ export default function EditExperienciaPage() {
                 type="button"
                 onClick={(e) => handleSubmit(e, 'guardar')}
                 disabled={isSubmitting}
-                className="px-6 py-2 border border-[var(--color-primary)] rounded-full text-[var(--color-primary)] hover:bg-[var(--color-primary-container)] hover:text-[var(--color-on-primary-container)] transition-colors font-medium text-sm"
+                className="btn-primary px-6 py-2 text-sm shadow-md w-full md:w-auto"
               >
                 {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
               </button>
-              
-              {estado !== 'aprobado' && (
-                <button
-                  type="button"
-                  onClick={(e) => handleSubmit(e, 'publicar')}
-                  disabled={isSubmitting}
-                  className="px-6 py-2 bg-[var(--color-primary)] text-[var(--color-on-primary)] rounded-full hover:bg-[var(--color-primary-fixed-dim)] transition-colors font-medium text-sm shadow-[0_4px_8px_rgba(0,0,0,0.1)]"
-                >
-                  {isSubmitting ? 'Guardando...' : 'Publicar Experiencia'}
-                </button>
-              )}
             </div>
           </form>
         </div>

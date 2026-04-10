@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import Link from 'next/link';
 import { User } from '@/types/user';
 
@@ -70,7 +69,7 @@ export default function UserDetailPage() {
 
   if (isLoading || !currentUser || !currentUser.roles?.includes('admin') || loadingUser) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface)]">
+      <div className="flex h-full items-center justify-center bg-[var(--color-surface)]">
         <p className="text-[var(--color-secondary)]">Cargando...</p>
       </div>
     );
@@ -78,38 +77,34 @@ export default function UserDetailPage() {
 
   if (error || !userRecord) {
     return (
-      <div className="min-h-screen bg-[var(--color-surface)] flex flex-col">
-        <Header />
+      <div className="h-full bg-[var(--color-surface)] flex flex-col">
         <main className="mx-auto px-6 py-8 max-w-3xl flex-1 w-full text-center">
           <p className="text-[var(--color-error)] mb-4">{error || 'Usuario no encontrado'}</p>
-          <Link href="/usuarios" className="btn-secondary px-4 py-2">Volver al listado</Link>
+          <button onClick={() => router.back()} className="btn-secondary px-4 py-2">&larr; Volver</button>
         </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)] flex flex-col">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-4xl flex-1 w-full">
-        <div className="mb-6 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link href="/usuarios" className="text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors">
-              &larr; Volver
-            </Link>
+    <div className="h-full bg-[var(--color-surface)] flex flex-col">
+      <main className="mx-auto px-6 py-8 flex-1 w-full">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
+          <div className="flex justify-between items-center w-full">
             <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
               Detalle de Usuario
             </h2>
+            <Link
+              href={`/usuarios/${userId}/edit`}
+              className="btn-primary px-4 py-2"
+            >
+              Editar Usuario
+            </Link>
           </div>
-          <Link
-            href={`/usuarios/${userId}/edit`}
-            className="btn-primary px-4 py-2 shadow-md"
-          >
-            Editar Usuario
-          </Link>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] overflow-hidden">
+        <div className="bg-[var(--color-surface-container)] rounded-[8px] overflow-hidden">
           
           {/* Encabezado del Detalle */}
           <div className="bg-[var(--color-surface-container-low)] p-6 border-b border-[var(--color-outline-variant)] flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -130,7 +125,7 @@ export default function UserDetailPage() {
             {/* Columna Izquierda */}
             <div className="space-y-6">
               <div>
-                <h4 className="text-sm font-semibold text-[var(--color-secondary)] uppercase tracking-wider mb-3">Roles Asignados</h4>
+                <h4 className="text-sm font-bold text-[var(--color-secondary)] uppercase tracking-[0.05em] mb-3">Roles Asignados</h4>
                 {userRecord.roles && userRecord.roles.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {userRecord.roles.map(role => (
@@ -145,7 +140,7 @@ export default function UserDetailPage() {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-[var(--color-secondary)] uppercase tracking-wider mb-2">Permisos Efectivos</h4>
+                <h4 className="text-sm font-bold text-[var(--color-secondary)] uppercase tracking-[0.05em] mb-2">Permisos Efectivos</h4>
                 <p className="text-sm text-[var(--color-on-surface)] bg-[var(--color-surface-container)] p-3 rounded-md border border-[var(--color-outline-variant)]">
                   {userRecord.roles?.includes('admin') ? 'Acceso total al sistema.' : 
                    userRecord.roles?.includes('editor') ? 'Puede gestionar contenidos, estaciones y actores.' :
@@ -159,7 +154,7 @@ export default function UserDetailPage() {
             {/* Columna Derecha */}
             <div className="space-y-6">
               <div>
-                <h4 className="text-sm font-semibold text-[var(--color-secondary)] uppercase tracking-wider mb-3">Información del Sistema</h4>
+                <h4 className="text-sm font-bold text-[var(--color-secondary)] uppercase tracking-[0.05em] mb-3">Información del Sistema</h4>
                 <div className="bg-[var(--color-surface-container)] rounded-md border border-[var(--color-outline-variant)] overflow-hidden">
                   <div className="px-4 py-3 border-b border-[var(--color-outline-variant)] flex justify-between items-center">
                     <span className="text-sm text-[var(--color-secondary)] font-medium">Fecha de Alta</span>
@@ -173,7 +168,7 @@ export default function UserDetailPage() {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-[var(--color-secondary)] uppercase tracking-wider mb-2">Observaciones Internas</h4>
+                <h4 className="text-sm font-bold text-[var(--color-secondary)] uppercase tracking-[0.05em] mb-2">Observaciones Internas</h4>
                 {userRecord.observations ? (
                   <div className="text-sm text-[var(--color-on-surface)] bg-[var(--color-surface-variant)] p-4 rounded-md border border-[var(--color-outline-variant)] whitespace-pre-wrap">
                     {userRecord.observations}

@@ -6,7 +6,6 @@ import { useEffect, useState, useMemo } from 'react';
 import pb from '@/lib/pocketbase';
 import Link from 'next/link';
 import { User } from '@/types/user';
-import Header from '@/components/Header';
 
 export default function UsuariosPage() {
   const { user, isLoading } = useAuth();
@@ -96,44 +95,43 @@ export default function UsuariosPage() {
 
   if (isLoading || !user || !user.roles?.includes('admin')) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
+    <div className="h-full bg-[var(--color-surface-dim)]">
       <main className="mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
+          <h2 className="text-2xl font-extrabold tracking-[-0.02em] font-display text-[var(--color-primary)]">
             Gestión de Usuarios
           </h2>
           <Link
             href="/usuarios/create"
-            className="btn-primary px-4 py-2 text-sm shadow-md"
+            className="btn-primary px-4 py-2 text-sm"
           >
             + Crear Usuario
           </Link>
         </div>
 
         {/* Filtros */}
-        <div className="bg-[var(--color-surface-container-lowest)] p-4 rounded-t-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] flex flex-col md:flex-row gap-4 border-b border-[var(--color-outline-variant)]">
+        <div className="bg-[var(--color-surface-container)] pl-8 pr-6 py-6 rounded-md flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1">
             <input
               type="text"
               placeholder="Buscar por nombre o correo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-on-surface)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              className="input-field w-full text-[var(--color-on-surface-variant)] placeholder:text-[var(--color-surface-variant)]"
             />
           </div>
           <div className="flex gap-4">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-on-surface)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              className="input-field text-[var(--color-on-surface-variant)]"
             >
               <option value="todos">Todos los estados</option>
               <option value="activo">Activos</option>
@@ -142,7 +140,7 @@ export default function UsuariosPage() {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-on-surface)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              className="input-field text-[var(--color-on-surface-variant)]"
             >
               <option value="todos">Todos los roles</option>
               <option value="admin">Administrador</option>
@@ -153,72 +151,54 @@ export default function UsuariosPage() {
           </div>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] rounded-b-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] overflow-hidden">
+        <div className="flex flex-col gap-2">
           {loadingUsers ? (
-            <p className="p-8 text-center text-[var(--color-secondary)]">Cargando usuarios...</p>
+            <p className="p-8 text-center text-[var(--color-on-surface-variant)]">Cargando usuarios...</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[800px]">
-                <thead>
-                  <tr className="bg-[var(--color-surface-container-low)] border-b border-[var(--color-outline-variant)] text-[var(--color-secondary)] text-sm">
-                    <th className="py-3 px-6 font-semibold">Nombre</th>
-                    <th className="py-3 px-6 font-semibold">Correo</th>
-                    <th className="py-3 px-6 font-semibold">Roles</th>
-                    <th className="py-3 px-6 font-semibold">Estado</th>
-                    <th className="py-3 px-6 font-semibold">Último Acceso</th>
-                    <th className="py-3 px-6 font-semibold text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id} className="border-b border-[var(--color-surface-variant)] hover:bg-[var(--color-surface-container-lowest)] transition-colors">
-                      <td className="py-4 px-6 text-sm text-[var(--color-on-surface)]">{u.name || '-'}</td>
-                      <td className="py-4 px-6 text-sm text-[var(--color-secondary)]">{u.email}</td>
-                      <td className="py-4 px-6 text-sm">
-                        <div className="flex gap-2 flex-wrap">
-                          {u.roles?.map((role) => (
-                            <span key={role} className="bg-[var(--color-secondary-container)] text-[var(--color-on-secondary-container)] px-2 py-1 rounded-full text-xs capitalize">
+            <>
+              <div className="grid grid-cols-1 gap-4">
+                {filteredUsers.map((u) => (
+                  <Link 
+                    key={u.id} 
+                    href={`/usuarios/${u.id}`}
+                    className={`bg-[var(--color-surface-container)] p-5 rounded-xl hover:bg-[var(--color-surface-container-low)] transition-all shadow-sm flex flex-col gap-2 cursor-pointer ${!u.active ? 'opacity-60' : ''}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-lg font-bold text-[var(--color-primary)]">{u.name || '-'}</h3>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.05em] shrink-0 ${u.active ? 'bg-[var(--color-secondary-container)] text-[var(--color-primary)]' : 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]'}`}>
+                        {u.active ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                    <div className="text-sm text-[var(--color-on-surface-variant)] flex flex-wrap items-center gap-4 mt-1">
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        {u.email}
+                      </span>
+                      {u.roles && u.roles.length > 0 && (
+                        <div className="flex gap-2 flex-wrap items-center">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                          {u.roles.map((role) => (
+                            <span key={role} className="bg-[var(--color-surface-variant)] text-[var(--color-on-surface)] px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-[0.05em]">
                               {role}
                             </span>
                           ))}
                         </div>
-                      </td>
-                      <td className="py-4 px-6 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.active ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]'}`}>
-                          {u.active ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-sm text-[var(--color-secondary)]">
-                        {formatDate(u.last_login || u.updated)}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-right">
-                        <div className="flex justify-end gap-3">
-                          <Link href={`/usuarios/${u.id}`} className="text-[var(--color-primary)] hover:text-[var(--color-on-primary-container)] font-medium transition-colors">
-                            Ver
-                          </Link>
-                          <Link href={`/usuarios/${u.id}/edit`} className="text-[var(--color-tertiary-fixed)] hover:text-[var(--color-on-tertiary-fixed-variant)] font-medium transition-colors">
-                            Editar
-                          </Link>
-                          <button 
-                            onClick={() => toggleUserStatus(u.id, u.active)}
-                            className={`font-medium transition-colors ${u.active ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'}`}
-                          >
-                            {u.active ? 'Desactivar' : 'Activar'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredUsers.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-[var(--color-secondary)]">
-                        No se encontraron usuarios con los filtros aplicados.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              
+              {filteredUsers.length === 0 && (
+                <div className="bg-[var(--color-surface-container)] p-8 text-center text-[var(--color-on-surface-variant)] rounded-md">
+                  No se encontraron usuarios con los filtros aplicados.
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

@@ -1,79 +1,92 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #002046;
-  --color-primary-container: #1b365d;
-  --color-surface: #f6fafe;
-  --color-surface-container-low: #f0f4f8;
+  --color-primary: #0f324b;
+  --color-primary-container: #1a496b;
+  --color-on-primary-fixed: #0a2233;
+  --color-surface: #ecd2b4;
+  --color-surface-container-low: #e3c2a4;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container: #eaeef2;
-  --color-surface-container-high: #e4e9ed;
-  --color-surface-variant: #e1e2e8;
-  --color-secondary: #515f74;
-  --color-secondary-container: #d8e2f3;
+  --color-surface-container: #dfbe9b;
+  --color-surface-container-highest: #f9dec0;
+  --color-surface-variant: #d5b99b;
+  --color-surface-bright: #fbf2e6;
+  --color-surface-dim: #f0d6b8;
+  --color-secondary: #4a3e30;
+  --color-secondary-container: #d8e4f2;
   --color-on-secondary-container: #111c2b;
   --color-tertiary-fixed: #3cafa2;
   --color-on-tertiary-fixed-variant: #005047;
   --color-error-container: #ffdad6;
   --color-on-error-container: #ba1a1a;
-  --color-outline-variant: #c4c6cf;
-  --color-on-surface: #171c1f;
-  --color-primary-fixed: #002046;
+  --color-outline-variant: rgba(15, 50, 75, 0.15);
+  --color-on-surface: #261906;
+  --color-on-surface-variant: #42474d;
 
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-manrope);
+  --font-sans: var(--font-manrope), sans-serif;
+  --font-display: var(--font-manrope), sans-serif;
+  
+  --shadow-ambient: 0 8px 24px rgba(38, 25, 6, 0.06);
 }
 
 :root {
-  --background: #f6fafe;
-  --foreground: #171c1f;
+  --background: #ecd2b4;
+  --foreground: #261906;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Glassmorphism utility */
 .glass-panel {
-  background-color: rgba(255, 255, 255, 0.85); /* surface_container_lowest at 85% */
+  background-color: rgba(251, 242, 230, 0.7); /* surface-bright at 70% */
   backdrop-filter: blur(20px);
 }
 
-/* Primary Button Gradient */
+/* Buttons */
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
-  color: white;
-  border-radius: 8px;
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  color: var(--color-surface);
+  border-radius: 0.375rem; /* md */
   font-weight: 600;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
 }
-
 .btn-primary:hover {
-  opacity: 0.9;
+  background: var(--color-primary);
+  transform: translateY(-2px);
 }
 
 .btn-secondary {
-  background-color: var(--color-surface-container-high);
-  color: var(--color-on-surface);
-  border-radius: 8px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
+  background-color: transparent;
+  color: var(--color-primary-container);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 0.375rem; /* md */
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
-
 .btn-secondary:hover {
-  background-color: #d1d5db; /* surface_container_highest approx */
+  background-color: var(--color-surface-container-low);
 }
 
 /* Input Fields */
 .input-field {
-  background-color: var(--color-surface-container-lowest);
-  border-bottom: 2px solid var(--color-outline-variant);
-  transition: border-color 0.2s ease;
+  background-color: var(--color-surface-container-highest);
+  border: none;
+  border-radius: 0.375rem; /* md */
+  transition: all 0.2s ease;
+  padding: 0.5rem 1rem;
+  color: var(--color-primary);
 }
-
+.input-field::placeholder {
+  color: var(--color-primary);
+  opacity: 0.6;
+}
 .input-field:focus {
-  border-bottom-color: var(--color-primary);
+  background-color: var(--color-surface-container-highest);
+  color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary); /* 1px primary ghost border */
   outline: none;
 }

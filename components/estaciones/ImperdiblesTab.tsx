@@ -124,7 +124,7 @@ export default function ImperdiblesTab({ estacionId, user }: ImperdiblesTabProps
               )}
               
               {canEdit && (
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 bg-white/90 backdrop-blur p-1 rounded-md shadow-sm">
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 bg-[var(--color-surface-container)]/90 backdrop-blur p-1 rounded-md shadow-sm">
                   <Link
                     href={`/imperdibles/${imperdible.id}/edit`}
                     className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"

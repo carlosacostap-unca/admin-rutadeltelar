@@ -16,38 +16,54 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p>Cargando...</p>
+      <div className="flex h-full items-center justify-center bg-[var(--color-surface)]">
+        <p className="font-sans text-[var(--color-on-surface-variant)] text-sm">Cargando...</p>
       </div>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4 bg-[var(--color-surface)]">
-      <div className="w-full max-w-md rounded-[8px] p-8 glass-panel shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] border border-[var(--color-outline-variant)] border-opacity-20">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold font-display text-[var(--color-primary)]">Iniciar Sesión</h1>
-          <p className="mt-2 text-sm text-[var(--color-secondary)]">
-            Gestión Territorial - Ruta del Telar
+    <main className="flex h-full items-center justify-center p-4 bg-[var(--color-surface)]">
+      {/* Container - using surface_container_low for related content grouping as per "Surface Hierarchy" */}
+      <div className="w-full max-w-md rounded-lg p-10 bg-[var(--color-surface-container-low)] shadow-[0_8px_24px_rgba(38,25,6,0.06)] border-none">
+        
+        {/* Header Section */}
+        <div className="mb-10 text-center flex flex-col items-center">
+          <div className="w-16 h-16 bg-[var(--color-surface-variant)] rounded-full mb-6 flex items-center justify-center shadow-[0_4px_12px_rgba(38,25,6,0.04)]">
+             <svg className="w-8 h-8 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-extrabold font-display text-[var(--color-primary)] tracking-[-0.02em] leading-tight mb-2">
+            Ruta del Telar
+          </h1>
+          <p className="text-sm font-sans text-[var(--color-primary)] uppercase tracking-[0.05em] font-bold">
+            Sistema de Gestión Territorial
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 rounded-[8px] bg-[var(--color-error-container)] p-4 text-sm font-medium text-[var(--color-on-error-container)]">
+          <div className="mb-8 rounded-full bg-[var(--color-error-container)] px-6 py-3 text-sm font-bold text-[var(--color-on-error-container)] text-center tracking-wide">
             {error}
           </div>
         )}
 
-        <button
-          onClick={loginWithGoogle}
-          className="flex w-full items-center justify-center px-4 py-3 btn-primary"
-        >
-          <svg
-            className="mr-2 h-5 w-5 bg-white rounded-full p-0.5"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            xmlns="http://www.w3.org/2000/svg"
+        {/* Action Section */}
+        <div className="pt-2">
+          <button
+            onClick={loginWithGoogle}
+            className="flex w-full items-center justify-center px-6 py-4 rounded-md text-[var(--color-surface)] font-semibold text-sm transition-all duration-300 ease-out hover:-translate-y-[2px]"
+            style={{ 
+              background: 'linear-gradient(135deg, var(--color-primary-container) 0%, var(--color-primary) 100%)',
+              boxShadow: '0 4px 12px rgba(38, 25, 6, 0.08)'
+            }}
           >
+            <svg
+              className="mr-3 h-5 w-5 bg-white rounded-full p-0.5"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+            >
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
               fill="#4285F4"
@@ -67,6 +83,7 @@ export default function LoginPage() {
           </svg>
           Iniciar sesión con Google
         </button>
+        </div>
       </div>
     </main>
   );

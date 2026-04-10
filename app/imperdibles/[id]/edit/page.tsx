@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { canEditContent } from '@/lib/permissions';
@@ -50,6 +49,7 @@ export default function EditImperdiblePage() {
   const [estado, setEstado] = useState<ImperdibleEstado>('borrador');
   const [videosEnlaces, setVideosEnlaces] = useState('');
   const [fotos, setFotos] = useState<FileList | null>(null);
+  const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -212,6 +212,13 @@ export default function EditImperdiblePage() {
       if (videosEnlaces) formData.append('videos_enlaces', videosEnlaces);
       else formData.append('videos_enlaces', '');
       
+      // Eliminar fotos seleccionadas
+      if (fotosParaEliminar.length > 0) {
+        fotosParaEliminar.forEach(foto => {
+          formData.append('fotos-', foto); // La sintaxis 'campo-' elimina el archivo en PocketBase
+        });
+      }
+      
       if (fotos && fotos.length > 0) {
         for (let i = 0; i < fotos.length; i++) {
           formData.append('fotos', fotos[i]);
@@ -251,7 +258,7 @@ export default function EditImperdiblePage() {
 
   if (isLoading || !user || !canEditContent(user as any) || loadingData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
@@ -259,26 +266,23 @@ export default function EditImperdiblePage() {
 
   if (!imperdible && !loadingData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Imperdible no encontrado.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-4xl">
-        <div className="mb-6 flex items-center gap-4">
-          <Link href={`/imperdibles/${id}`} className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]">
-            &larr; Volver
-          </Link>
-          <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
+    <div className="h-full bg-[var(--color-surface)] flex flex-col">
+      <main className="mx-auto px-6 py-8 flex-1 w-full">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
+          <h1 className="text-[32px] font-bold text-[var(--color-on-surface)] tracking-tight ml-4">
             Editar Imperdible
-          </h2>
+          </h1>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+        <div className="bg-[var(--color-surface-container)] p-8 rounded-md">
           {error && (
             <div className="mb-6 p-4 bg-[var(--color-error-container)] text-[var(--color-on-error-container)] rounded-md text-sm">
               {error}
@@ -288,7 +292,7 @@ export default function EditImperdiblePage() {
           {imperdible && (
             <div className="mb-8 p-4 bg-[var(--color-surface-container-low)] rounded-md border border-[var(--color-outline-variant)]">
               <h3 className="text-sm font-semibold text-[var(--color-on-surface)] mb-2">Historial Básico</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-[var(--color-secondary)]">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-[var(--color-on-surface-variant)]">
                 <div>
                   <span className="block text-[var(--color-outline)] mb-1">Fecha de creación</span>
                   <span className="block font-medium">{new Date(imperdible.created).toLocaleString()}</span>
@@ -312,33 +316,30 @@ export default function EditImperdiblePage() {
           )}
 
           <form className="space-y-6">
-            {/* Información Principal */}
-            <div className="border-b border-[var(--color-outline-variant)] pb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-on-surface)] mb-4">Información Principal</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Título *
                   </label>
                   <input
                     type="text"
                     value={titulo}
                     onChange={(e) => setTitulo(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Cerro de los Siete Colores"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Subtítulo Breve
                   </label>
                   <input
                     type="text"
                     value={subtitulo}
                     onChange={(e) => setSubtitulo(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Un paisaje único en la quebrada"
                   />
                 </div>
@@ -346,13 +347,13 @@ export default function EditImperdiblePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Tipo *
                   </label>
                   <select
                     value={tipo}
                     onChange={(e) => setTipo(e.target.value as ImperdibleTipo)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     required
                   >
                     <option value="" disabled>Seleccionar...</option>
@@ -364,7 +365,7 @@ export default function EditImperdiblePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Estación *
                   </label>
                   <select
@@ -375,7 +376,7 @@ export default function EditImperdiblePage() {
                       setProductosRelacionados([]);
                       setExperienciasRelacionadas([]);
                     }}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     required
                   >
                     <option value="" disabled>Seleccionar Estación...</option>
@@ -387,13 +388,13 @@ export default function EditImperdiblePage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Prioridad *
                   </label>
                   <select
                     value={prioridad}
                     onChange={(e) => setPrioridad(e.target.value as ImperdiblePrioridad)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     required
                   >
                     <option value="" disabled>Seleccionar...</option>
@@ -403,94 +404,88 @@ export default function EditImperdiblePage() {
                   </select>
                 </div>
               </div>
-            </div>
+            
 
-            {/* Descripciones */}
-            <div className="border-b border-[var(--color-outline-variant)] pb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-on-surface)] mb-4">Descripciones y Detalles</h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Descripción Completa
                 </label>
                 <textarea
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px] resize-y"
+                  className="input-field w-full min-h-[100px] resize-y"
                   placeholder="Descripción detallada del imperdible..."
                 />
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Motivo de Destaque
                 </label>
                 <textarea
                   value={motivoDestaque}
                   onChange={(e) => setMotivoDestaque(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[80px] resize-y"
+                  className="input-field w-full min-h-[80px] resize-y"
                   placeholder="¿Por qué es un imperdible?"
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Duración Sugerida
                   </label>
                   <input
                     type="text"
                     value={duracionSugerida}
                     onChange={(e) => setDuracionSugerida(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. 2 horas, Medio día"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Accesibilidad
                   </label>
                   <input
                     type="text"
                     value={accesibilidad}
                     onChange={(e) => setAccesibilidad(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Apto para sillas de ruedas, dificultad media"
                   />
                 </div>
               </div>
               
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Recomendaciones
                 </label>
                 <textarea
                   value={recomendaciones}
                   onChange={(e) => setRecomendaciones(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[80px] resize-y"
+                  className="input-field w-full min-h-[80px] resize-y"
                   placeholder="Recomendaciones para los visitantes (ropa cómoda, mejor horario, etc.)..."
                 />
               </div>
-            </div>
+            
 
-            {/* Ubicación y Extras */}
-            <div className="border-b border-[var(--color-outline-variant)] pb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-on-surface)] mb-4">Ubicación y Relaciones</h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Ubicación
                 </label>
                 <input
                   type="text"
                   value={ubicacion}
                   onChange={(e) => setUbicacion(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   placeholder="Ej. Ruta 9 km 15, Centro"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Latitud
                   </label>
                   <input
@@ -498,12 +493,12 @@ export default function EditImperdiblePage() {
                     step="any"
                     value={latitud}
                     onChange={(e) => setLatitud(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="-23.7431"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Longitud
                   </label>
                   <input
@@ -511,7 +506,7 @@ export default function EditImperdiblePage() {
                     step="any"
                     value={longitud}
                     onChange={(e) => setLongitud(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="-65.4891"
                   />
                 </div>
@@ -522,9 +517,9 @@ export default function EditImperdiblePage() {
                 </div>
               )}
               
-              <div className="grid grid-cols-1 gap-6 mb-4">
+              <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Actores Relacionados (opcional)
                   </label>
                   <select
@@ -534,7 +529,7 @@ export default function EditImperdiblePage() {
                       const options = Array.from(e.target.selectedOptions, option => option.value);
                       setActoresRelacionados(options);
                     }}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px]"
+                    className="input-field w-full min-h-[100px]"
                     disabled={!estacionId || actoresFiltrados.length === 0}
                   >
                     {actoresFiltrados.map((actor) => (
@@ -543,11 +538,11 @@ export default function EditImperdiblePage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-[var(--color-secondary)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
+                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Productos Relacionados (opcional)
                   </label>
                   <select
@@ -557,7 +552,7 @@ export default function EditImperdiblePage() {
                       const options = Array.from(e.target.selectedOptions, option => option.value);
                       setProductosRelacionados(options);
                     }}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px]"
+                    className="input-field w-full min-h-[100px]"
                     disabled={!estacionId || productosFiltrados.length === 0}
                   >
                     {productosFiltrados.map((prod) => (
@@ -566,11 +561,11 @@ export default function EditImperdiblePage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-[var(--color-secondary)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
+                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Experiencias Relacionadas (opcional)
                   </label>
                   <select
@@ -580,7 +575,7 @@ export default function EditImperdiblePage() {
                       const options = Array.from(e.target.selectedOptions, option => option.value);
                       setExperienciasRelacionadas(options);
                     }}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px]"
+                    className="input-field w-full min-h-[100px]"
                     disabled={!estacionId || experienciasFiltradas.length === 0}
                   >
                     {experienciasFiltradas.map((exp) => (
@@ -589,60 +584,60 @@ export default function EditImperdiblePage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-[var(--color-secondary)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
+                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Estacionalidad
                   </label>
                   <input
                     type="text"
                     value={estacionalidad}
                     onChange={(e) => setEstacionalidad(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Todo el año, Verano, Semana Santa"
                   />
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Horarios o Disponibilidad
                   </label>
                   <input
                     type="text"
                     value={horarios}
                     onChange={(e) => setHorarios(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Lunes a Viernes de 9 a 18hs"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Videos o Enlaces (URLs)
                   </label>
                   <input
                     type="text"
                     value={videosEnlaces}
                     onChange={(e) => setVideosEnlaces(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. https://youtube.com/..."
                   />
                 </div>
               </div>
               
-              <div className="mb-4 w-1/2 pr-3">
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Estado
                 </label>
                 <select
                   value={estado}
                   onChange={(e) => setEstado(e.target.value as ImperdibleEstado)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full md:w-1/2"
                 >
                   <option value="borrador">Borrador</option>
                   <option value="en_revision">En Revisión</option>
@@ -650,42 +645,126 @@ export default function EditImperdiblePage() {
                   <option value="inactivo">Inactivo</option>
                 </select>
               </div>
-            </div>
+            
 
-            {/* Multimedia */}
-            <div className="border-b border-[var(--color-outline-variant)] pb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-on-surface)] mb-4">Multimedia</h3>
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
-                  Fotos (Opcional - Nuevas imágenes se agregarán a las existentes)
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Fotos Actuales
                 </label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => setFotos(e.target.files)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
-                />
-                <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">
-                  Selecciona imágenes si deseas subir nuevas fotos para este imperdible.
+                {imperdible?.fotos && imperdible.fotos.length > 0 && imperdible.fotos.filter(f => !fotosParaEliminar.includes(f)).length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                    {imperdible.fotos.filter(f => !fotosParaEliminar.includes(f)).map((foto, index) => (
+                      <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                        <img 
+                          src={pb.files.getURL(imperdible, foto)} 
+                          alt={`Foto de ${imperdible.titulo}`}
+                          className="object-contain w-full h-full p-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFotosParaEliminar([...fotosParaEliminar, foto])}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Eliminar foto"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[var(--color-on-surface-variant)] text-sm italic">
+                    No hay fotos guardadas para este imperdible.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Añadir Nuevas Fotos (Opcional)
+                </label>
+                <div className="flex flex-col gap-4">
+                  {fotos && fotos.length > 0 && (
+                    <div className="flex flex-wrap gap-4">
+                      {Array.from(fotos).map((foto, index) => (
+                        <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                          <img 
+                            src={URL.createObjectURL(foto)} 
+                            alt={`Nueva foto ${index + 1}`}
+                            className="object-contain w-full h-full p-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const dt = new DataTransfer();
+                              Array.from(fotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
+                              setFotos(dt.files.length > 0 ? dt.files : null);
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Eliminar nueva foto"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        const currentFotosCount = (imperdible?.fotos?.length || 0) - fotosParaEliminar.length;
+                        const existingNewFotosCount = fotos?.length || 0;
+                        const newFotosCount = e.target.files?.length || 0;
+                        
+                        if (currentFotosCount + existingNewFotosCount + newFotosCount > 5) {
+                          alert(`Puedes tener un máximo de 5 imágenes por imperdible. Te quedan ${5 - (currentFotosCount + existingNewFotosCount)} espacios.`);
+                        } else {
+                          const dt = new DataTransfer();
+                          if (fotos) {
+                            Array.from(fotos).forEach(f => dt.items.add(f));
+                          }
+                          if (e.target.files) {
+                            Array.from(e.target.files).forEach(f => dt.items.add(f));
+                          }
+                          setFotos(dt.files);
+                        }
+                        // Reset input so the same file can be selected again if needed
+                        e.target.value = '';
+                      }}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                      className="btn-secondary px-4 py-2 text-sm shadow-sm"
+                    >
+                      + Añadir foto
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                  Selecciona imágenes si deseas subir nuevas fotos para este imperdible. Puedes tener hasta 5 imágenes en total.
                 </p>
               </div>
-            </div>
+            
 
-            <div className="pt-6 flex items-center justify-end gap-4 border-t border-[var(--color-outline-variant)]">
-              <button
-                type="button"
-                onClick={() => router.push(`/imperdibles/${id}`)}
-                className="px-6 py-2 border border-[var(--color-outline)] rounded-full text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)] transition-colors font-medium text-sm"
+            <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
+              <Link
+                href={`/imperdibles/${id}`}
+                className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
               >
                 Cancelar
-              </button>
+              </Link>
               
               <button
                 type="button"
                 onClick={(e) => handleSubmit(e, 'guardar')}
                 disabled={isSubmitting}
-                className="px-6 py-2 border border-[var(--color-primary)] rounded-full text-[var(--color-primary)] hover:bg-[var(--color-primary-container)] hover:text-[var(--color-on-primary-container)] transition-colors font-medium text-sm"
+                className="btn-secondary px-6 py-2 text-sm shadow-sm"
               >
                 {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
               </button>
@@ -695,7 +774,7 @@ export default function EditImperdiblePage() {
                   type="button"
                   onClick={(e) => handleSubmit(e, 'publicar')}
                   disabled={isSubmitting}
-                  className="px-6 py-2 bg-[var(--color-primary)] text-[var(--color-on-primary)] rounded-full hover:bg-[var(--color-primary-fixed-dim)] transition-colors font-medium text-sm shadow-[0_4px_8px_rgba(0,0,0,0.1)]"
+                  className="btn-primary px-6 py-2 text-sm shadow-md"
                 >
                   {isSubmitting ? 'Guardando...' : 'Publicar Imperdible'}
                 </button>

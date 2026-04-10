@@ -84,7 +84,7 @@ export default function ActoresTab({ estacionId, user }: { estacionId: string, u
           </thead>
           <tbody>
             {actores.map((a) => (
-              <tr key={a.id} className="border-b border-[var(--color-surface-variant)] hover:bg-[var(--color-surface-container-lowest)] transition-colors">
+              <tr key={a.id} className="border-b border-[var(--color-surface-variant)] hover:bg-[var(--color-surface-container)] transition-colors">
                 <td className="py-4 px-6 text-sm text-[var(--color-on-surface)] font-medium">{a.nombre}</td>
                 <td className="py-4 px-6 text-sm text-[var(--color-secondary)]">{getTipoLabel(a.tipo)}</td>
                 <td className="py-4 px-6 text-sm">

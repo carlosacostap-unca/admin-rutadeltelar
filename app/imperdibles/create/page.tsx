@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
@@ -177,26 +176,23 @@ function CreateImperdibleForm() {
 
   if (isLoading || !user || !canEditContent(user as any) || loadingData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-4xl">
-        <div className="mb-6 flex items-center gap-4">
-          <Link href="/imperdibles" className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]">
-            &larr; Volver
-          </Link>
-          <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
+    <div className="h-full bg-[var(--color-surface)] flex flex-col">
+      <main className="mx-auto px-6 py-8 flex-1 w-full">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
+          <h1 className="text-[32px] font-bold text-[var(--color-on-surface)] tracking-tight ml-4">
             Crear Imperdible
-          </h2>
+          </h1>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+        <div className="bg-[var(--color-surface-container)] p-8 rounded-md">
           {error && (
             <div className="mb-6 p-4 bg-[var(--color-error-container)] text-[var(--color-on-error-container)] rounded-md text-sm">
               {error}
@@ -204,33 +200,30 @@ function CreateImperdibleForm() {
           )}
           
           <form className="space-y-6">
-            {/* Información Principal */}
-            <div className="border-b border-[var(--color-outline-variant)] pb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-on-surface)] mb-4">Información Principal</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Título *
                   </label>
                   <input
                     type="text"
                     value={titulo}
                     onChange={(e) => setTitulo(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Cerro de los Siete Colores"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Subtítulo Breve
                   </label>
                   <input
                     type="text"
                     value={subtitulo}
                     onChange={(e) => setSubtitulo(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Un paisaje único en la quebrada"
                   />
                 </div>
@@ -238,13 +231,13 @@ function CreateImperdibleForm() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Tipo *
                   </label>
                   <select
                     value={tipo}
                     onChange={(e) => setTipo(e.target.value as ImperdibleTipo)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     required
                   >
                     <option value="" disabled>Seleccionar...</option>
@@ -256,7 +249,7 @@ function CreateImperdibleForm() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Estación *
                   </label>
                   <select
@@ -267,7 +260,7 @@ function CreateImperdibleForm() {
                       setProductosRelacionados([]);
                       setExperienciasRelacionadas([]);
                     }}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     required
                   >
                     <option value="" disabled>Seleccionar Estación...</option>
@@ -279,13 +272,13 @@ function CreateImperdibleForm() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Prioridad *
                   </label>
                   <select
                     value={prioridad}
                     onChange={(e) => setPrioridad(e.target.value as ImperdiblePrioridad)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     required
                   >
                     <option value="" disabled>Seleccionar...</option>
@@ -295,94 +288,88 @@ function CreateImperdibleForm() {
                   </select>
                 </div>
               </div>
-            </div>
+            
 
-            {/* Descripciones */}
-            <div className="border-b border-[var(--color-outline-variant)] pb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-on-surface)] mb-4">Descripciones y Detalles</h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Descripción Completa
                 </label>
                 <textarea
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px] resize-y"
+                  className="input-field w-full min-h-[100px] resize-y"
                   placeholder="Descripción detallada del imperdible..."
                 />
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Motivo de Destaque
                 </label>
                 <textarea
                   value={motivoDestaque}
                   onChange={(e) => setMotivoDestaque(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[80px] resize-y"
+                  className="input-field w-full min-h-[80px] resize-y"
                   placeholder="¿Por qué es un imperdible?"
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Duración Sugerida
                   </label>
                   <input
                     type="text"
                     value={duracionSugerida}
                     onChange={(e) => setDuracionSugerida(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. 2 horas, Medio día"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Accesibilidad
                   </label>
                   <input
                     type="text"
                     value={accesibilidad}
                     onChange={(e) => setAccesibilidad(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Apto para sillas de ruedas, dificultad media"
                   />
                 </div>
               </div>
               
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Recomendaciones
                 </label>
                 <textarea
                   value={recomendaciones}
                   onChange={(e) => setRecomendaciones(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[80px] resize-y"
+                  className="input-field w-full min-h-[80px] resize-y"
                   placeholder="Recomendaciones para los visitantes (ropa cómoda, mejor horario, etc.)..."
                 />
               </div>
-            </div>
+            
 
-            {/* Ubicación y Extras */}
-            <div className="border-b border-[var(--color-outline-variant)] pb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-on-surface)] mb-4">Ubicación y Relaciones</h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Ubicación
                 </label>
                 <input
                   type="text"
                   value={ubicacion}
                   onChange={(e) => setUbicacion(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   placeholder="Ej. Ruta 9 km 15, Centro"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Latitud
                   </label>
                   <input
@@ -390,12 +377,12 @@ function CreateImperdibleForm() {
                     step="any"
                     value={latitud}
                     onChange={(e) => setLatitud(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="-23.7431"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Longitud
                   </label>
                   <input
@@ -403,21 +390,21 @@ function CreateImperdibleForm() {
                     step="any"
                     value={longitud}
                     onChange={(e) => setLongitud(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="-65.4891"
                   />
                 </div>
               </div>
 
               {(latitud && longitud && !isNaN(Number(latitud)) && !isNaN(Number(longitud))) && (
-                <div className="mb-4">
+                <div>
                   <Map lat={Number(latitud)} lng={Number(longitud)} label={titulo || 'Nueva ubicación'} />
                 </div>
               )}
               
-              <div className="grid grid-cols-1 gap-6 mb-4">
+              <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Actores Relacionados (opcional)
                   </label>
                   <select
@@ -427,7 +414,7 @@ function CreateImperdibleForm() {
                       const options = Array.from(e.target.selectedOptions, option => option.value);
                       setActoresRelacionados(options);
                     }}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px]"
+                    className="input-field w-full min-h-[100px]"
                     disabled={!estacionId || actoresFiltrados.length === 0}
                   >
                     {actoresFiltrados.map((actor) => (
@@ -436,11 +423,11 @@ function CreateImperdibleForm() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-[var(--color-secondary)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
+                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Productos Relacionados (opcional)
                   </label>
                   <select
@@ -450,7 +437,7 @@ function CreateImperdibleForm() {
                       const options = Array.from(e.target.selectedOptions, option => option.value);
                       setProductosRelacionados(options);
                     }}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px]"
+                    className="input-field w-full min-h-[100px]"
                     disabled={!estacionId || productosFiltrados.length === 0}
                   >
                     {productosFiltrados.map((prod) => (
@@ -459,11 +446,11 @@ function CreateImperdibleForm() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-[var(--color-secondary)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
+                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Experiencias Relacionadas (opcional)
                   </label>
                   <select
@@ -473,7 +460,7 @@ function CreateImperdibleForm() {
                       const options = Array.from(e.target.selectedOptions, option => option.value);
                       setExperienciasRelacionadas(options);
                     }}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px]"
+                    className="input-field w-full min-h-[100px]"
                     disabled={!estacionId || experienciasFiltradas.length === 0}
                   >
                     {experienciasFiltradas.map((exp) => (
@@ -482,96 +469,144 @@ function CreateImperdibleForm() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-[var(--color-secondary)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
+                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Estacionalidad
                   </label>
                   <input
                     type="text"
                     value={estacionalidad}
                     onChange={(e) => setEstacionalidad(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Todo el año, Verano, Semana Santa"
                   />
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Horarios o Disponibilidad
                   </label>
                   <input
                     type="text"
                     value={horarios}
                     onChange={(e) => setHorarios(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Lunes a Viernes de 9 a 18hs"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Videos o Enlaces (URLs)
                   </label>
                   <input
                     type="text"
                     value={videosEnlaces}
                     onChange={(e) => setVideosEnlaces(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. https://youtube.com/..."
                   />
                 </div>
               </div>
-            </div>
+            
 
-            {/* Multimedia */}
-            <div className="border-b border-[var(--color-outline-variant)] pb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-on-surface)] mb-4">Multimedia</h3>
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
-                  Fotos
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Fotos (Opcional)
                 </label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => setFotos(e.target.files)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
-                />
-                <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">
-                  Puedes seleccionar múltiples imágenes.
+                <div className="flex flex-col gap-4">
+                  {fotos && fotos.length > 0 && (
+                    <div className="flex flex-wrap gap-4">
+                      {Array.from(fotos).map((foto, index) => (
+                        <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                          <img 
+                            src={URL.createObjectURL(foto)} 
+                            alt={`Nueva foto ${index + 1}`}
+                            className="object-contain w-full h-full p-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const dt = new DataTransfer();
+                              Array.from(fotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
+                              setFotos(dt.files.length > 0 ? dt.files : null);
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Eliminar nueva foto"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div>
+                    <input
+                      id="file-upload-create"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        const existingFotosCount = fotos?.length || 0;
+                        const newFotosCount = e.target.files?.length || 0;
+                        
+                        if (existingFotosCount + newFotosCount > 5) {
+                          alert(`Puedes tener un máximo de 5 imágenes. Te quedan ${5 - existingFotosCount} espacios.`);
+                        } else {
+                          const dt = new DataTransfer();
+                          if (fotos) {
+                            Array.from(fotos).forEach(f => dt.items.add(f));
+                          }
+                          if (e.target.files) {
+                            Array.from(e.target.files).forEach(f => dt.items.add(f));
+                          }
+                          setFotos(dt.files);
+                        }
+                        e.target.value = '';
+                      }}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('file-upload-create')?.click()}
+                      className="btn-secondary px-4 py-2 text-sm shadow-sm"
+                    >
+                      + Añadir foto
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                  Puedes seleccionar hasta 5 imágenes.
                 </p>
               </div>
-            </div>
-
-            <div className="pt-6 flex items-center justify-end gap-4">
-              <button
-                type="button"
-                onClick={() => router.push('/imperdibles')}
-                className="px-6 py-2 border border-[var(--color-outline)] rounded-full text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)] transition-colors font-medium text-sm"
+            
+            <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
+              <Link
+                href="/imperdibles"
+                className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
               >
                 Cancelar
-              </button>
-              
+              </Link>
               <button
                 type="button"
                 onClick={(e) => handleSubmit(e, 'borrador')}
                 disabled={isSubmitting}
-                className="px-6 py-2 border border-[var(--color-primary)] rounded-full text-[var(--color-primary)] hover:bg-[var(--color-primary-container)] hover:text-[var(--color-on-primary-container)] transition-colors font-medium text-sm"
+                className="btn-secondary px-6 py-2 text-sm shadow-sm"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar como Borrador'}
+                Guardar Borrador
               </button>
-              
               <button
                 type="button"
                 onClick={(e) => handleSubmit(e, 'continuar')}
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-[var(--color-primary)] text-[var(--color-on-primary)] rounded-full hover:bg-[var(--color-primary-fixed-dim)] transition-colors font-medium text-sm shadow-[0_4px_8px_rgba(0,0,0,0.1)]"
+                className="btn-primary px-6 py-2 text-sm shadow-md"
               >
                 {isSubmitting ? 'Guardando...' : 'Guardar y Continuar'}
               </button>
@@ -585,7 +620,7 @@ function CreateImperdibleForm() {
 
 export default function CreateImperdiblePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando...</div>}>
+    <Suspense fallback={<div className="h-full flex items-center justify-center">Cargando...</div>}>
       <CreateImperdibleForm />
     </Suspense>
   );

@@ -102,7 +102,7 @@ export default function ContentStatusManager({
       {/* Modal de Rechazo */}
       {showRejectModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+          <div className="bg-[var(--color-surface-container)] rounded-lg p-6 max-w-md w-full shadow-xl">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Rechazar contenido</h3>
             <p className="text-sm text-gray-600 mb-4">
               Por favor, indica el motivo del rechazo. Esta observación será visible para el editor.

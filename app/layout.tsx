@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ClientLayout from "./ClientLayout";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,7 +30,11 @@ export default function RootLayout({
       className={`${inter.variable} ${manrope.variable} h-full antialiased font-sans`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ClientLayout>
+            {children}
+          </ClientLayout>
+        </AuthProvider>
       </body>
     </html>
   );

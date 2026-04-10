@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
@@ -62,7 +61,7 @@ export default function ProductoDetailPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
@@ -84,20 +83,19 @@ export default function ProductoDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-4xl">
-        <div className="mb-6 flex items-center gap-4">
+    <div className="h-full bg-[var(--color-surface)]">
+      <main className="mx-auto px-6 py-8">
+        <div className="mb-6 flex flex-col items-start gap-4">
           <button 
-            onClick={() => router.back()} 
-            className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]"
+            onClick={() => router.back()}
+            className="btn-primary px-4 py-2 text-sm shadow-md"
           >
             &larr; Volver
           </button>
         </div>
 
         {loadingData ? (
-          <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-sm text-center">
+          <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px] text-center">
             Cargando datos...
           </div>
         ) : error ? (
@@ -114,7 +112,7 @@ export default function ProductoDetailPage() {
               user={user}
               onStatusChange={(updatedRecord) => setProducto(updatedRecord as Producto)}
             />
-            <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+            <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px]">
               <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8 pb-6 border-b border-[var(--color-surface-variant)]">
               <div>
                 <div className="flex items-center gap-3 mb-2">
@@ -161,7 +159,7 @@ export default function ProductoDetailPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-3 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                   Descripción
                 </h3>
                 <p className="text-[var(--color-on-surface)] whitespace-pre-wrap">
@@ -170,7 +168,7 @@ export default function ProductoDetailPage() {
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-3 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                   Actores Relacionados
                 </h3>
                 <div className="space-y-3">
@@ -194,39 +192,43 @@ export default function ProductoDetailPage() {
               </div>
             </div>
 
-            {producto.fotos && producto.fotos.length > 0 && (
-              <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
-                <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-4 uppercase tracking-wider">
-                  Fotos
-                </h3>
+            <div className="mt-8 pt-6 border-t border-[var(--color-outline-variant)]">
+              <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
+                Fotos
+              </h3>
+              {producto.fotos && producto.fotos.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {producto.fotos.map((foto, index) => (
                     <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
                       <img 
-                        src={pb.files.getUrl(producto, foto)} 
+                        src={pb.files.getURL(producto, foto)} 
                         alt={`Foto de ${producto.nombre}`}
-                        className="object-cover w-full h-full"
+                        className="object-contain w-full h-full p-1"
                       />
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-[var(--color-on-surface-variant)] italic">
+                  No hay fotos disponibles para este producto.
+                </p>
+              )}
+            </div>
 
-            <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
-              <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-4 uppercase tracking-wider">
+            <div className="mt-8 pt-6 border-t border-[var(--color-outline-variant)]">
+              <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                 Historial
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-[var(--color-secondary)]">
                 <div>
-                  <span className="font-medium block mb-1">Creado el</span> 
+                  <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Creado el</span> 
                   {new Date(producto.created).toLocaleString()}
                   {producto.expand?.created_by && (
                     <span className="block mt-1 text-xs">Por: {producto.expand.created_by.name || producto.expand.created_by.email}</span>
                   )}
                 </div>
                 <div>
-                  <span className="font-medium block mb-1">Última actualización</span> 
+                  <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Última actualización</span> 
                   {new Date(producto.updated).toLocaleString()}
                   {producto.expand?.updated_by && (
                     <span className="block mt-1 text-xs">Por: {producto.expand.updated_by.name || producto.expand.updated_by.email}</span>

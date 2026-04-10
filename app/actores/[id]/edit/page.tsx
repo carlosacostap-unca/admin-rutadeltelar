@@ -4,11 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor, ActorTipo, ActorEstado } from '@/types/actor';
+import MapPicker from '@/components/MapPicker';
 
 export default function EditActorPage() {
   const { user, isLoading } = useAuth();
@@ -28,6 +28,8 @@ export default function EditActorPage() {
   const [contactoTelefono, setContactoTelefono] = useState('');
   const [contactoEmail, setContactoEmail] = useState('');
   const [ubicacion, setUbicacion] = useState('');
+  const [latitud, setLatitud] = useState('');
+  const [longitud, setLongitud] = useState('');
   const [estado, setEstado] = useState<ActorEstado>('borrador');
   const [observaciones, setObservaciones] = useState('');
   
@@ -56,6 +58,9 @@ export default function EditActorPage() {
   const [acreditacion, setAcreditacion] = useState('');
   const [horarios, setHorarios] = useState('');
   const [disponibilidad, setDisponibilidad] = useState('');
+  
+  const [fotos, setFotos] = useState<FileList | null>(null);
+  const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +92,8 @@ export default function EditActorPage() {
         setContactoTelefono(actorRecord.contacto_telefono || '');
         setContactoEmail(actorRecord.contacto_email || '');
         setUbicacion(actorRecord.ubicacion || '');
+        setLatitud(actorRecord.latitud ? actorRecord.latitud.toString() : '');
+        setLongitud(actorRecord.longitud ? actorRecord.longitud.toString() : '');
         setEstado(actorRecord.estado || 'borrador');
         setObservaciones(actorRecord.observaciones || '');
 
@@ -137,32 +144,70 @@ export default function EditActorPage() {
     setError(null);
     
     try {
-      let data: any = {
-        nombre,
-        tipo,
-        estacion_id: estacionId,
-        descripcion,
-        contacto_telefono: contactoTelefono,
-        contacto_email: contactoEmail,
-        ubicacion,
-        observaciones,
-        estado,
-        updated_by: user?.id,
-      };
+      const formData = new FormData();
+      formData.append('nombre', nombre);
+      formData.append('tipo', tipo);
+      formData.append('estacion_id', estacionId);
+      formData.append('descripcion', descripcion);
+      formData.append('contacto_telefono', contactoTelefono);
+      formData.append('contacto_email', contactoEmail);
+      formData.append('ubicacion', ubicacion);
+      if (latitud) formData.append('latitud', latitud);
+      if (longitud) formData.append('longitud', longitud);
+      formData.append('observaciones', observaciones);
+      formData.append('estado', estado);
+      if (user?.id) {
+        formData.append('updated_by', user.id);
+      }
 
       if (tipo === 'artesano') {
-        data = { ...data, tecnicas, materiales, productos_ofrecidos: productosOfrecidos, visitas_demostraciones: visitasDemostraciones, disponibilidad };
+        formData.append('tecnicas', tecnicas);
+        formData.append('materiales', materiales);
+        formData.append('productos_ofrecidos', productosOfrecidos);
+        formData.append('visitas_demostraciones', String(visitasDemostraciones));
+        formData.append('disponibilidad', disponibilidad);
       } else if (tipo === 'productor') {
-        data = { ...data, rubro_productivo: rubroProductivo, escala_produccion: escalaProduccion, modalidad_venta: modalidadVenta, productos_ofrecidos: productosOfrecidos, visitas_demostraciones: visitasDemostraciones };
+        formData.append('rubro_productivo', rubroProductivo);
+        formData.append('escala_produccion', escalaProduccion);
+        formData.append('modalidad_venta', modalidadVenta);
+        formData.append('productos_ofrecidos', productosOfrecidos);
+        formData.append('visitas_demostraciones', String(visitasDemostraciones));
       } else if (tipo === 'hospedaje') {
-        data = { ...data, tipo_hospedaje: tipoHospedaje, capacidad, servicios, horarios };
+        formData.append('tipo_hospedaje', tipoHospedaje);
+        formData.append('capacidad', capacidad);
+        formData.append('servicios', servicios);
+        formData.append('horarios', horarios);
       } else if (tipo === 'gastronomico') {
-        data = { ...data, tipo_propuesta: tipoPropuesta, especialidades, platos_destacados: platosDestacados, modalidad_servicio: modalidadServicio, servicios_adicionales: serviciosAdicionales, horarios };
+        formData.append('tipo_propuesta', tipoPropuesta);
+        formData.append('especialidades', especialidades);
+        formData.append('platos_destacados', platosDestacados);
+        formData.append('modalidad_servicio', modalidadServicio);
+        formData.append('servicios_adicionales', serviciosAdicionales);
+        formData.append('horarios', horarios);
       } else if (tipo === 'guia') {
-        data = { ...data, especialidad, idiomas, recorridos_ofrecidos: recorridosOfrecidos, duracion_recorridos: duracionRecorridos, zona_cobertura: zonaCobertura, punto_encuentro: puntoEncuentro, acreditacion, disponibilidad };
+        formData.append('especialidad', especialidad);
+        formData.append('idiomas', idiomas);
+        formData.append('recorridos_ofrecidos', recorridosOfrecidos);
+        formData.append('duracion_recorridos', duracionRecorridos);
+        formData.append('zona_cobertura', zonaCobertura);
+        formData.append('punto_encuentro', puntoEncuentro);
+        formData.append('acreditacion', acreditacion);
+        formData.append('disponibilidad', disponibilidad);
+      }
+
+      if (fotosParaEliminar.length > 0) {
+        fotosParaEliminar.forEach(filename => {
+          formData.append('fotos-', filename);
+        });
+      }
+
+      if (fotos && fotos.length > 0) {
+        for (let i = 0; i < fotos.length; i++) {
+          formData.append('fotos+', fotos[i]);
+        }
       }
       
-      await pb.collection('actores').update(id, data);
+      await pb.collection('actores').update(id, formData);
       router.push(`/actores/${id}`);
     } catch (err: any) {
       console.error('Error actualizando actor:', err);
@@ -174,27 +219,24 @@ export default function EditActorPage() {
 
   if (isLoading || !user || !canEditContent(user as any)) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-3xl">
-        <div className="mb-6 flex items-center gap-4">
-          <Link href={`/actores/${id}`} className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]">
-            &larr; Volver al detalle
-          </Link>
+    <div className="h-full bg-[var(--color-surface)] flex flex-col">
+      <main className="mx-auto px-6 py-8 flex-1 w-full">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
           <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
             Editar Actor
           </h2>
         </div>
 
         {loadingData ? (
-          <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-sm text-center">
+          <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px] shadow-sm text-center">
             Cargando datos...
           </div>
         ) : error && !actor ? (
@@ -202,7 +244,7 @@ export default function EditActorPage() {
             {error}
           </div>
         ) : (
-          <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+          <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px]">
             {error && (
               <div className="mb-6 p-4 bg-[var(--color-error-container)] text-[var(--color-on-error-container)] rounded-md text-sm">
                 {error}
@@ -238,27 +280,27 @@ export default function EditActorPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Nombre *
                   </label>
                   <input
                     type="text"
                     value={nombre}
                     onChange={(e) => setNombre(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. Juan Pérez o Taller Los Telares"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Tipo de Actor *
                   </label>
                   <select
                     value={tipo}
                     onChange={(e) => setTipo(e.target.value as ActorTipo)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     required
                   >
                     <option value="artesano">Artesano</option>
@@ -271,13 +313,13 @@ export default function EditActorPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Estación *
                 </label>
                 <select
                   value={estacionId}
                   onChange={(e) => setEstacionId(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   required
                 >
                   <option value="" disabled>Seleccionar Estación...</option>
@@ -290,20 +332,20 @@ export default function EditActorPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Descripción
                 </label>
                 <textarea
                   value={descripcion}
                   onChange={(e) => setDescripcion(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px] resize-y"
+                  className="input-field w-full min-h-[100px] resize-y"
                   placeholder="Breve descripción del actor..."
                 />
               </div>
 
               {/* CAMPOS DINÁMICOS SEGÚN TIPO */}
               <div className="p-6 bg-[var(--color-surface-container-low)] rounded-md border border-[var(--color-outline-variant)]">
-                <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-4 border-b border-[var(--color-outline-variant)] pb-2">
+                <h3 className="text-lg font-bold text-[var(--color-on-surface)] mb-4 border-b border-[var(--color-surface-variant)] pb-2 uppercase tracking-[0.05em]">
                   Detalles Específicos: {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
                 </h3>
                 <div className="space-y-4">
@@ -313,22 +355,22 @@ export default function EditActorPage() {
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Técnicas que realiza</label>
-                          <input type="text" value={tecnicas} onChange={(e) => setTecnicas(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Técnicas que realiza</label>
+                          <input type="text" value={tecnicas} onChange={(e) => setTecnicas(e.target.value)} className="input-field w-full" />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Materiales que utiliza</label>
-                          <input type="text" value={materiales} onChange={(e) => setMateriales(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Materiales que utiliza</label>
+                          <input type="text" value={materiales} onChange={(e) => setMateriales(e.target.value)} className="input-field w-full" />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Productos que ofrece</label>
-                        <input type="text" value={productosOfrecidos} onChange={(e) => setProductosOfrecidos(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                        <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Productos que ofrece</label>
+                        <input type="text" value={productosOfrecidos} onChange={(e) => setProductosOfrecidos(e.target.value)} className="input-field w-full" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Disponibilidad</label>
-                          <input type="text" value={disponibilidad} onChange={(e) => setDisponibilidad(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Disponibilidad</label>
+                          <input type="text" value={disponibilidad} onChange={(e) => setDisponibilidad(e.target.value)} className="input-field w-full" />
                         </div>
                         <div className="flex items-center mt-6">
                           <input type="checkbox" id="visitas" checked={visitasDemostraciones} onChange={(e) => setVisitasDemostraciones(e.target.checked)} className="mr-2" />
@@ -343,22 +385,22 @@ export default function EditActorPage() {
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Rubro productivo</label>
-                          <input type="text" value={rubroProductivo} onChange={(e) => setRubroProductivo(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Rubro productivo</label>
+                          <input type="text" value={rubroProductivo} onChange={(e) => setRubroProductivo(e.target.value)} className="input-field w-full" />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Escala de producción</label>
-                          <input type="text" value={escalaProduccion} onChange={(e) => setEscalaProduccion(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Escala de producción</label>
+                          <input type="text" value={escalaProduccion} onChange={(e) => setEscalaProduccion(e.target.value)} className="input-field w-full" />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Productos que ofrece</label>
-                        <input type="text" value={productosOfrecidos} onChange={(e) => setProductosOfrecidos(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                        <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Productos que ofrece</label>
+                        <input type="text" value={productosOfrecidos} onChange={(e) => setProductosOfrecidos(e.target.value)} className="input-field w-full" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Modalidad de venta</label>
-                          <input type="text" value={modalidadVenta} onChange={(e) => setModalidadVenta(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Modalidad de venta</label>
+                          <input type="text" value={modalidadVenta} onChange={(e) => setModalidadVenta(e.target.value)} className="input-field w-full" />
                         </div>
                         <div className="flex items-center mt-6">
                           <input type="checkbox" id="visitas_prod" checked={visitasDemostraciones} onChange={(e) => setVisitasDemostraciones(e.target.checked)} className="mr-2" />
@@ -373,21 +415,21 @@ export default function EditActorPage() {
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Tipo de hospedaje</label>
-                          <input type="text" value={tipoHospedaje} onChange={(e) => setTipoHospedaje(e.target.value)} className="w-full px-3 py-2 border rounded-md" placeholder="Ej. Cabaña, Posada" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Tipo de hospedaje</label>
+                          <input type="text" value={tipoHospedaje} onChange={(e) => setTipoHospedaje(e.target.value)} className="input-field w-full" placeholder="Ej. Cabaña, Posada" />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Capacidad</label>
-                          <input type="text" value={capacidad} onChange={(e) => setCapacidad(e.target.value)} className="w-full px-3 py-2 border rounded-md" placeholder="Ej. 10 personas" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Capacidad</label>
+                          <input type="text" value={capacidad} onChange={(e) => setCapacidad(e.target.value)} className="input-field w-full" placeholder="Ej. 10 personas" />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Servicios disponibles</label>
-                        <textarea value={servicios} onChange={(e) => setServicios(e.target.value)} className="w-full px-3 py-2 border rounded-md min-h-[80px]" placeholder="Ej. Wi-Fi, Desayuno, Piscina" />
+                        <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Servicios disponibles</label>
+                        <textarea value={servicios} onChange={(e) => setServicios(e.target.value)} className="input-field w-full min-h-[80px]" placeholder="Ej. Wi-Fi, Desayuno, Piscina" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Horarios (check-in / check-out)</label>
-                        <input type="text" value={horarios} onChange={(e) => setHorarios(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                        <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Horarios (check-in / check-out)</label>
+                        <input type="text" value={horarios} onChange={(e) => setHorarios(e.target.value)} className="input-field w-full" />
                       </div>
                     </>
                   )}
@@ -397,30 +439,30 @@ export default function EditActorPage() {
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Tipo de propuesta</label>
-                          <input type="text" value={tipoPropuesta} onChange={(e) => setTipoPropuesta(e.target.value)} className="w-full px-3 py-2 border rounded-md" placeholder="Ej. Restaurante, Casa de té" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Tipo de propuesta</label>
+                          <input type="text" value={tipoPropuesta} onChange={(e) => setTipoPropuesta(e.target.value)} className="input-field w-full" placeholder="Ej. Restaurante, Casa de té" />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Modalidad de servicio</label>
-                          <input type="text" value={modalidadServicio} onChange={(e) => setModalidadServicio(e.target.value)} className="w-full px-3 py-2 border rounded-md" placeholder="Ej. A la carta, Viandas" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Modalidad de servicio</label>
+                          <input type="text" value={modalidadServicio} onChange={(e) => setModalidadServicio(e.target.value)} className="input-field w-full" placeholder="Ej. A la carta, Viandas" />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Especialidades</label>
-                        <input type="text" value={especialidades} onChange={(e) => setEspecialidades(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                        <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Especialidades</label>
+                        <input type="text" value={especialidades} onChange={(e) => setEspecialidades(e.target.value)} className="input-field w-full" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Platos o productos destacados</label>
-                        <textarea value={platosDestacados} onChange={(e) => setPlatosDestacados(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                        <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Platos o productos destacados</label>
+                        <textarea value={platosDestacados} onChange={(e) => setPlatosDestacados(e.target.value)} className="input-field w-full" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Días y horarios de atención</label>
-                          <input type="text" value={horarios} onChange={(e) => setHorarios(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Días y horarios de atención</label>
+                          <input type="text" value={horarios} onChange={(e) => setHorarios(e.target.value)} className="input-field w-full" />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Servicios adicionales</label>
-                          <input type="text" value={serviciosAdicionales} onChange={(e) => setServiciosAdicionales(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Servicios adicionales</label>
+                          <input type="text" value={serviciosAdicionales} onChange={(e) => setServiciosAdicionales(e.target.value)} className="input-field w-full" />
                         </div>
                       </div>
                     </>
@@ -431,41 +473,41 @@ export default function EditActorPage() {
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Especialidad</label>
-                          <input type="text" value={especialidad} onChange={(e) => setEspecialidad(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Especialidad</label>
+                          <input type="text" value={especialidad} onChange={(e) => setEspecialidad(e.target.value)} className="input-field w-full" />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Idiomas</label>
-                          <input type="text" value={idiomas} onChange={(e) => setIdiomas(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Idiomas</label>
+                          <input type="text" value={idiomas} onChange={(e) => setIdiomas(e.target.value)} className="input-field w-full" />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Recorridos que ofrece</label>
-                        <textarea value={recorridosOfrecidos} onChange={(e) => setRecorridosOfrecidos(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                        <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Recorridos que ofrece</label>
+                        <textarea value={recorridosOfrecidos} onChange={(e) => setRecorridosOfrecidos(e.target.value)} className="input-field w-full" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Duración estimada</label>
-                          <input type="text" value={duracionRecorridos} onChange={(e) => setDuracionRecorridos(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Duración estimada</label>
+                          <input type="text" value={duracionRecorridos} onChange={(e) => setDuracionRecorridos(e.target.value)} className="input-field w-full" />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Disponibilidad</label>
-                          <input type="text" value={disponibilidad} onChange={(e) => setDisponibilidad(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Disponibilidad</label>
+                          <input type="text" value={disponibilidad} onChange={(e) => setDisponibilidad(e.target.value)} className="input-field w-full" />
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Zona de cobertura</label>
-                          <input type="text" value={zonaCobertura} onChange={(e) => setZonaCobertura(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Zona de cobertura</label>
+                          <input type="text" value={zonaCobertura} onChange={(e) => setZonaCobertura(e.target.value)} className="input-field w-full" />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Punto de encuentro habitual</label>
-                          <input type="text" value={puntoEncuentro} onChange={(e) => setPuntoEncuentro(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                          <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Punto de encuentro habitual</label>
+                          <input type="text" value={puntoEncuentro} onChange={(e) => setPuntoEncuentro(e.target.value)} className="input-field w-full" />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">Matrícula, habilitación o acreditación</label>
-                        <input type="text" value={acreditacion} onChange={(e) => setAcreditacion(e.target.value)} className="w-full px-3 py-2 border rounded-md" />
+                        <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Matrícula, habilitación o acreditación</label>
+                        <input type="text" value={acreditacion} onChange={(e) => setAcreditacion(e.target.value)} className="input-field w-full" />
                       </div>
                     </>
                   )}
@@ -475,64 +517,223 @@ export default function EditActorPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Teléfono de Contacto
                   </label>
                   <input
                     type="text"
                     value={contactoTelefono}
                     onChange={(e) => setContactoTelefono(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. +54 9 383 123 4567"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Email de Contacto
                   </label>
                   <input
                     type="email"
                     value={contactoEmail}
                     onChange={(e) => setContactoEmail(e.target.value)}
-                    className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                    className="input-field w-full"
                     placeholder="Ej. correo@ejemplo.com"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Ubicación / Dirección
                 </label>
                 <input
                   type="text"
                   value={ubicacion}
                   onChange={(e) => setUbicacion(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   placeholder="Ej. Calle Principal 123, Barrio Centro"
                 />
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                    Latitud
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={latitud}
+                    onChange={(e) => setLatitud(e.target.value)}
+                    className="input-field w-full"
+                    placeholder="Ej. -27.0442"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                    Longitud
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={longitud}
+                    onChange={(e) => setLongitud(e.target.value)}
+                    className="input-field w-full"
+                    placeholder="Ej. -67.7201"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
-                  Observaciones Internas
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Seleccionar ubicación en el mapa
                 </label>
+                <p className="text-sm text-[var(--color-outline)] mb-3">
+                  Haz clic en el mapa para establecer las coordenadas automáticamente.
+                </p>
+                <MapPicker 
+                  lat={latitud ? parseFloat(latitud) : null} 
+                  lng={longitud ? parseFloat(longitud) : null} 
+                  onLocationSelect={(lat, lng) => {
+                    setLatitud(lat.toString());
+                    setLongitud(lng.toString());
+                  }} 
+                />
+              </div>
+
+              <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Fotos
+              </label>
+              <p className="text-sm text-[var(--color-outline)] mb-3">
+                Selecciona hasta 5 fotos para el actor.
+              </p>
+              
+              <div className="bg-[var(--color-surface-container)] p-4 rounded-md border border-[var(--color-outline-variant)]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
+                  {/* Current Photos */}
+                  {actor?.fotos?.filter(f => !fotosParaEliminar.includes(f)).map((foto, index) => (
+                    <div key={`current-${index}`} className="relative aspect-square bg-[var(--color-surface)] rounded-md border border-[var(--color-outline-variant)] overflow-hidden">
+                      <img 
+                        src={pb.files.getURL(actor, foto)} 
+                        alt={`Current ${index}`} 
+                        className="object-contain w-full h-full p-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFotosParaEliminar([...fotosParaEliminar, foto])}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 focus:outline-none"
+                        title="Eliminar imagen"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* New Photos Previews */}
+                  {fotos && Array.from(fotos).map((file, index) => (
+                    <div key={`new-${index}`} className="relative aspect-square bg-[var(--color-surface)] rounded-md border border-[var(--color-outline-variant)] overflow-hidden">
+                      <img 
+                        src={URL.createObjectURL(file)} 
+                        alt={`Preview ${index}`} 
+                        className="object-contain w-full h-full p-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const dt = new DataTransfer();
+                          Array.from(fotos).forEach((f, i) => {
+                            if (i !== index) dt.items.add(f);
+                          });
+                          setFotos(dt.files.length > 0 ? dt.files : null);
+                        }}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 focus:outline-none"
+                        title="Eliminar imagen"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Upload Button */}
+                {((actor?.fotos?.length || 0) - fotosParaEliminar.length + (fotos?.length || 0) < 5) && (
+                  <div className="mt-2">
+                    <input
+                      type="file"
+                      id="fotos-upload"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        const newFiles = e.target.files;
+                        if (!newFiles) return;
+                        
+                        const dt = new DataTransfer();
+                        
+                        // Añadir fotos nuevas existentes
+                        if (fotos) {
+                          Array.from(fotos).forEach(f => dt.items.add(f));
+                        }
+                        
+                        // Calcular espacio disponible
+                        const currentCount = (actor?.fotos?.length || 0) - fotosParaEliminar.length + (fotos?.length || 0);
+                        const remainingSlots = 5 - currentCount;
+                        
+                        // Añadir nuevas fotos hasta llegar al límite
+                        let added = 0;
+                        Array.from(newFiles).forEach(file => {
+                          if (added < remainingSlots) {
+                            dt.items.add(file);
+                            added++;
+                          }
+                        });
+                        
+                        setFotos(dt.files);
+                        
+                        // Reset input
+                        e.target.value = '';
+                      }}
+                      className="hidden"
+                    />
+                    <label 
+                      htmlFor="fotos-upload"
+                      className="inline-flex items-center justify-center px-4 py-2 bg-[var(--color-surface-variant)] text-[var(--color-on-surface)] rounded-md cursor-pointer hover:bg-[var(--color-outline-variant)] transition-colors text-sm font-medium"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Añadir foto
+                    </label>
+                  </div>
+                )}
+                {((actor?.fotos?.length || 0) - fotosParaEliminar.length + (fotos?.length || 0) >= 5) && (
+                  <p className="text-xs text-amber-600 mt-2">
+                    Has alcanzado el límite máximo de 5 fotos.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Observaciones Internas
+              </label>
                 <textarea
                   value={observaciones}
                   onChange={(e) => setObservaciones(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[80px]"
+                  className="input-field w-full min-h-[80px]"
                   placeholder="Notas solo visibles para el equipo..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-3">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Estado
                 </label>
                 <select
                   value={estado}
                   onChange={(e) => setEstado(e.target.value as ActorEstado)}
-                  className="w-full md:w-1/2 px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full md:w-1/2"
                 >
                   <option value="borrador">Borrador</option>
                   <option value="en_revision">En revisión</option>
@@ -541,17 +742,17 @@ export default function EditActorPage() {
                 </select>
               </div>
 
-              <div className="pt-4 flex justify-end gap-4 border-t border-[var(--color-surface-variant)]">
+              <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
                 <Link
                   href={`/actores/${id}`}
-                  className="px-6 py-2 text-[var(--color-secondary)] hover:text-[var(--color-primary)] font-medium transition-colors"
+                  className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
                 >
                   Cancelar
                 </Link>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-primary px-6 py-2"
+                  className="btn-primary px-6 py-2 text-sm shadow-md"
                 >
                   {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
                 </button>

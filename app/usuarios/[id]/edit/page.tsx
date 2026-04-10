@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import Link from 'next/link';
 import { User } from '@/types/user';
 
@@ -99,26 +98,23 @@ export default function EditUserPage() {
 
   if (isLoading || !user || !user.roles?.includes('admin') || loadingUser) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--color-surface)]">
+      <div className="flex h-full items-center justify-center bg-[var(--color-surface)]">
         <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)] flex flex-col">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-3xl flex-1 w-full">
-        <div className="mb-6 flex items-center gap-4">
-          <Link href="/usuarios" className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]">
-            &larr; Volver
-          </Link>
+    <div className="h-full bg-[var(--color-surface)] flex flex-col">
+      <main className="mx-auto px-6 py-8 flex-1 w-full">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
           <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
             Editar Usuario
           </h2>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+        <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px]">
           {error && (
             <div className="mb-6 p-4 bg-[var(--color-error-container)] text-[var(--color-on-error-container)] rounded-md text-sm">
               {error}
@@ -128,7 +124,7 @@ export default function EditUserPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Nombre Completo *
                 </label>
                 <input
@@ -140,7 +136,7 @@ export default function EditUserPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Correo Electrónico *
                 </label>
                 <input
@@ -154,7 +150,7 @@ export default function EditUserPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-3">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-3 uppercase tracking-[0.05em]">
                 Roles (selecciona al menos uno) *
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -179,7 +175,7 @@ export default function EditUserPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-3">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-3 uppercase tracking-[0.05em]">
                 Estado
               </label>
               <label className="flex items-center cursor-pointer">
@@ -190,8 +186,8 @@ export default function EditUserPage() {
                     checked={active}
                     onChange={(e) => setActive(e.target.checked)}
                   />
-                  <div className={`block w-14 h-8 rounded-full transition-colors ${active ? 'bg-[var(--color-tertiary-fixed)]' : 'bg-gray-300'}`}></div>
-                  <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${active ? 'transform translate-x-6' : ''}`}></div>
+                  <div className={`block w-14 h-8 rounded-full transition-colors ${active ? 'bg-[var(--color-primary)]' : 'bg-gray-300'}`}></div>
+                  <div className={`dot absolute left-1 top-1 bg-[var(--color-surface-container)] w-6 h-6 rounded-full transition-transform ${active ? 'transform translate-x-6' : ''}`}></div>
                 </div>
                 <div className="ml-3 text-[var(--color-on-surface)] font-medium">
                   {active ? 'Usuario Activo' : 'Usuario Inactivo'}
@@ -203,7 +199,7 @@ export default function EditUserPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Observaciones Internas
               </label>
               <textarea
@@ -214,17 +210,17 @@ export default function EditUserPage() {
               />
             </div>
 
-            <div className="pt-4 flex justify-end gap-4 border-t border-[var(--color-surface-variant)]">
+            <div className="pt-6 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-[var(--color-outline-variant)] mt-8">
               <Link
                 href="/usuarios"
-                className="btn-secondary px-6 py-2"
+                className="btn-secondary px-6 py-2 text-sm shadow-sm text-center w-full sm:w-auto"
               >
                 Cancelar
               </Link>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn-primary px-6 py-2"
+                className="btn-primary px-6 py-2 text-sm shadow-md w-full sm:w-auto"
               >
                 {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
               </button>

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/Header';
 import { canManageUsers } from '@/lib/permissions';
 import { runSeed, SeedResult } from '@/lib/seedData';
 
@@ -46,26 +45,25 @@ export default function CargaMasivaPage() {
 
   if (isLoading || !user || !canManageUsers(user as any)) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-4xl">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold font-display text-[var(--color-primary)] mb-2">
+    <div className="h-full bg-[var(--color-surface)]">
+      <main className="max-w-4xl mx-auto px-6 py-8">
+        <div className="mb-10">
+          <h1 className="text-[32px] font-bold text-[var(--color-on-surface)] tracking-tight mb-2">
             Carga Masiva de Datos Sintéticos
-          </h2>
-          <p className="text-[var(--color-secondary)]">
+          </h1>
+          <p className="text-[var(--color-on-surface-variant)] text-lg">
             Esta herramienta permite poblar el sistema con datos de prueba estructurados. Se crearán estaciones, actores, productos, experiencias e imperdibles con relaciones coherentes.
           </p>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] mb-8">
+        <div className="bg-[var(--color-surface-container)] p-8 rounded-md mb-8">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-[var(--color-on-surface)] mb-4">Configuración</h3>
             
@@ -81,17 +79,17 @@ export default function CargaMasivaPage() {
                   />
                 </div>
                 <div className="ml-3 text-sm">
-                  <label htmlFor="carga-ia" className="font-medium text-[var(--color-on-surface)]">
+                  <label htmlFor="carga-ia" className="font-bold text-[var(--color-on-surface)]">
                     Carga Generativa (OpenAI)
                   </label>
-                  <p className="text-[var(--color-secondary)] mt-1">
+                  <p className="text-[var(--color-on-surface-variant)] mt-1">
                     Crea estaciones base con actores, productos, experiencias e imperdibles interrelacionados utilizando Inteligencia Artificial.
                   </p>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="prompt" className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">
+                <label htmlFor="prompt" className="block text-sm font-bold text-[var(--color-on-surface)] mb-2">
                   Temática o contexto (Opcional)
                 </label>
                 <textarea
@@ -99,17 +97,17 @@ export default function CargaMasivaPage() {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder='Ej. "Quiero datos enfocados en turismo de aventura y alta montaña en Fiambalá"'
-                  className="w-full rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-on-surface)] shadow-sm focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] min-h-[80px]"
+                  className="input-field min-h-[80px] w-full"
                 />
-                <p className="text-xs text-[var(--color-secondary)] mt-1">
+                <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
                   Puedes darle instrucciones a la IA para guiar el tipo de datos generados.
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-[var(--color-outline-variant)]">
-                <h4 className="text-sm font-medium text-[var(--color-on-surface)] mb-3">Opciones Adicionales</h4>
+              <div className="pt-6 border-t border-[var(--color-surface-variant)]">
+                <h4 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">Opciones Adicionales</h4>
                 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-start">
                     <div className="flex items-center h-5">
                       <input
@@ -121,10 +119,10 @@ export default function CargaMasivaPage() {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="clean-data" className="font-medium text-[var(--color-on-surface)]">
+                      <label htmlFor="clean-data" className="font-bold text-[var(--color-on-surface)]">
                         Limpiar datos previos
                       </label>
-                      <p className="text-[var(--color-secondary)]">
+                      <p className="text-[var(--color-on-surface-variant)] mt-1">
                         Eliminará todas las estaciones, actores, productos, experiencias e imperdibles existentes antes de cargar los nuevos.
                       </p>
                     </div>
@@ -141,10 +139,10 @@ export default function CargaMasivaPage() {
                       />
                     </div>
                     <div className="ml-3 text-sm">
-                      <label htmlFor="create-users" className="font-medium text-[var(--color-on-surface)]">
+                      <label htmlFor="create-users" className="font-bold text-[var(--color-on-surface)]">
                         Generar usuarios de prueba
                       </label>
-                      <p className="text-[var(--color-secondary)]">
+                      <p className="text-[var(--color-on-surface-variant)] mt-1">
                         Creará usuarios con roles (admin, editor, revisor, consultor) si no existen.
                       </p>
                     </div>
@@ -154,11 +152,11 @@ export default function CargaMasivaPage() {
             </div>
           </div>
 
-          <div className="border-t border-[var(--color-outline-variant)] pt-6">
+          <div className="border-t border-[var(--color-surface-variant)] pt-8 mt-8">
             <button
               onClick={handleRunSeed}
               disabled={isRunning}
-              className="btn-primary px-6 py-3 font-medium text-sm w-full md:w-auto shadow-md flex justify-center items-center gap-2"
+              className="btn-primary w-full md:w-auto flex justify-center items-center gap-2"
             >
               {isRunning ? (
                 <>

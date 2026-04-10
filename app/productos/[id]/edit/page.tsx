@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
@@ -27,6 +26,7 @@ export default function EditProductoPage() {
   const [descripcion, setDescripcion] = useState('');
   const [actoresRelacionados, setActoresRelacionados] = useState<string[]>([]);
   const [fotos, setFotos] = useState<FileList | null>(null);
+  const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
   const [estado, setEstado] = useState<ProductoEstado>('borrador');
   const [producto, setProducto] = useState<Producto | null>(null);
   
@@ -109,9 +109,16 @@ export default function EditProductoPage() {
         formData.append('actores_relacionados', ''); // Para borrar relaciones
       }
 
+      if (fotosParaEliminar.length > 0) {
+        fotosParaEliminar.forEach(filename => {
+          formData.append('fotos-', filename);
+        });
+      }
+
       if (fotos && fotos.length > 0) {
         for (let i = 0; i < fotos.length; i++) {
-          formData.append('fotos', fotos[i]);
+          // Usamos "fotos+" para añadir las nuevas sin borrar las que ya estaban
+          formData.append('fotos+', fotos[i]);
         }
       }
       
@@ -139,26 +146,23 @@ export default function EditProductoPage() {
 
   if (isLoading || !user || !canEditContent(user as any) || loadingData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-3xl">
-        <div className="mb-6 flex items-center gap-4">
-          <Link href={`/productos/${id}`} className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]">
-            &larr; Volver
-          </Link>
+    <div className="h-full bg-[var(--color-surface)] flex flex-col">
+      <main className="mx-auto px-6 py-8 flex-1 w-full">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
           <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
             Editar Producto
           </h2>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+        <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px]">
           {error && (
             <div className="mb-6 p-4 bg-[var(--color-error-container)] text-[var(--color-on-error-container)] rounded-md text-sm">
               {error}
@@ -167,7 +171,7 @@ export default function EditProductoPage() {
           
           {producto && (
             <div className="mb-8 p-4 bg-[var(--color-surface-container-low)] rounded-md border border-[var(--color-outline-variant)]">
-              <h3 className="text-sm font-semibold text-[var(--color-on-surface)] mb-2">Historial Básico</h3>
+              <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">Historial Básico</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-[var(--color-secondary)]">
                 <div>
                   <span className="block text-[var(--color-outline)] mb-1">Fecha de creación</span>
@@ -194,26 +198,26 @@ export default function EditProductoPage() {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Nombre *
                 </label>
                 <input
                   type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Categoría *
                 </label>
                 <select
                   value={categoria}
                   onChange={(e) => setCategoria(e.target.value as ProductoCategoria)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   required
                 >
                   <option value="" disabled>Seleccionar Categoría...</option>
@@ -230,7 +234,7 @@ export default function EditProductoPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Estación *
                 </label>
                 <select
@@ -239,7 +243,7 @@ export default function EditProductoPage() {
                     setEstacionId(e.target.value);
                     setActoresRelacionados([]); 
                   }}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   required
                 >
                   <option value="" disabled>Seleccionar Estación...</option>
@@ -252,13 +256,13 @@ export default function EditProductoPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Estado *
                 </label>
                 <select
                   value={estado}
                   onChange={(e) => setEstado(e.target.value as ProductoEstado)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   required
                 >
                   <option value="borrador">Borrador</option>
@@ -270,18 +274,18 @@ export default function EditProductoPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Descripción
               </label>
               <textarea
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px] resize-y"
+                className="input-field w-full min-h-[100px] resize-y"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Actores Relacionados (opcional)
               </label>
               <div className="bg-[var(--color-surface)] border border-[var(--color-outline)] rounded-md max-h-48 overflow-y-auto p-4 space-y-2">
@@ -309,35 +313,124 @@ export default function EditProductoPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
-                Fotos (Opcional - Nuevas imágenes se agregarán a las existentes)
-              </label>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => setFotos(e.target.files)}
-                className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
-              />
-              <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">
-                Selecciona imágenes si deseas subir nuevas fotos para este producto.
-              </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Fotos Actuales
+                </label>
+                {producto?.fotos && producto.fotos.length > 0 && producto.fotos.filter(f => !fotosParaEliminar.includes(f)).length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                    {producto.fotos.filter(f => !fotosParaEliminar.includes(f)).map((foto, index) => (
+                      <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                        <img 
+                          src={pb.files.getURL(producto, foto)} 
+                          alt={`Foto de ${producto.nombre}`}
+                          className="object-contain w-full h-full p-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFotosParaEliminar([...fotosParaEliminar, foto])}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Eliminar foto"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[var(--color-on-surface-variant)] text-sm italic">
+                    No hay fotos guardadas para este producto.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Añadir Nuevas Fotos (Opcional)
+                </label>
+                <div className="flex flex-col gap-4">
+                  {fotos && fotos.length > 0 && (
+                    <div className="flex flex-wrap gap-4">
+                      {Array.from(fotos).map((foto, index) => (
+                        <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                          <img 
+                            src={URL.createObjectURL(foto)} 
+                            alt={`Nueva foto ${index + 1}`}
+                            className="object-contain w-full h-full p-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const dt = new DataTransfer();
+                              Array.from(fotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
+                              setFotos(dt.files.length > 0 ? dt.files : null);
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Eliminar nueva foto"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        const currentFotosCount = (producto?.fotos?.length || 0) - fotosParaEliminar.length;
+                        const existingNewFotosCount = fotos?.length || 0;
+                        const newFotosCount = e.target.files?.length || 0;
+                        
+                        if (currentFotosCount + existingNewFotosCount + newFotosCount > 5) {
+                          alert(`Puedes tener un máximo de 5 imágenes por producto. Te quedan ${5 - (currentFotosCount + existingNewFotosCount)} espacios.`);
+                        } else {
+                          const dt = new DataTransfer();
+                          if (fotos) {
+                            Array.from(fotos).forEach(f => dt.items.add(f));
+                          }
+                          if (e.target.files) {
+                            Array.from(e.target.files).forEach(f => dt.items.add(f));
+                          }
+                          setFotos(dt.files);
+                        }
+                        // Reset input so the same file can be selected again if needed
+                        e.target.value = '';
+                      }}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                      className="btn-secondary px-4 py-2 text-sm shadow-sm"
+                    >
+                      + Añadir foto
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                  Selecciona imágenes si deseas subir nuevas fotos para este producto. Puedes tener hasta 5 imágenes en total.
+                </p>
+              </div>
             </div>
 
-            <div className="pt-6 flex items-center justify-end gap-4 border-t border-[var(--color-outline-variant)]">
+            <div className="pt-6 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-[var(--color-outline-variant)] mt-8">
               <button
                 type="button"
                 onClick={() => router.push(`/productos/${id}`)}
-                className="px-6 py-2 border border-[var(--color-outline)] rounded-full text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)] transition-colors font-medium text-sm"
+                className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
               >
                 Cancelar
               </button>
-              
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-[var(--color-primary)] text-[var(--color-on-primary)] rounded-full hover:bg-[var(--color-primary-fixed-dim)] transition-colors font-medium text-sm shadow-[0_4px_8px_rgba(0,0,0,0.1)]"
+                className="btn-primary px-6 py-2 text-sm shadow-md"
               >
                 {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
               </button>

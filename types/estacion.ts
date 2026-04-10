@@ -5,8 +5,9 @@ export interface Estacion {
   nombre: string;
   localidad: string;
   descripcion_general?: string;
-  mapas_referencias?: string;
-  coordenadas_generales?: string;
+  latitud?: number;
+  longitud?: number;
+  fotos?: string[];
   estado: EstacionEstado;
   observaciones_revision?: string;
   created: string;

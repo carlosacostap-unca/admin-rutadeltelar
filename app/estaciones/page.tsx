@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
 import Link from 'next/link';
 import { Estacion } from '@/types/estacion';
-import Header from '@/components/Header';
 import { canEditContent } from '@/lib/permissions';
 
 export default function EstacionesPage() {
@@ -64,7 +63,7 @@ export default function EstacionesPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
@@ -88,17 +87,16 @@ export default function EstacionesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
+    <div className="h-full bg-[var(--color-surface-dim)]">
       <main className="mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
+          <h2 className="text-2xl font-extrabold tracking-[-0.02em] font-display text-[var(--color-primary)]">
             Estaciones
           </h2>
           {canEdit && (
             <Link
               href="/estaciones/create"
-              className="btn-primary px-4 py-2 text-sm shadow-md"
+              className="btn-primary px-4 py-2 text-sm"
             >
               + Nueva Estación
             </Link>
@@ -106,19 +104,19 @@ export default function EstacionesPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-[var(--color-surface-container-lowest)] p-4 rounded-t-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] flex flex-col md:flex-row gap-4 border-b border-[var(--color-outline-variant)]">
+        <div className="bg-[var(--color-surface-container)] pl-8 pr-6 py-6 rounded-md flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1">
             <input
               type="text"
               placeholder="Buscar por nombre o localidad..."
-              className="w-full rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-on-surface)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              className="input-field w-full text-[var(--color-on-surface-variant)] placeholder:text-[var(--color-surface-variant)]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex gap-4">
             <select
-              className="rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-on-surface)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              className="input-field text-[var(--color-on-surface-variant)]"
               value={localidadFilter}
               onChange={(e) => setLocalidadFilter(e.target.value)}
             >
@@ -128,7 +126,7 @@ export default function EstacionesPage() {
               ))}
             </select>
             <select
-              className="rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-on-surface)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+              className="input-field text-[var(--color-on-surface-variant)]"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -141,73 +139,48 @@ export default function EstacionesPage() {
           </div>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] rounded-b-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] overflow-hidden">
+        <div className="flex flex-col gap-2">
           {loadingEstaciones ? (
-            <p className="p-8 text-center text-[var(--color-secondary)]">Cargando estaciones...</p>
+            <p className="p-8 text-center text-[var(--color-on-surface-variant)]">Cargando estaciones...</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead>
-                <tr className="bg-[var(--color-surface-container-low)] border-b border-[var(--color-outline-variant)] text-[var(--color-secondary)] text-sm">
-                  <th className="py-3 px-6 font-semibold">Nombre</th>
-                  <th className="py-3 px-6 font-semibold">Localidad</th>
-                  <th className="py-3 px-6 font-semibold">Estado</th>
-                  <th className="py-3 px-6 font-semibold">Actualización</th>
-                  <th className="py-3 px-6 font-semibold text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              <div className="grid grid-cols-1 gap-4">
                 {filteredEstaciones.map((e) => (
-                  <tr key={e.id} className={`border-b border-[var(--color-surface-variant)] hover:bg-[var(--color-surface-container-lowest)] transition-colors ${e.estado === 'inactivo' ? 'opacity-60 bg-gray-50' : ''}`}>
-                    <td className="py-4 px-6 text-sm text-[var(--color-on-surface)] font-medium">{e.nombre}</td>
-                    <td className="py-4 px-6 text-sm text-[var(--color-secondary)]">{e.localidad}</td>
-                    <td className="py-4 px-6 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium 
-                        ${e.estado === 'aprobado' ? 'bg-[#e6f4ea] text-[#137333]' : 
+                  <Link 
+                    key={e.id} 
+                    href={`/estaciones/${e.id}`}
+                    className={`bg-[var(--color-surface-container)] p-5 rounded-xl hover:bg-[var(--color-surface-container-low)] transition-all shadow-sm flex flex-col gap-2 cursor-pointer ${e.estado === 'inactivo' ? 'opacity-60' : ''}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-lg font-bold text-[var(--color-primary)]">{e.nombre}</h3>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.05em] shrink-0
+                        ${e.estado === 'aprobado' ? 'bg-[var(--color-secondary-container)] text-[var(--color-primary)]' : 
                           e.estado === 'inactivo' ? 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]' : 
-                          e.estado === 'en_revision' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'}`}>
+                          e.estado === 'en_revision' ? 'bg-[var(--color-surface-variant)] text-[var(--color-on-surface)]' :
+                          'bg-[var(--color-surface)] text-[var(--color-on-surface-variant)]'}`}>
                         {e.estado.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
-                    </td>
-                    <td className="py-4 px-6 text-sm text-[var(--color-secondary)]">
-                      {new Date(e.updated).toLocaleDateString()}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-right">
-                      <div className="flex justify-end gap-3">
-                        <Link href={`/estaciones/${e.id}`} className="text-[var(--color-primary)] hover:text-[var(--color-on-primary-container)] font-medium transition-colors">
-                          Ver detalle
-                        </Link>
-                        {canEdit && (
-                          <>
-                            <Link href={`/estaciones/${e.id}/edit`} className="text-[var(--color-tertiary-fixed)] hover:text-[var(--color-on-tertiary-fixed-variant)] font-medium transition-colors">
-                              Editar
-                            </Link>
-                            <button 
-                              onClick={() => toggleEstacionStatus(e.id, e.estado)}
-                              className={`font-medium transition-colors ${e.estado === 'inactivo' ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'}`}
-                            >
-                              {e.estado === 'inactivo' ? 'Restaurar' : 'Desactivar'}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="text-sm text-[var(--color-on-surface-variant)] flex items-center gap-2 mt-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {e.localidad}
+                    </div>
+                  </Link>
                 ))}
-                {filteredEstaciones.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-[var(--color-secondary)]">
-                      No hay estaciones registradas o que coincidan con los filtros.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </main>
+              </div>
+              
+              {filteredEstaciones.length === 0 && (
+                <div className="bg-[var(--color-surface-container)] p-8 text-center text-[var(--color-on-surface-variant)] rounded-md">
+                  No hay estaciones registradas o que coincidan con los filtros.
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

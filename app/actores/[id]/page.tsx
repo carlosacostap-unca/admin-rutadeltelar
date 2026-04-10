@@ -4,11 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Actor, ActorTipo } from '@/types/actor';
+import Map from '@/components/Map';
 
 export default function ActorDetailPage() {
   const { user, isLoading } = useAuth();
@@ -62,7 +62,7 @@ export default function ActorDetailPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
@@ -82,20 +82,19 @@ export default function ActorDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-4xl">
-        <div className="mb-6 flex items-center gap-4">
+    <div className="h-full bg-[var(--color-surface)]">
+      <main className="mx-auto px-6 py-8">
+        <div className="mb-6 flex flex-col items-start gap-4">
           <button 
-            onClick={() => router.back()} 
-            className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]"
+            onClick={() => router.back()}
+            className="btn-primary px-4 py-2 text-sm shadow-md"
           >
             &larr; Volver
           </button>
         </div>
 
         {loadingData ? (
-          <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-sm text-center">
+          <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px] shadow-sm text-center">
             Cargando datos...
           </div>
         ) : error ? (
@@ -113,7 +112,7 @@ export default function ActorDetailPage() {
               onStatusChange={(updatedRecord) => setActor(updatedRecord as Actor)}
             />
             
-            <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+            <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px]">
               <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8 pb-6 border-b border-[var(--color-surface-variant)]">
               <div>
                 <div className="flex items-center gap-3 mb-2">
@@ -160,27 +159,43 @@ export default function ActorDetailPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-3 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                   Información de Contacto
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <span className="block text-sm text-[var(--color-secondary)]">Teléfono</span>
+                    <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Teléfono</span>
                     <span className="text-[var(--color-on-surface)]">{actor.contacto_telefono || 'No especificado'}</span>
                   </div>
                   <div>
-                    <span className="block text-sm text-[var(--color-secondary)]">Email</span>
+                    <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Email</span>
                     <span className="text-[var(--color-on-surface)]">{actor.contacto_email || 'No especificado'}</span>
                   </div>
                   <div>
-                    <span className="block text-sm text-[var(--color-secondary)]">Ubicación / Dirección</span>
+                    <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Ubicación / Dirección</span>
                     <span className="text-[var(--color-on-surface)]">{actor.ubicacion || 'No especificada'}</span>
                   </div>
+                </div>
+
+                <div className="mt-6">
+                  <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-3 uppercase tracking-[0.05em]">
+                    Ubicación
+                  </h3>
+                  {actor.latitud !== undefined && actor.latitud !== null && actor.longitud !== undefined && actor.longitud !== null ? (
+                    <div className="w-full">
+                      <Map lat={actor.latitud} lng={actor.longitud} label={actor.nombre} />
+                      <p className="text-xs text-[var(--color-outline)] mt-2">
+                        Latitud: {actor.latitud} | Longitud: {actor.longitud}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[var(--color-outline)] text-sm">Coordenadas no especificadas</p>
+                  )}
                 </div>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-3 uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                   Descripción
                 </h3>
                 <p className="text-[var(--color-on-surface)] whitespace-pre-wrap">
@@ -189,7 +204,7 @@ export default function ActorDetailPage() {
 
                 {actor.observaciones && canEdit && (
                   <div className="mt-6">
-                    <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-3 uppercase tracking-wider">
+                    <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                       Observaciones Internas
                     </h3>
                     <p className="text-[var(--color-on-surface)] whitespace-pre-wrap bg-[var(--color-surface-container)] p-3 rounded-md text-sm">
@@ -201,75 +216,98 @@ export default function ActorDetailPage() {
             </div>
 
             <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
-              <h3 className="text-sm font-semibold text-[var(--color-primary)] mb-4 uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                 Detalles Específicos
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                 {actor.tipo === 'artesano' && (
                   <>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Técnicas</span><span className="font-medium">{actor.tecnicas || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Materiales</span><span className="font-medium">{actor.materiales || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Productos ofrecidos</span><span className="font-medium">{actor.productos_ofrecidos || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Disponibilidad</span><span className="font-medium">{actor.disponibilidad || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Visitas/Demostraciones</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Técnicas</span><span className="font-medium">{actor.tecnicas || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Materiales</span><span className="font-medium">{actor.materiales || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Productos ofrecidos</span><span className="font-medium">{actor.productos_ofrecidos || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Disponibilidad</span><span className="font-medium">{actor.disponibilidad || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Visitas/Demostraciones</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
                   </>
                 )}
                 {actor.tipo === 'productor' && (
                   <>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Rubro productivo</span><span className="font-medium">{actor.rubro_productivo || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Escala de producción</span><span className="font-medium">{actor.escala_produccion || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Modalidad de venta</span><span className="font-medium">{actor.modalidad_venta || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Productos ofrecidos</span><span className="font-medium">{actor.productos_ofrecidos || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Posibilidad de visitas</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Rubro productivo</span><span className="font-medium">{actor.rubro_productivo || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Escala de producción</span><span className="font-medium">{actor.escala_produccion || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Modalidad de venta</span><span className="font-medium">{actor.modalidad_venta || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Productos ofrecidos</span><span className="font-medium">{actor.productos_ofrecidos || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Posibilidad de visitas</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
                   </>
                 )}
                 {actor.tipo === 'hospedaje' && (
                   <>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Tipo de hospedaje</span><span className="font-medium">{actor.tipo_hospedaje || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Capacidad</span><span className="font-medium">{actor.capacidad || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Servicios</span><span className="font-medium">{actor.servicios || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Horarios</span><span className="font-medium">{actor.horarios || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Tipo de hospedaje</span><span className="font-medium">{actor.tipo_hospedaje || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Capacidad</span><span className="font-medium">{actor.capacidad || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Servicios</span><span className="font-medium">{actor.servicios || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Horarios</span><span className="font-medium">{actor.horarios || '-'}</span></div>
                   </>
                 )}
                 {actor.tipo === 'gastronomico' && (
                   <>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Tipo de propuesta</span><span className="font-medium">{actor.tipo_propuesta || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Modalidad de servicio</span><span className="font-medium">{actor.modalidad_servicio || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Especialidades</span><span className="font-medium">{actor.especialidades || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Platos destacados</span><span className="font-medium">{actor.platos_destacados || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Servicios adicionales</span><span className="font-medium">{actor.servicios_adicionales || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Días y horarios</span><span className="font-medium">{actor.horarios || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Tipo de propuesta</span><span className="font-medium">{actor.tipo_propuesta || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Modalidad de servicio</span><span className="font-medium">{actor.modalidad_servicio || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Especialidades</span><span className="font-medium">{actor.especialidades || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Platos destacados</span><span className="font-medium">{actor.platos_destacados || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Servicios adicionales</span><span className="font-medium">{actor.servicios_adicionales || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Días y horarios</span><span className="font-medium">{actor.horarios || '-'}</span></div>
                   </>
                 )}
                 {actor.tipo === 'guia' && (
                   <>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Especialidad</span><span className="font-medium">{actor.especialidad || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Idiomas</span><span className="font-medium">{actor.idiomas || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Recorridos ofrecidos</span><span className="font-medium">{actor.recorridos_ofrecidos || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Duración estimada</span><span className="font-medium">{actor.duracion_recorridos || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Zona de cobertura</span><span className="font-medium">{actor.zona_cobertura || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Punto de encuentro</span><span className="font-medium">{actor.punto_encuentro || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Acreditación</span><span className="font-medium">{actor.acreditacion || '-'}</span></div>
-                    <div><span className="block text-[var(--color-secondary)] mb-1">Disponibilidad</span><span className="font-medium">{actor.disponibilidad || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Especialidad</span><span className="font-medium">{actor.especialidad || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Idiomas</span><span className="font-medium">{actor.idiomas || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Recorridos ofrecidos</span><span className="font-medium">{actor.recorridos_ofrecidos || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Duración estimada</span><span className="font-medium">{actor.duracion_recorridos || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Zona de cobertura</span><span className="font-medium">{actor.zona_cobertura || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Punto de encuentro</span><span className="font-medium">{actor.punto_encuentro || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Acreditación</span><span className="font-medium">{actor.acreditacion || '-'}</span></div>
+                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Disponibilidad</span><span className="font-medium">{actor.disponibilidad || '-'}</span></div>
                   </>
                 )}
               </div>
             </div>
 
             <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
-              <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-4 uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
+                Fotos
+              </h3>
+              {actor.fotos && actor.fotos.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {actor.fotos.map((foto, index) => (
+                    <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
+                      <img 
+                        src={pb.files.getURL(actor, foto)} 
+                        alt={`Foto de ${actor.nombre}`}
+                        className="object-contain w-full h-full p-1"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[var(--color-on-surface-variant)] italic">
+                  No hay fotos disponibles para este actor.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
+              <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                 Historial
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-[var(--color-secondary)]">
                 <div>
-                  <span className="font-medium block mb-1">Creado el</span> 
+                  <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Creado el</span> 
                   {new Date(actor.created).toLocaleString()}
                   {actor.expand?.created_by && (
                     <span className="block mt-1 text-xs">Por: {actor.expand.created_by.name || actor.expand.created_by.email}</span>
                   )}
                 </div>
                 <div>
-                  <span className="font-medium block mb-1">Última actualización</span> 
+                  <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Última actualización</span> 
                   {new Date(actor.updated).toLocaleString()}
                   {actor.expand?.updated_by && (
                     <span className="block mt-1 text-xs">Por: {actor.expand.updated_by.name || actor.expand.updated_by.email}</span>

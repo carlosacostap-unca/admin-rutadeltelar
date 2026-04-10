@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
-import Header from '@/components/Header';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
@@ -133,26 +132,23 @@ function CreateProductoForm() {
 
   if (isLoading || !user || !canEditContent(user as any) || loadingData) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
-      <main className="mx-auto px-6 py-8 max-w-3xl">
-        <div className="mb-6 flex items-center gap-4">
-          <Link href="/productos" className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]">
-            &larr; Volver
-          </Link>
+    <div className="h-full bg-[var(--color-surface)] flex flex-col">
+      <main className="mx-auto px-6 py-8 flex-1 w-full">
+        <div className="mb-6 flex flex-col items-start gap-4">
+          <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
           <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
             Crear Producto
           </h2>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+        <div className="bg-[var(--color-surface-container)] p-8 rounded-[8px]">
           {error && (
             <div className="mb-6 p-4 bg-[var(--color-error-container)] text-[var(--color-on-error-container)] rounded-md text-sm">
               {error}
@@ -162,27 +158,27 @@ function CreateProductoForm() {
           <form className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Nombre *
                 </label>
                 <input
                   type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   placeholder="Ej. Poncho de Llama"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Categoría *
                 </label>
                 <select
                   value={categoria}
                   onChange={(e) => setCategoria(e.target.value as ProductoCategoria)}
-                  className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                  className="input-field w-full"
                   required
                 >
                   <option value="" disabled>Seleccionar Categoría...</option>
@@ -198,7 +194,7 @@ function CreateProductoForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Estación *
               </label>
               <select
@@ -207,7 +203,7 @@ function CreateProductoForm() {
                   setEstacionId(e.target.value);
                   setActoresRelacionados([]); // Limpiar actores si cambia la estación
                 }}
-                className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
+                className="input-field"
                 required
               >
                 <option value="" disabled>Seleccionar Estación...</option>
@@ -220,19 +216,19 @@ function CreateProductoForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Descripción
               </label>
               <textarea
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)] min-h-[100px] resize-y"
+                className="input-field w-full min-h-[100px] resize-y"
                 placeholder="Breve descripción del producto..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Actores Relacionados (opcional)
               </label>
               <div className="bg-[var(--color-surface)] border border-[var(--color-outline)] rounded-md max-h-48 overflow-y-auto p-4 space-y-2">
@@ -261,26 +257,81 @@ function CreateProductoForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-on-surface)] mb-2">
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Fotos
               </label>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => setFotos(e.target.files)}
-                className="w-full px-4 py-2 border border-[var(--color-outline)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
-              />
-              <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">
-                Puedes seleccionar múltiples imágenes.
+              <div className="flex flex-col gap-4">
+                {fotos && fotos.length > 0 && (
+                  <div className="flex flex-wrap gap-4">
+                    {Array.from(fotos).map((foto, index) => (
+                      <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                        <img 
+                          src={URL.createObjectURL(foto)} 
+                          alt={`Nueva foto ${index + 1}`}
+                          className="object-contain w-full h-full p-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dt = new DataTransfer();
+                            Array.from(fotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
+                            setFotos(dt.files.length > 0 ? dt.files : null);
+                          }}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Eliminar nueva foto"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div>
+                  <input
+                    id="file-upload-create"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => {
+                      const existingFotosCount = fotos?.length || 0;
+                      const newFotosCount = e.target.files?.length || 0;
+                      
+                      if (existingFotosCount + newFotosCount > 5) {
+                        alert(`Puedes tener un máximo de 5 imágenes por producto. Te quedan ${5 - existingFotosCount} espacios.`);
+                      } else {
+                        const dt = new DataTransfer();
+                        if (fotos) {
+                          Array.from(fotos).forEach(f => dt.items.add(f));
+                        }
+                        if (e.target.files) {
+                          Array.from(e.target.files).forEach(f => dt.items.add(f));
+                        }
+                        setFotos(dt.files);
+                      }
+                      e.target.value = '';
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('file-upload-create')?.click()}
+                    className="btn-secondary px-4 py-2 text-sm shadow-sm"
+                  >
+                    + Añadir foto
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                Puedes seleccionar hasta 5 imágenes.
               </p>
             </div>
 
-            <div className="pt-6 flex items-center justify-end gap-4 border-t border-[var(--color-outline-variant)]">
+            <div className="pt-6 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-[var(--color-outline-variant)] mt-8">
               <button
                 type="button"
                 onClick={() => router.push('/productos')}
-                className="px-6 py-2 border border-[var(--color-outline)] rounded-full text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)] transition-colors font-medium text-sm"
+                className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
               >
                 Cancelar
               </button>
@@ -289,7 +340,7 @@ function CreateProductoForm() {
                 type="button"
                 onClick={(e) => handleSubmit(e, 'borrador')}
                 disabled={isSubmitting}
-                className="px-6 py-2 border border-[var(--color-primary)] rounded-full text-[var(--color-primary)] hover:bg-[var(--color-primary-container)] hover:text-[var(--color-on-primary-container)] transition-colors font-medium text-sm"
+                className="btn-secondary px-6 py-2 text-sm shadow-sm"
               >
                 {isSubmitting ? 'Guardando...' : 'Guardar como Borrador'}
               </button>
@@ -298,9 +349,9 @@ function CreateProductoForm() {
                 type="button"
                 onClick={(e) => handleSubmit(e, 'continuar')}
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-[var(--color-primary)] text-[var(--color-on-primary)] rounded-full hover:bg-[var(--color-primary-fixed-dim)] transition-colors font-medium text-sm shadow-[0_4px_8px_rgba(0,0,0,0.1)]"
+                className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar y Continuar'}
+                {isSubmitting ? 'Guardando...' : 'Crear y Continuar'}
               </button>
             </div>
           </form>
@@ -312,7 +363,7 @@ function CreateProductoForm() {
 
 export default function CreateProductoPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando...</div>}>
+    <Suspense fallback={<div className="h-full flex items-center justify-center">Cargando...</div>}>
       <CreateProductoForm />
     </Suspense>
   );

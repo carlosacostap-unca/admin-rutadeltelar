@@ -1,17 +1,27 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
 import Link from 'next/link';
 import { Imperdible, ImperdibleTipo, ImperdiblePrioridad } from '@/types/imperdible';
-import Header from '@/components/Header';
 import { canEditContent } from '@/lib/permissions';
 
 export default function ImperdiblesPage() {
+  return (
+    <Suspense fallback={<div className="flex h-full items-center justify-center"><p>Cargando...</p></div>}>
+      <ImperdiblesContent />
+    </Suspense>
+  );
+}
+
+function ImperdiblesContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialEstacionId = searchParams.get('estacion_id') || '';
+
   const [imperdibles, setImperdibles] = useState<Imperdible[]>([]);
   const [loadingImperdibles, setLoadingImperdibles] = useState(true);
 
@@ -20,6 +30,18 @@ export default function ImperdiblesPage() {
   const [tipoFilter, setTipoFilter] = useState('');
   const [prioridadFilter, setPrioridadFilter] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
+  const [estacionFilter, setEstacionFilter] = useState(initialEstacionId);
+  const [estacionNombre, setEstacionNombre] = useState('');
+
+  useEffect(() => {
+    if (estacionFilter) {
+      pb.collection('estaciones').getOne(estacionFilter, { requestKey: null })
+        .then(record => setEstacionNombre(record.nombre))
+        .catch(() => setEstacionNombre('Estación'));
+    } else {
+      setEstacionNombre('');
+    }
+  }, [estacionFilter]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -60,7 +82,7 @@ export default function ImperdiblesPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
       </div>
     );
@@ -74,7 +96,8 @@ export default function ImperdiblesPage() {
     const matchesTipo = tipoFilter ? i.tipo === tipoFilter : true;
     const matchesPrioridad = prioridadFilter ? i.prioridad === prioridadFilter : true;
     const matchesEstado = estadoFilter ? i.estado === estadoFilter : true;
-    return matchesSearch && matchesTipo && matchesPrioridad && matchesEstado;
+    const matchesEstacion = estacionFilter ? i.estacion_id === estacionFilter : true;
+    return matchesSearch && matchesTipo && matchesPrioridad && matchesEstado && matchesEstacion;
   });
 
   const getTipoLabel = (tipo: string) => {
@@ -89,17 +112,16 @@ export default function ImperdiblesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface)]">
-      <Header />
+    <div className="h-full bg-[var(--color-surface-dim)]">
       <main className="mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
+          <h2 className="text-2xl font-extrabold tracking-[-0.02em] font-display text-[var(--color-primary)]">
             Imperdibles
           </h2>
           {canEdit && (
             <Link
               href="/imperdibles/create"
-              className="btn-primary px-4 py-2 text-sm shadow-md"
+              className="btn-primary px-4 py-2 text-sm"
             >
               + Nuevo Imperdible
             </Link>
@@ -107,122 +129,128 @@ export default function ImperdiblesPage() {
         </div>
 
         {/* Filtros */}
-        <div className="mb-6 flex flex-wrap gap-4">
-          <input
-            type="text"
-            placeholder="Buscar por título..."
-            className="border border-[var(--color-outline)] rounded-md px-3 py-2 w-full max-w-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <select
-            className="border border-[var(--color-outline)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
-            value={tipoFilter}
-            onChange={(e) => setTipoFilter(e.target.value)}
-          >
-            <option value="">Todos los tipos</option>
-            <option value="lugar">Lugar</option>
-            <option value="actividad">Actividad</option>
-            <option value="evento">Evento</option>
-            <option value="atractivo">Atractivo</option>
-            <option value="otro">Otro</option>
-          </select>
-          <select
-            className="border border-[var(--color-outline)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
-            value={prioridadFilter}
-            onChange={(e) => setPrioridadFilter(e.target.value)}
-          >
-            <option value="">Todas las prioridades</option>
-            <option value="alta">Alta</option>
-            <option value="media">Media</option>
-            <option value="baja">Baja</option>
-          </select>
-          <select
-            className="border border-[var(--color-outline)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] bg-[var(--color-surface)]"
-            value={estadoFilter}
-            onChange={(e) => setEstadoFilter(e.target.value)}
-          >
-            <option value="">Todos los estados</option>
-            <option value="borrador">Borrador</option>
-            <option value="en_revision">En revisión</option>
-            <option value="aprobado">Aprobado</option>
-            <option value="inactivo">Inactivo</option>
-          </select>
+        <div className="bg-[var(--color-surface-container)] pl-8 pr-6 py-6 rounded-md flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Buscar por título..."
+              className="input-field w-full text-[var(--color-on-surface-variant)] placeholder:text-[var(--color-surface-variant)]"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-4">
+            {estacionFilter && (
+              <button 
+                onClick={() => { setEstacionFilter(''); router.replace('/imperdibles'); }}
+                className="input-field text-[var(--color-primary)] font-bold flex items-center gap-2 bg-[var(--color-primary-container)]"
+              >
+                {estacionNombre ? `Estación: ${estacionNombre}` : 'Limpiar filtro de Estación'}
+                <span>✕</span>
+              </button>
+            )}
+            <select
+              className="input-field text-[var(--color-on-surface-variant)]"
+              value={tipoFilter}
+              onChange={(e) => setTipoFilter(e.target.value)}
+            >
+              <option value="">Todos los tipos</option>
+              <option value="lugar">Lugar</option>
+              <option value="actividad">Actividad</option>
+              <option value="evento">Evento</option>
+              <option value="atractivo">Atractivo</option>
+              <option value="otro">Otro</option>
+            </select>
+            <select
+              className="input-field text-[var(--color-on-surface-variant)]"
+              value={prioridadFilter}
+              onChange={(e) => setPrioridadFilter(e.target.value)}
+            >
+              <option value="">Todas las prioridades</option>
+              <option value="alta">Alta</option>
+              <option value="media">Media</option>
+              <option value="baja">Baja</option>
+            </select>
+            <select
+              className="input-field text-[var(--color-on-surface-variant)]"
+              value={estadoFilter}
+              onChange={(e) => setEstadoFilter(e.target.value)}
+            >
+              <option value="">Todos los estados</option>
+              <option value="borrador">Borrador</option>
+              <option value="en_revision">En revisión</option>
+              <option value="aprobado">Aprobado</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+          </div>
         </div>
 
-        <div className="bg-[var(--color-surface-container-lowest)] rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] overflow-hidden">
+        <div className="flex flex-col gap-4">
           {loadingImperdibles ? (
-            <p className="p-8 text-center text-[var(--color-secondary)]">Cargando imperdibles...</p>
+            <p className="p-8 text-center text-[var(--color-on-surface-variant)]">Cargando imperdibles...</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-max">
-                <thead>
-                  <tr className="bg-[var(--color-surface-container-low)] border-b border-[var(--color-outline-variant)] text-[var(--color-secondary)] text-sm">
-                    <th className="py-3 px-6 font-semibold">Título</th>
-                    <th className="py-3 px-6 font-semibold">Tipo</th>
-                    <th className="py-3 px-6 font-semibold">Estación</th>
-                    <th className="py-3 px-6 font-semibold">Prioridad</th>
-                    <th className="py-3 px-6 font-semibold">Estado</th>
-                    <th className="py-3 px-6 font-semibold text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredImperdibles.map((i) => (
-                    <tr key={i.id} className="border-b border-[var(--color-surface-variant)] hover:bg-[var(--color-surface-container-lowest)] transition-colors">
-                      <td className="py-4 px-6 text-sm text-[var(--color-on-surface)] font-medium">{i.titulo}</td>
-                      <td className="py-4 px-6 text-sm text-[var(--color-secondary)]">{getTipoLabel(i.tipo)}</td>
-                      <td className="py-4 px-6 text-sm text-[var(--color-secondary)]">
-                        {i.expand?.estacion_id?.nombre || <span className="text-[var(--color-outline)]">Sin estación</span>}
-                      </td>
-                      <td className="py-4 px-6 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium 
-                          ${i.prioridad === 'alta' ? 'bg-red-100 text-red-800' : 
-                            i.prioridad === 'media' ? 'bg-yellow-100 text-yellow-800' : 
-                            'bg-green-100 text-green-800'}`}>
+            <>
+              <div className="grid grid-cols-1 gap-4">
+                {filteredImperdibles.map((i) => (
+                  <Link 
+                    key={i.id} 
+                    href={`/imperdibles/${i.id}`}
+                    className={`bg-[var(--color-surface-container)] p-5 rounded-xl hover:bg-[var(--color-surface-container-low)] transition-all shadow-sm flex flex-col gap-2 cursor-pointer ${i.estado === 'inactivo' ? 'opacity-60' : ''}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-bold text-[var(--color-primary)]">{i.titulo}</h3>
+                        <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-[0.05em] 
+                          ${i.prioridad === 'alta' ? 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]' : 
+                            i.prioridad === 'media' ? 'bg-[var(--color-primary-container)] text-[var(--color-on-primary-container)]' : 
+                            'bg-[var(--color-surface-variant)] text-[var(--color-on-surface-variant)]'}`}>
                           {i.prioridad.toUpperCase()}
                         </span>
-                      </td>
-                      <td className="py-4 px-6 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium 
-                          ${i.estado === 'aprobado' ? 'bg-[#e6f4ea] text-[#137333]' : 
-                            i.estado === 'inactivo' ? 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]' : 
-                            i.estado === 'en_revision' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'}`}>
-                          {i.estado.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.05em] shrink-0
+                        ${i.estado === 'aprobado' ? 'bg-[var(--color-secondary-container)] text-[var(--color-primary)]' : 
+                          i.estado === 'inactivo' ? 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]' : 
+                          i.estado === 'en_revision' ? 'bg-[var(--color-surface-variant)] text-[var(--color-on-surface)]' :
+                          'bg-[var(--color-surface)] text-[var(--color-on-surface-variant)]'}`}>
+                        {i.estado.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    </div>
+                    
+                    <div className="text-sm text-[var(--color-on-surface-variant)] flex items-center gap-4 mt-1">
+                      <span className="flex items-center gap-1.5">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        {getTipoLabel(i.tipo)}
+                      </span>
+                      {i.expand?.estacion_id?.nombre && (
+                        <span className="flex items-center gap-1.5 border-l border-[var(--color-outline-variant)] pl-4">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {i.expand.estacion_id.nombre}
                         </span>
-                      </td>
-                      <td className="py-4 px-6 text-sm text-right">
-                        <div className="flex justify-end gap-3">
-                          <Link href={`/imperdibles/${i.id}`} className="text-[var(--color-primary)] hover:text-[var(--color-on-primary-container)] font-medium transition-colors">
-                            Ver detalle
-                          </Link>
-                          {canEdit && (
-                            <>
-                              <Link href={`/imperdibles/${i.id}/edit`} className="text-[var(--color-tertiary-fixed)] hover:text-[var(--color-on-tertiary-fixed-variant)] font-medium transition-colors">
-                                Editar
-                              </Link>
-                              <button 
-                                onClick={() => toggleImperdibleStatus(i.id, i.estado)}
-                                className={`font-medium transition-colors ${i.estado === 'inactivo' ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'}`}
-                              >
-                                {i.estado === 'inactivo' ? 'Restaurar' : 'Desactivar'}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredImperdibles.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-[var(--color-secondary)]">
-                        No se encontraron imperdibles.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      )}
+                      {i.expand?.actores_relacionados && i.expand.actores_relacionados.length > 0 && (
+                        <span className="flex items-center gap-1.5 border-l border-[var(--color-outline-variant)] pl-4">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          {i.expand.actores_relacionados[0].nombre} {i.expand.actores_relacionados.length > 1 && `(+${i.expand.actores_relacionados.length - 1})`}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              
+              {!loadingImperdibles && filteredImperdibles.length === 0 && (
+                <div className="bg-[var(--color-surface-container)] p-8 text-center text-[var(--color-on-surface-variant)] rounded-md">
+                  No se encontraron imperdibles.
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
