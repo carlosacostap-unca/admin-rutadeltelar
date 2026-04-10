@@ -1,0 +1,286 @@
+'use client';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import pb from '@/lib/pocketbase';
+import Header from '@/components/Header';
+import ContentStatusManager from '@/components/ContentStatusManager';
+import Link from 'next/link';
+import { canEditContent } from '@/lib/permissions';
+import { Actor, ActorTipo } from '@/types/actor';
+
+export default function ActorDetailPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+  
+  const [actor, setActor] = useState<Actor | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
+  useEffect(() => {
+    async function fetchActor() {
+      if (!id || !user) return;
+      
+      try {
+        const record = await pb.collection('actores').getOne<Actor>(id, {
+          expand: 'estacion_id,created_by,updated_by',
+          requestKey: null
+        });
+        setActor(record);
+      } catch (err) {
+        console.error('Error fetching actor:', err);
+        setError('No se pudo cargar el actor. Es posible que no exista.');
+      } finally {
+        setLoadingData(false);
+      }
+    }
+    
+    fetchActor();
+  }, [id, user]);
+
+  const toggleActorStatus = async () => {
+    if (!actor) return;
+    
+    try {
+      const newStatus = actor.estado === 'inactivo' ? 'borrador' : 'inactivo';
+      const updatedRecord = await pb.collection('actores').update<Actor>(id, { estado: newStatus });
+      setActor({ ...actor, estado: updatedRecord.estado });
+    } catch (error) {
+      console.error('Error toggling actor status:', error);
+      alert('Error al cambiar el estado del actor');
+    }
+  };
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Cargando...</p>
+      </div>
+    );
+  }
+
+  const canEdit = canEditContent(user as any);
+
+  const getTipoLabel = (tipo: ActorTipo) => {
+    const labels: Record<ActorTipo, string> = {
+      artesano: 'Artesano',
+      productor: 'Productor',
+      hospedaje: 'Hospedaje',
+      gastronomico: 'Gastronómico',
+      guia: 'Guía de turismo'
+    };
+    return labels[tipo] || tipo;
+  };
+
+  return (
+    <div className="min-h-screen bg-[var(--color-surface)]">
+      <Header />
+      <main className="mx-auto px-6 py-8 max-w-4xl">
+        <div className="mb-6 flex items-center gap-4">
+          <button 
+            onClick={() => router.back()} 
+            className="text-[var(--color-secondary)] hover:text-[var(--color-primary)]"
+          >
+            &larr; Volver
+          </button>
+        </div>
+
+        {loadingData ? (
+          <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-sm text-center">
+            Cargando datos...
+          </div>
+        ) : error ? (
+          <div className="bg-[var(--color-error-container)] text-[var(--color-on-error-container)] p-6 rounded-md">
+            {error}
+          </div>
+        ) : actor ? (
+          <>
+            <ContentStatusManager
+              collectionName="actores"
+              recordId={actor.id}
+              currentState={actor.estado}
+              observaciones={actor.observaciones_revision}
+              user={user}
+              onStatusChange={(updatedRecord) => setActor(updatedRecord as Actor)}
+            />
+            
+            <div className="bg-[var(--color-surface-container-lowest)] p-8 rounded-[8px] shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)]">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8 pb-6 border-b border-[var(--color-surface-variant)]">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-3xl font-bold font-display text-[var(--color-primary)]">
+                    {actor.nombre}
+                  </h2>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium 
+                    ${actor.estado === 'aprobado' ? 'bg-[#e6f4ea] text-[#137333]' : 
+                      actor.estado === 'inactivo' ? 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]' : 
+                      actor.estado === 'en_revision' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'}`}>
+                    {actor.estado.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-[var(--color-secondary)]">
+                  <span className="bg-[var(--color-surface-container)] px-3 py-1 rounded-full text-sm">
+                    {getTipoLabel(actor.tipo)}
+                  </span>
+                  {actor.expand?.estacion_id && (
+                    <Link href={`/estaciones/${actor.expand.estacion_id.id}`} className="hover:text-[var(--color-primary)] transition-colors">
+                      📍 {actor.expand.estacion_id.nombre}
+                    </Link>
+                  )}
+                </div>
+              </div>
+              
+              {canEdit && (
+                <div className="flex gap-3">
+                  <button 
+                    onClick={toggleActorStatus}
+                    className={`font-medium transition-colors px-4 py-2 border rounded-full text-sm ${actor.estado === 'inactivo' ? 'border-green-600 text-green-600 hover:bg-green-50' : 'border-red-600 text-red-600 hover:bg-red-50'}`}
+                  >
+                    {actor.estado === 'inactivo' ? 'Restaurar' : 'Desactivar'}
+                  </button>
+                  <Link
+                    href={`/actores/${actor.id}/edit`}
+                    className="btn-primary px-4 py-2 text-sm shadow-md"
+                  >
+                    Editar Actor
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-3 uppercase tracking-wider">
+                  Información de Contacto
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <span className="block text-sm text-[var(--color-secondary)]">Teléfono</span>
+                    <span className="text-[var(--color-on-surface)]">{actor.contacto_telefono || 'No especificado'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm text-[var(--color-secondary)]">Email</span>
+                    <span className="text-[var(--color-on-surface)]">{actor.contacto_email || 'No especificado'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm text-[var(--color-secondary)]">Ubicación / Dirección</span>
+                    <span className="text-[var(--color-on-surface)]">{actor.ubicacion || 'No especificada'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-3 uppercase tracking-wider">
+                  Descripción
+                </h3>
+                <p className="text-[var(--color-on-surface)] whitespace-pre-wrap">
+                  {actor.descripcion || 'No hay descripción disponible.'}
+                </p>
+
+                {actor.observaciones && canEdit && (
+                  <div className="mt-6">
+                    <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-3 uppercase tracking-wider">
+                      Observaciones Internas
+                    </h3>
+                    <p className="text-[var(--color-on-surface)] whitespace-pre-wrap bg-[var(--color-surface-container)] p-3 rounded-md text-sm">
+                      {actor.observaciones}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
+              <h3 className="text-sm font-semibold text-[var(--color-primary)] mb-4 uppercase tracking-wider">
+                Detalles Específicos
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                {actor.tipo === 'artesano' && (
+                  <>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Técnicas</span><span className="font-medium">{actor.tecnicas || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Materiales</span><span className="font-medium">{actor.materiales || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Productos ofrecidos</span><span className="font-medium">{actor.productos_ofrecidos || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Disponibilidad</span><span className="font-medium">{actor.disponibilidad || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Visitas/Demostraciones</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
+                  </>
+                )}
+                {actor.tipo === 'productor' && (
+                  <>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Rubro productivo</span><span className="font-medium">{actor.rubro_productivo || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Escala de producción</span><span className="font-medium">{actor.escala_produccion || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Modalidad de venta</span><span className="font-medium">{actor.modalidad_venta || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Productos ofrecidos</span><span className="font-medium">{actor.productos_ofrecidos || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Posibilidad de visitas</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
+                  </>
+                )}
+                {actor.tipo === 'hospedaje' && (
+                  <>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Tipo de hospedaje</span><span className="font-medium">{actor.tipo_hospedaje || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Capacidad</span><span className="font-medium">{actor.capacidad || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Servicios</span><span className="font-medium">{actor.servicios || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Horarios</span><span className="font-medium">{actor.horarios || '-'}</span></div>
+                  </>
+                )}
+                {actor.tipo === 'gastronomico' && (
+                  <>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Tipo de propuesta</span><span className="font-medium">{actor.tipo_propuesta || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Modalidad de servicio</span><span className="font-medium">{actor.modalidad_servicio || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Especialidades</span><span className="font-medium">{actor.especialidades || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Platos destacados</span><span className="font-medium">{actor.platos_destacados || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Servicios adicionales</span><span className="font-medium">{actor.servicios_adicionales || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Días y horarios</span><span className="font-medium">{actor.horarios || '-'}</span></div>
+                  </>
+                )}
+                {actor.tipo === 'guia' && (
+                  <>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Especialidad</span><span className="font-medium">{actor.especialidad || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Idiomas</span><span className="font-medium">{actor.idiomas || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Recorridos ofrecidos</span><span className="font-medium">{actor.recorridos_ofrecidos || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Duración estimada</span><span className="font-medium">{actor.duracion_recorridos || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Zona de cobertura</span><span className="font-medium">{actor.zona_cobertura || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Punto de encuentro</span><span className="font-medium">{actor.punto_encuentro || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Acreditación</span><span className="font-medium">{actor.acreditacion || '-'}</span></div>
+                    <div><span className="block text-[var(--color-secondary)] mb-1">Disponibilidad</span><span className="font-medium">{actor.disponibilidad || '-'}</span></div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
+              <h3 className="text-sm font-semibold text-[var(--color-secondary)] mb-4 uppercase tracking-wider">
+                Historial
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-[var(--color-secondary)]">
+                <div>
+                  <span className="font-medium block mb-1">Creado el</span> 
+                  {new Date(actor.created).toLocaleString()}
+                  {actor.expand?.created_by && (
+                    <span className="block mt-1 text-xs">Por: {actor.expand.created_by.name || actor.expand.created_by.email}</span>
+                  )}
+                </div>
+                <div>
+                  <span className="font-medium block mb-1">Última actualización</span> 
+                  {new Date(actor.updated).toLocaleString()}
+                  {actor.expand?.updated_by && (
+                    <span className="block mt-1 text-xs">Por: {actor.expand.updated_by.name || actor.expand.updated_by.email}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          </>
+        ) : null}
+      </main>
+    </div>
+  );
+}

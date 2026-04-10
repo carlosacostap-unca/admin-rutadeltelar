@@ -1,26 +1,79 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: #002046;
+  --color-primary-container: #1b365d;
+  --color-surface: #f6fafe;
+  --color-surface-container-low: #f0f4f8;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container: #eaeef2;
+  --color-surface-container-high: #e4e9ed;
+  --color-surface-variant: #e1e2e8;
+  --color-secondary: #515f74;
+  --color-secondary-container: #d8e2f3;
+  --color-on-secondary-container: #111c2b;
+  --color-tertiary-fixed: #3cafa2;
+  --color-on-tertiary-fixed-variant: #005047;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #ba1a1a;
+  --color-outline-variant: #c4c6cf;
+  --color-on-surface: #171c1f;
+  --color-primary-fixed: #002046;
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-manrope);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #f6fafe;
+  --foreground: #171c1f;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), sans-serif;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.85); /* surface_container_lowest at 85% */
+  backdrop-filter: blur(20px);
+}
+
+/* Primary Button Gradient */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: opacity 0.2s ease;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #d1d5db; /* surface_container_highest approx */
+}
+
+/* Input Fields */
+.input-field {
+  background-color: var(--color-surface-container-lowest);
+  border-bottom: 2px solid var(--color-outline-variant);
+  transition: border-color 0.2s ease;
+}
+
+.input-field:focus {
+  border-bottom-color: var(--color-primary);
+  outline: none;
 }

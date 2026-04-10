@@ -1,63 +1,87 @@
-import Image from "next/image";
+'use client';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+import Header from '@/components/Header';
+import RoleGuard from '@/components/RoleGuard';
+import Link from 'next/link';
 
 export default function Home() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Si no hay usuario y ya terminó de cargar, enviarlo al login
+    if (!user && !isLoading) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Cargando...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-[var(--color-surface)]">
+      <Header />
+
+      {/* Main Content */}
+      <main className="mx-auto px-6 py-8">
+        <div className="bg-[var(--color-surface-container-lowest)] p-8 shadow-[0_12px_32px_-4px_rgba(23,28,31,0.06)] rounded-[8px] mb-8">
+          <h2 className="text-2xl font-bold font-display text-[var(--color-primary)] mb-4">
+            Bienvenido, {user.name || 'Usuario'}
+          </h2>
+          <p className="text-sm text-[var(--color-secondary)] leading-relaxed max-w-2xl">
+            Has iniciado sesión correctamente. Desde este panel podrás acceder a las funciones del sistema según los roles que tienes asignados.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <RoleGuard allowedRoles={['admin']}>
+            <div className="bg-[var(--color-surface-container-lowest)] p-6 rounded-[8px] shadow-sm border border-[var(--color-outline-variant)]">
+              <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-2">Administración</h3>
+              <p className="text-sm text-[var(--color-secondary)] mb-4">Gestiona los usuarios, sus roles y permisos dentro del sistema.</p>
+              <Link href="/usuarios" className="text-[var(--color-tertiary-fixed)] font-medium text-sm hover:underline">
+                Ir a Usuarios &rarr;
+              </Link>
+            </div>
+          </RoleGuard>
+
+          <RoleGuard allowedRoles={['admin', 'editor']}>
+            <div className="bg-[var(--color-surface-container-lowest)] p-6 rounded-[8px] shadow-sm border border-[var(--color-outline-variant)]">
+              <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-2">Edición de Contenido</h3>
+              <p className="text-sm text-[var(--color-secondary)] mb-4">Crea y edita estaciones, actores, productos, experiencias e imperdibles.</p>
+              <Link href="/estaciones" className="text-[var(--color-tertiary-fixed)] font-medium text-sm hover:underline">
+                Gestionar Estaciones &rarr;
+              </Link>
+            </div>
+          </RoleGuard>
+
+          <RoleGuard allowedRoles={['admin', 'revisor']}>
+            <div className="bg-[var(--color-surface-container-lowest)] p-6 rounded-[8px] shadow-sm border border-[var(--color-outline-variant)]">
+              <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-2">Revisión</h3>
+              <p className="text-sm text-[var(--color-secondary)] mb-4">Revisa la calidad de la información cargada y aprueba o rechaza el contenido.</p>
+              <Link href="/estaciones" className="text-[var(--color-tertiary-fixed)] font-medium text-sm hover:underline">
+                Ver Pendientes &rarr;
+              </Link>
+            </div>
+          </RoleGuard>
+
+          <RoleGuard allowedRoles={['consultor']}>
+            <div className="bg-[var(--color-surface-container-lowest)] p-6 rounded-[8px] shadow-sm border border-[var(--color-outline-variant)]">
+              <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-2">Consulta</h3>
+              <p className="text-sm text-[var(--color-secondary)] mb-4">Explora la información de estaciones y actores del territorio.</p>
+              <Link href="/estaciones" className="text-[var(--color-tertiary-fixed)] font-medium text-sm hover:underline">
+                Explorar Datos &rarr;
+              </Link>
+            </div>
+          </RoleGuard>
         </div>
       </main>
     </div>
