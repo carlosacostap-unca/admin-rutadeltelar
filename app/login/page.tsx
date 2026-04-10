@@ -23,7 +23,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex h-full items-center justify-center p-4 bg-[var(--color-surface)]">
+    <main className="flex h-screen w-full items-center justify-center p-4 bg-[var(--color-surface)]">
       {/* Container - using surface_container_low for related content grouping as per "Surface Hierarchy" */}
       <div className="w-full max-w-md rounded-lg p-10 bg-[var(--color-surface-container-low)] shadow-[0_8px_24px_rgba(38,25,6,0.06)] border-none">
         

@@ -52,12 +52,6 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         </Link>
         
         <RoleGuard allowedRoles={['admin', 'editor', 'revisor', 'consultor']}>
-          <div className="pt-4 pb-2 px-4">
-            <span className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider">
-              Contenido
-            </span>
-          </div>
-          
           <Link 
             href="/estaciones"
             className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/estaciones') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
@@ -95,24 +89,11 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         </RoleGuard>
 
         <RoleGuard allowedRoles={['admin']}>
-          <div className="pt-6 pb-2 px-4">
-            <span className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider">
-              Administración
-            </span>
-          </div>
-          
           <Link 
             href="/usuarios"
             className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/usuarios') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
           >
             Usuarios
-          </Link>
-          
-          <Link 
-            href="/carga-masiva"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/carga-masiva') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
-          >
-            Carga Masiva
           </Link>
         </RoleGuard>
       </div>

@@ -201,9 +201,9 @@ function ImperdiblesContent() {
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-bold text-[var(--color-primary)]">{i.titulo}</h3>
                         <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-[0.05em] 
-                          ${i.prioridad === 'alta' ? 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]' : 
-                            i.prioridad === 'media' ? 'bg-[var(--color-primary-container)] text-[var(--color-on-primary-container)]' : 
-                            'bg-[var(--color-surface-variant)] text-[var(--color-on-surface-variant)]'}`}>
+                          ${i.prioridad === 'alta' ? 'bg-[var(--color-primary)] text-[var(--color-surface)]' : 
+                            i.prioridad === 'media' ? 'bg-[var(--color-primary-container)] text-[var(--color-surface)]' : 
+                            'bg-[var(--color-surface-variant)] text-[var(--color-primary)]'}`}>
                           {i.prioridad.toUpperCase()}
                         </span>
                       </div>
