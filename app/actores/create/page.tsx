@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { ActorTipo, ActorEstado } from '@/types/actor';
 import MapPicker from '@/components/MapPicker';
@@ -157,13 +158,9 @@ function CreateActorForm() {
         }
       }
       
-      const record = await pb.collection('actores').create(formData);
+      const record = await createRecordWithAudit('actores', formData, user);
       
-      if (action === 'borrador') {
-        router.push('/actores');
-      } else {
-        router.push(`/actores/${record.id}/edit`);
-      }
+      router.push('/actores');
     } catch (err: any) {
       console.error('Error creando actor:', err);
       setError(err?.response?.message || 'Error al crear el actor.');
@@ -185,7 +182,7 @@ function CreateActorForm() {
       <main className="mx-auto px-6 py-8 flex-1 w-full">
         <div className="mb-6 flex flex-col items-start gap-4">
           <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
-          <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
+          <h2 className="text-[32px] font-bold text-[var(--color-primary)] tracking-tight ml-4">
             Crear Actor
           </h2>
         </div>
@@ -639,7 +636,9 @@ function CreateActorForm() {
               >
                 <option value="borrador">Borrador</option>
                 <option value="en_revision">En revisión</option>
-                <option value="aprobado">Aprobado</option>
+                {canReviewContent(user as any) && (
+                  <option value="aprobado">Aprobado</option>
+                )}
               </select>
             </div>
 
@@ -652,19 +651,11 @@ function CreateActorForm() {
               </Link>
               <button
                 type="button"
-                onClick={(e) => handleSubmit(e, 'borrador')}
-                disabled={isSubmitting}
-                className="btn-secondary px-6 py-2 text-sm shadow-sm"
-              >
-                Guardar Borrador
-              </button>
-              <button
-                type="button"
                 onClick={(e) => handleSubmit(e, 'continuar')}
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Crear y Continuar Editando'}
+                {isSubmitting ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </form>

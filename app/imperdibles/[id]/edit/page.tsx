@@ -4,9 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, canReviewContent } from '@/lib/permissions';
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false }) as React.FC<{ lat: number; lng: number; zoom?: number; label?: string }>;
 import { Estacion } from '@/types/estacion';
@@ -225,9 +226,9 @@ export default function EditImperdiblePage() {
         }
       }
       
-      await pb.collection('imperdibles').update(id, formData);
+      await updateRecordWithAudit('imperdibles', id, formData, user);
       
-      router.push(`/imperdibles/${id}`);
+      router.push('/imperdibles');
     } catch (err: any) {
       console.error('Error actualizando imperdible:', err?.message, err?.response?.data);
       const validationErrors = err?.response?.data;
@@ -277,7 +278,7 @@ export default function EditImperdiblePage() {
       <main className="mx-auto px-6 py-8 flex-1 w-full">
         <div className="mb-6 flex flex-col items-start gap-4">
           <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
-          <h1 className="text-[32px] font-bold text-[var(--color-on-surface)] tracking-tight ml-4">
+          <h1 className="text-[32px] font-bold text-[var(--color-primary)] tracking-tight ml-4">
             Editar Imperdible
           </h1>
         </div>
@@ -522,69 +523,99 @@ export default function EditImperdiblePage() {
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Actores Relacionados (opcional)
                   </label>
-                  <select
-                    multiple
-                    value={actoresRelacionados}
-                    onChange={(e) => {
-                      const options = Array.from(e.target.selectedOptions, option => option.value);
-                      setActoresRelacionados(options);
-                    }}
-                    className="input-field w-full min-h-[100px]"
-                    disabled={!estacionId || actoresFiltrados.length === 0}
-                  >
-                    {actoresFiltrados.map((actor) => (
-                      <option key={actor.id} value={actor.id}>
-                        {actor.nombre} ({actor.tipo})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
+                  <div className={`bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] rounded-md p-3 max-h-48 overflow-y-auto space-y-2 ${!estacionId || actoresFiltrados.length === 0 ? 'opacity-60 bg-gray-50' : ''}`}>
+                    {!estacionId ? (
+                      <p className="text-sm text-[var(--color-on-surface-variant)] italic">Selecciona una estación primero.</p>
+                    ) : actoresFiltrados.length === 0 ? (
+                      <p className="text-sm text-[var(--color-on-surface-variant)] italic">No hay actores en esta estación.</p>
+                    ) : (
+                      actoresFiltrados.map((actor) => (
+                        <label key={actor.id} className="flex items-center gap-3 cursor-pointer hover:bg-[var(--color-surface-container)] p-1.5 rounded transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={actoresRelacionados.includes(actor.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setActoresRelacionados([...actoresRelacionados, actor.id]);
+                              } else {
+                                setActoresRelacionados(actoresRelacionados.filter(id => id !== actor.id));
+                              }
+                            }}
+                            className="w-4 h-4 text-[var(--color-primary)] bg-[var(--color-surface)] border-[var(--color-outline)] rounded focus:ring-[var(--color-primary)]"
+                          />
+                          <span className="text-sm text-[var(--color-on-surface)]">
+                            {actor.nombre} <span className="text-xs text-[var(--color-on-surface-variant)]">({actor.tipo})</span>
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Productos Relacionados (opcional)
                   </label>
-                  <select
-                    multiple
-                    value={productosRelacionados}
-                    onChange={(e) => {
-                      const options = Array.from(e.target.selectedOptions, option => option.value);
-                      setProductosRelacionados(options);
-                    }}
-                    className="input-field w-full min-h-[100px]"
-                    disabled={!estacionId || productosFiltrados.length === 0}
-                  >
-                    {productosFiltrados.map((prod) => (
-                      <option key={prod.id} value={prod.id}>
-                        {prod.nombre} ({prod.categoria})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
+                  <div className={`bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] rounded-md p-3 max-h-48 overflow-y-auto space-y-2 ${!estacionId || productosFiltrados.length === 0 ? 'opacity-60 bg-gray-50' : ''}`}>
+                    {!estacionId ? (
+                      <p className="text-sm text-[var(--color-on-surface-variant)] italic">Selecciona una estación primero.</p>
+                    ) : productosFiltrados.length === 0 ? (
+                      <p className="text-sm text-[var(--color-on-surface-variant)] italic">No hay productos en esta estación.</p>
+                    ) : (
+                      productosFiltrados.map((prod) => (
+                        <label key={prod.id} className="flex items-center gap-3 cursor-pointer hover:bg-[var(--color-surface-container)] p-1.5 rounded transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={productosRelacionados.includes(prod.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setProductosRelacionados([...productosRelacionados, prod.id]);
+                              } else {
+                                setProductosRelacionados(productosRelacionados.filter(id => id !== prod.id));
+                              }
+                            }}
+                            className="w-4 h-4 text-[var(--color-primary)] bg-[var(--color-surface)] border-[var(--color-outline)] rounded focus:ring-[var(--color-primary)]"
+                          />
+                          <span className="text-sm text-[var(--color-on-surface)]">
+                            {prod.nombre} <span className="text-xs text-[var(--color-on-surface-variant)]">({prod.categoria})</span>
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Experiencias Relacionadas (opcional)
                   </label>
-                  <select
-                    multiple
-                    value={experienciasRelacionadas}
-                    onChange={(e) => {
-                      const options = Array.from(e.target.selectedOptions, option => option.value);
-                      setExperienciasRelacionadas(options);
-                    }}
-                    className="input-field w-full min-h-[100px]"
-                    disabled={!estacionId || experienciasFiltradas.length === 0}
-                  >
-                    {experienciasFiltradas.map((exp) => (
-                      <option key={exp.id} value={exp.id}>
-                        {exp.titulo} ({exp.categoria})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</p>
+                  <div className={`bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] rounded-md p-3 max-h-48 overflow-y-auto space-y-2 ${!estacionId || experienciasFiltradas.length === 0 ? 'opacity-60 bg-gray-50' : ''}`}>
+                    {!estacionId ? (
+                      <p className="text-sm text-[var(--color-on-surface-variant)] italic">Selecciona una estación primero.</p>
+                    ) : experienciasFiltradas.length === 0 ? (
+                      <p className="text-sm text-[var(--color-on-surface-variant)] italic">No hay experiencias en esta estación.</p>
+                    ) : (
+                      experienciasFiltradas.map((exp) => (
+                        <label key={exp.id} className="flex items-center gap-3 cursor-pointer hover:bg-[var(--color-surface-container)] p-1.5 rounded transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={experienciasRelacionadas.includes(exp.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setExperienciasRelacionadas([...experienciasRelacionadas, exp.id]);
+                              } else {
+                                setExperienciasRelacionadas(experienciasRelacionadas.filter(id => id !== exp.id));
+                              }
+                            }}
+                            className="w-4 h-4 text-[var(--color-primary)] bg-[var(--color-surface)] border-[var(--color-outline)] rounded focus:ring-[var(--color-primary)]"
+                          />
+                          <span className="text-sm text-[var(--color-on-surface)]">
+                            {exp.titulo} <span className="text-xs text-[var(--color-on-surface-variant)]">({exp.categoria})</span>
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -641,8 +672,12 @@ export default function EditImperdiblePage() {
                 >
                   <option value="borrador">Borrador</option>
                   <option value="en_revision">En Revisión</option>
-                  <option value="aprobado">Aprobado</option>
-                  <option value="inactivo">Inactivo</option>
+                  {canReviewContent(user as any) && (
+                    <>
+                      <option value="aprobado">Aprobado</option>
+                      <option value="inactivo">Inactivo</option>
+                    </>
+                  )}
                 </select>
               </div>
             

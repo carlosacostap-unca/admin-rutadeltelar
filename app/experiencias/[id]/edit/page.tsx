@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { Experiencia, ExperienciaCategoria, ExperienciaEstado } from '@/types/experiencia';
@@ -140,9 +141,9 @@ export default function EditExperienciaPage() {
         }
       }
       
-      await pb.collection('experiencias').update(id, formData);
+      await updateRecordWithAudit('experiencias', id, formData, user);
       
-      router.push(`/experiencias/${id}`);
+      router.push('/experiencias');
     } catch (err: any) {
       console.error('Error actualizando experiencia:', err?.message, err?.response?.data);
       const validationErrors = err?.response?.data;
@@ -339,29 +340,12 @@ export default function EditExperienciaPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Estado
-                </label>
-                <select
-                  value={estado}
-                  onChange={(e) => setEstado(e.target.value as ExperienciaEstado)}
-                  className="input-field w-full"
-                >
-                  <option value="borrador">Borrador</option>
-                  <option value="en_revision">En Revisión</option>
-                  <option value="aprobado">Aprobado</option>
-                  <option value="inactivo">Inactivo</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Responsable (opcional)
-                </label>
-                <select
-                  value={responsable}
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Responsable (opcional)
+              </label>
+              <select
+                value={responsable}
                   onChange={(e) => setResponsable(e.target.value)}
                   className="input-field w-full"
                   disabled={!estacionId || actoresFiltrados.length === 0}
@@ -379,7 +363,6 @@ export default function EditExperienciaPage() {
                   </p>
                 )}
               </div>
-            </div>
 
             <div>
               <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
@@ -482,6 +465,26 @@ export default function EditExperienciaPage() {
               <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
                 Selecciona imágenes si deseas subir nuevas fotos para esta experiencia. Puedes tener hasta 5 imágenes en total.
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Estado
+              </label>
+              <select
+                value={estado}
+                onChange={(e) => setEstado(e.target.value as ExperienciaEstado)}
+                className="input-field w-full md:w-1/2"
+              >
+                <option value="borrador">Borrador</option>
+                <option value="en_revision">En revisión</option>
+                {canReviewContent(user as any) && (
+                  <>
+                    <option value="aprobado">Aprobado</option>
+                    <option value="inactivo">Inactivo</option>
+                  </>
+                )}
+              </select>
             </div>
 
             <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">

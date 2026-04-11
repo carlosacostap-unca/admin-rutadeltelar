@@ -88,12 +88,36 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
           </Link>
         </RoleGuard>
 
+        <RoleGuard allowedRoles={['admin', 'revisor']}>
+          <Link 
+            href="/revision"
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/revision') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+          >
+            Revisión
+          </Link>
+        </RoleGuard>
+
+        <RoleGuard allowedRoles={['admin', 'editor']}>
+          <Link 
+            href="/borradores"
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/borradores') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+          >
+            Borradores
+          </Link>
+        </RoleGuard>
+
         <RoleGuard allowedRoles={['admin']}>
           <Link 
             href="/usuarios"
             className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/usuarios') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
           >
             Usuarios
+          </Link>
+          <Link 
+            href="/auditoria"
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/auditoria') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+          >
+            Auditoría
           </Link>
         </RoleGuard>
       </div>

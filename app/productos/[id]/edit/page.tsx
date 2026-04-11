@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { Producto, ProductoCategoria, ProductoEstado } from '@/types/producto';
@@ -122,8 +123,8 @@ export default function EditProductoPage() {
         }
       }
       
-      await pb.collection('productos').update(id, formData);
-      router.push(`/productos/${id}`);
+      await updateRecordWithAudit('productos', id, formData, user);
+      router.push('/productos');
     } catch (err: any) {
       console.error('Error actualizando producto:', err?.message, err?.response?.data);
       const validationErrors = err?.response?.data;
@@ -267,8 +268,12 @@ export default function EditProductoPage() {
                 >
                   <option value="borrador">Borrador</option>
                   <option value="en_revision">En Revisión</option>
-                  <option value="aprobado">Aprobado</option>
-                  <option value="inactivo">Inactivo</option>
+                  {canReviewContent(user as any) && (
+                    <>
+                      <option value="aprobado">Aprobado</option>
+                      <option value="inactivo">Inactivo</option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>
@@ -300,6 +305,9 @@ export default function EditProductoPage() {
                         onChange={(e) => {
                           if (e.target.checked) {
                             setActoresRelacionados([...actoresRelacionados, actor.id]);
+                            if (!estacionId && actor.estacion_id) {
+                              setEstacionId(actor.estacion_id);
+                            }
                           } else {
                             setActoresRelacionados(actoresRelacionados.filter(id => id !== actor.id));
                           }
@@ -417,6 +425,26 @@ export default function EditProductoPage() {
                   Selecciona imágenes si deseas subir nuevas fotos para este producto. Puedes tener hasta 5 imágenes en total.
                 </p>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Estado
+              </label>
+              <select
+                value={estado}
+                onChange={(e) => setEstado(e.target.value as ProductoEstado)}
+                className="input-field w-full md:w-1/2"
+              >
+                <option value="borrador">Borrador</option>
+                <option value="en_revision">En revisión</option>
+                {canReviewContent(user as any) && (
+                  <>
+                    <option value="aprobado">Aprobado</option>
+                    <option value="inactivo">Inactivo</option>
+                  </>
+                )}
+              </select>
             </div>
 
             <div className="pt-6 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-[var(--color-outline-variant)] mt-8">

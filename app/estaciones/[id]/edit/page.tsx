@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import MapPicker from '@/components/MapPicker';
 
@@ -97,7 +98,7 @@ export default function EditEstacionPage() {
         }
       }
       
-      await pb.collection('estaciones').update(id, formData);
+      await updateRecordWithAudit('estaciones', id, formData, user);
       router.push('/estaciones');
     } catch (err: any) {
       console.error('Error actualizando estación:', err);
@@ -260,8 +261,12 @@ export default function EditEstacionPage() {
                 >
                   <option value="borrador">Borrador</option>
                   <option value="en_revision">En revisión</option>
-                  <option value="aprobado">Aprobado</option>
-                  <option value="inactivo">Inactivo</option>
+                  {canReviewContent(user as any) && (
+                    <>
+                      <option value="aprobado">Aprobado</option>
+                      <option value="inactivo">Inactivo</option>
+                    </>
+                  )}
                 </select>
               </div>
 

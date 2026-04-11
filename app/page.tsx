@@ -115,41 +115,6 @@ export default function Home() {
             </div>
           )}
         </div>
-
-        {/* Accesos Rápidos */}
-        <h3 className="text-sm font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-6 border-b border-[var(--color-surface-variant)] pb-2 inline-block">
-          Accesos Rápidos
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <RoleGuard allowedRoles={['admin']}>
-            <Link href="/usuarios" className="block bg-[var(--color-surface-container)] px-8 py-8 rounded-md hover:bg-[var(--color-surface-variant)] transition-colors border-t-2 border-transparent hover:border-[var(--color-primary)] cursor-pointer">
-              <h3 className="text-lg font-bold text-[var(--color-primary)] mb-3 tracking-tight">Administración</h3>
-              <p className="text-sm font-normal text-[var(--color-on-surface-variant)]">Gestiona los usuarios, sus roles y permisos dentro del sistema.</p>
-            </Link>
-          </RoleGuard>
-
-          <RoleGuard allowedRoles={['admin', 'editor']}>
-            <Link href="/estaciones" className="block bg-[var(--color-surface-container)] px-8 py-8 rounded-md hover:bg-[var(--color-surface-variant)] transition-colors border-t-2 border-transparent hover:border-[var(--color-primary)] cursor-pointer">
-              <h3 className="text-lg font-bold text-[var(--color-primary)] mb-3 tracking-tight">Edición de Contenido</h3>
-              <p className="text-sm font-normal text-[var(--color-on-surface-variant)]">Crea y edita estaciones, actores, productos, experiencias e imperdibles.</p>
-            </Link>
-          </RoleGuard>
-
-          <RoleGuard allowedRoles={['admin', 'revisor']}>
-            <Link href="/estaciones" className="block bg-[var(--color-surface-container)] px-8 py-8 rounded-md hover:bg-[var(--color-surface-variant)] transition-colors border-t-2 border-transparent hover:border-[var(--color-primary)] cursor-pointer">
-              <h3 className="text-lg font-bold text-[var(--color-primary)] mb-3 tracking-tight">Revisión</h3>
-              <p className="text-sm font-normal text-[var(--color-on-surface-variant)]">Revisa la calidad de la información cargada y aprueba o rechaza el contenido.</p>
-            </Link>
-          </RoleGuard>
-
-          <RoleGuard allowedRoles={['consultor']}>
-            <Link href="/estaciones" className="block bg-[var(--color-surface-container)] px-8 py-8 rounded-md hover:bg-[var(--color-surface-variant)] transition-colors border-t-2 border-transparent hover:border-[var(--color-primary)] cursor-pointer">
-              <h3 className="text-lg font-bold text-[var(--color-primary)] mb-3 tracking-tight">Consulta</h3>
-              <p className="text-sm font-normal text-[var(--color-on-surface-variant)]">Explora la información de estaciones y actores del territorio.</p>
-            </Link>
-          </RoleGuard>
-        </div>
       </main>
     </div>
   );

@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor, ActorTipo, ActorEstado } from '@/types/actor';
 import MapPicker from '@/components/MapPicker';
@@ -207,8 +208,8 @@ export default function EditActorPage() {
         }
       }
       
-      await pb.collection('actores').update(id, formData);
-      router.push(`/actores/${id}`);
+      await updateRecordWithAudit('actores', id, formData, user);
+      router.push('/actores');
     } catch (err: any) {
       console.error('Error actualizando actor:', err);
       setError(err?.response?.message || 'Error al actualizar el actor.');
@@ -737,8 +738,12 @@ export default function EditActorPage() {
                 >
                   <option value="borrador">Borrador</option>
                   <option value="en_revision">En revisión</option>
-                  <option value="aprobado">Aprobado</option>
-                  <option value="inactivo">Inactivo</option>
+                  {canReviewContent(user as any) && (
+                    <>
+                      <option value="aprobado">Aprobado</option>
+                      <option value="inactivo">Inactivo</option>
+                    </>
+                  )}
                 </select>
               </div>
 

@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { ProductoCategoria, ProductoEstado } from '@/types/producto';
@@ -102,13 +103,9 @@ function CreateProductoForm() {
         }
       }
       
-      const record = await pb.collection('productos').create(formData);
+      const record = await createRecordWithAudit('productos', formData, user);
       
-      if (action === 'borrador') {
-        router.push('/productos');
-      } else {
-        router.push(`/productos/${record.id}/edit`);
-      }
+      router.push('/productos');
     } catch (err: any) {
       console.error('Error creando producto:', err?.message, err?.response?.data);
       const validationErrors = err?.response?.data;
@@ -143,7 +140,7 @@ function CreateProductoForm() {
       <main className="mx-auto px-6 py-8 flex-1 w-full">
         <div className="mb-6 flex flex-col items-start gap-4">
           <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
-          <h2 className="text-2xl font-bold font-display text-[var(--color-primary)]">
+          <h2 className="text-[32px] font-bold text-[var(--color-primary)] tracking-tight ml-4">
             Crear Producto
           </h2>
         </div>
@@ -243,6 +240,9 @@ function CreateProductoForm() {
                         onChange={(e) => {
                           if (e.target.checked) {
                             setActoresRelacionados([...actoresRelacionados, actor.id]);
+                            if (!estacionId && actor.estacion_id) {
+                              setEstacionId(actor.estacion_id);
+                            }
                           } else {
                             setActoresRelacionados(actoresRelacionados.filter(id => id !== actor.id));
                           }
@@ -327,6 +327,23 @@ function CreateProductoForm() {
               </p>
             </div>
 
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Estado inicial
+              </label>
+              <select
+                value={estado}
+                onChange={(e) => setEstado(e.target.value as ProductoEstado)}
+                className="input-field w-full md:w-1/2"
+              >
+                <option value="borrador">Borrador</option>
+                <option value="en_revision">En revisión</option>
+                {canReviewContent(user as any) && (
+                  <option value="aprobado">Aprobado</option>
+                )}
+              </select>
+            </div>
+
             <div className="pt-6 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-[var(--color-outline-variant)] mt-8">
               <button
                 type="button"
@@ -338,20 +355,11 @@ function CreateProductoForm() {
               
               <button
                 type="button"
-                onClick={(e) => handleSubmit(e, 'borrador')}
-                disabled={isSubmitting}
-                className="btn-secondary px-6 py-2 text-sm shadow-sm"
-              >
-                {isSubmitting ? 'Guardando...' : 'Guardar como Borrador'}
-              </button>
-              
-              <button
-                type="button"
                 onClick={(e) => handleSubmit(e, 'continuar')}
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Crear y Continuar'}
+                {isSubmitting ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </form>

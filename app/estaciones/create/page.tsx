@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, canReviewContent } from '@/lib/permissions';
 import MapPicker from '@/components/MapPicker';
 
 export default function CreateEstacionPage() {
@@ -58,13 +59,9 @@ export default function CreateEstacionPage() {
         }
       }
       
-      const record = await pb.collection('estaciones').create(formData);
+      const record = await createRecordWithAudit('estaciones', formData, user);
       
-      if (action === 'borrador') {
-        router.push('/estaciones');
-      } else {
-        router.push(`/estaciones/${record.id}/edit`);
-      }
+      router.push('/estaciones');
     } catch (err: any) {
       console.error('Error creando estación:', err);
       setError(err?.response?.message || 'Error al crear la estación.');
@@ -86,7 +83,7 @@ export default function CreateEstacionPage() {
       <main className="mx-auto px-6 py-8 flex-1 w-full">
         <div className="mb-6 flex flex-col items-start gap-4">
           <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
-          <h1 className="text-[32px] font-bold text-[var(--color-on-surface)] tracking-tight ml-4">
+          <h1 className="text-[32px] font-bold text-[var(--color-primary)] tracking-tight ml-4">
             Crear Estación
           </h1>
         </div>
@@ -197,7 +194,9 @@ export default function CreateEstacionPage() {
               >
                 <option value="borrador">Borrador</option>
                 <option value="en_revision">En revisión</option>
-                <option value="aprobado">Aprobado</option>
+                {canReviewContent(user as any) && (
+                  <option value="aprobado">Aprobado</option>
+                )}
               </select>
             </div>
 
@@ -281,19 +280,11 @@ export default function CreateEstacionPage() {
               </Link>
               <button
                 type="button"
-                onClick={(e) => handleSubmit(e, 'borrador')}
-                disabled={isSubmitting}
-                className="btn-secondary px-6 py-2 text-sm shadow-sm"
-              >
-                Guardar Borrador
-              </button>
-              <button
-                type="button"
                 onClick={(e) => handleSubmit(e, 'continuar')}
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar y Continuar'}
+                {isSubmitting ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </form>

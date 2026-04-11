@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 
 export default function CreateUserPage() {
@@ -65,7 +66,7 @@ export default function CreateUserPage() {
         observations
       };
       
-      await pb.collection('users').create(data);
+      await createRecordWithAudit('users', data, user);
       router.push('/usuarios');
     } catch (err: any) {
       console.error('Error creando usuario:', err);
@@ -200,7 +201,7 @@ export default function CreateUserPage() {
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md w-full sm:w-auto"
               >
-                {isSubmitting ? 'Guardando...' : 'Crear Usuario'}
+                {isSubmitting ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </form>

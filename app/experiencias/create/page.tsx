@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { ExperienciaCategoria, ExperienciaEstado } from '@/types/experiencia';
@@ -100,13 +101,9 @@ function CreateExperienciaForm() {
         }
       }
       
-      const record = await pb.collection('experiencias').create(formData);
+      const record = await createRecordWithAudit('experiencias', formData, user);
       
-      if (action === 'borrador') {
-        router.push('/experiencias');
-      } else {
-        router.push(`/experiencias/${record.id}/edit`);
-      }
+      router.push('/experiencias');
     } catch (err: any) {
       console.error('Error creando experiencia:', err?.message, err?.response?.data);
       const validationErrors = err?.response?.data;
@@ -141,7 +138,7 @@ function CreateExperienciaForm() {
       <main className="mx-auto px-6 py-8 flex-1 w-full">
         <div className="mb-6 flex flex-col items-start gap-4">
           <button onClick={() => router.back()} className="btn-primary px-4 py-2 text-sm shadow-md">&larr; Volver</button>
-          <h1 className="text-[32px] font-bold text-[var(--color-on-surface)] tracking-tight ml-4">
+          <h1 className="text-[32px] font-bold text-[var(--color-primary)] tracking-tight ml-4">
             Crear Experiencia
           </h1>
         </div>
@@ -359,6 +356,23 @@ function CreateExperienciaForm() {
               </p>
             </div>
 
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Estado inicial
+              </label>
+              <select
+                value={estado}
+                onChange={(e) => setEstado(e.target.value as ExperienciaEstado)}
+                className="input-field w-full md:w-1/2"
+              >
+                <option value="borrador">Borrador</option>
+                <option value="en_revision">En revisión</option>
+                {canReviewContent(user as any) && (
+                  <option value="aprobado">Aprobado</option>
+                )}
+              </select>
+            </div>
+
             <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
               <Link
                 href="/experiencias"
@@ -368,19 +382,11 @@ function CreateExperienciaForm() {
               </Link>
               <button
                 type="button"
-                onClick={(e) => handleSubmit(e, 'borrador')}
-                disabled={isSubmitting}
-                className="btn-secondary px-6 py-2 text-sm shadow-sm"
-              >
-                Guardar Borrador
-              </button>
-              <button
-                type="button"
                 onClick={(e) => handleSubmit(e, 'continuar')}
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar y Continuar'}
+                {isSubmitting ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </form>

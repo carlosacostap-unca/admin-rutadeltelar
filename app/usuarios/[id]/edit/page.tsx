@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import { User } from '@/types/user';
 
@@ -86,7 +87,7 @@ export default function EditUserPage() {
         observations
       };
       
-      await pb.collection('users').update(userId, data);
+      await updateRecordWithAudit('users', userId, data, user);
       router.push('/usuarios');
     } catch (err: any) {
       console.error('Error editando usuario:', err);

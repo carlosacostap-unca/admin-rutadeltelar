@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import pb from '@/lib/pocketbase';
 
@@ -22,6 +23,7 @@ export default function ContentStatusManager({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const router = useRouter();
 
   const canEdit = canEditContent(user);
   const canReview = canReviewContent(user);
@@ -46,6 +48,11 @@ export default function ContentStatusManager({
       onStatusChange(updatedRecord);
       setShowRejectModal(false);
       setRejectReason('');
+      
+      // Redirect to collection list if approved
+      if (newState === 'aprobado') {
+        router.push(`/${collectionName}`);
+      }
     } catch (error) {
       console.error('Error changing status:', error);
       alert('Error al cambiar el estado del contenido.');
