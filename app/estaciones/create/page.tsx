@@ -8,18 +8,22 @@ import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import MapPicker from '@/components/MapPicker';
+import { CATAMARCA_DEPARTAMENTOS } from '@/types/estacion';
 
 export default function CreateEstacionPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   
   const [nombre, setNombre] = useState('');
+  const [eslogan, setEslogan] = useState('');
   const [localidad, setLocalidad] = useState('');
+  const [departamento, setDepartamento] = useState('');
   const [descripcionGeneral, setDescripcionGeneral] = useState('');
   const [latitud, setLatitud] = useState('');
   const [longitud, setLongitud] = useState('');
   const [estado, setEstado] = useState('borrador'); // estado inicial
-  const [fotos, setFotos] = useState<FileList | null>(null);
+  const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +36,8 @@ export default function CreateEstacionPage() {
 
   const handleSubmit = async (e: React.FormEvent, action: 'borrador' | 'continuar') => {
     e.preventDefault();
-    if (!nombre || !localidad) {
-      setError('Nombre y localidad son obligatorios.');
+    if (!nombre || !localidad || !departamento) {
+      setError('Nombre, localidad y departamento son obligatorios.');
       return;
     }
     
@@ -43,7 +47,9 @@ export default function CreateEstacionPage() {
     try {
       const formData = new FormData();
       formData.append('nombre', nombre);
+      formData.append('eslogan', eslogan);
       formData.append('localidad', localidad);
+      formData.append('departamento', departamento);
       formData.append('descripcion_general', descripcionGeneral);
       if (latitud) formData.append('latitud', latitud);
       if (longitud) formData.append('longitud', longitud);
@@ -53,9 +59,13 @@ export default function CreateEstacionPage() {
         formData.append('updated_by', user.id);
       }
 
-      if (fotos) {
-        for (let i = 0; i < fotos.length; i++) {
-          formData.append('fotos', fotos[i]);
+      if (fotoPortada) {
+        formData.append('foto_portada', fotoPortada);
+      }
+
+      if (galeriaFotos) {
+        for (let i = 0; i < galeriaFotos.length; i++) {
+          formData.append('galeria_fotos', galeriaFotos[i]);
         }
       }
       
@@ -112,6 +122,18 @@ export default function CreateEstacionPage() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Eslogan
+                </label>
+                <input
+                  type="text"
+                  value={eslogan}
+                  onChange={(e) => setEslogan(e.target.value)}
+                  className="input-field w-full"
+                  placeholder="Ej. Cuna del tejido catamarqueño"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Localidad *
                 </label>
                 <input
@@ -122,6 +144,24 @@ export default function CreateEstacionPage() {
                   placeholder="Ej. Belén, Catamarca"
                   required
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Departamento *
+                </label>
+                <select
+                  value={departamento}
+                  onChange={(e) => setDepartamento(e.target.value)}
+                  className="input-field w-full"
+                  required
+                >
+                  <option value="">Selecciona un departamento</option>
+                  {CATAMARCA_DEPARTAMENTOS.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -202,27 +242,76 @@ export default function CreateEstacionPage() {
 
             <div>
               <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                Fotos (Opcional)
+                Foto de portada (Opcional)
               </label>
               <div className="flex flex-col gap-4">
-                {fotos && fotos.length > 0 && (
+                {fotoPortada && (
+                  <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                    <img
+                      src={URL.createObjectURL(fotoPortada)}
+                      alt="Vista previa de la foto de portada"
+                      className="object-contain w-full h-full p-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFotoPortada(null)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Eliminar foto de portada"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                <div>
+                  <input
+                    id="file-upload-portada-create"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setFotoPortada(file);
+                      e.target.value = '';
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('file-upload-portada-create')?.click()}
+                    className="btn-secondary px-4 py-2 text-sm shadow-sm"
+                  >
+                    {fotoPortada ? 'Cambiar portada' : '+ Añadir portada'}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                Selecciona una sola imagen para la portada principal de la estación.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Galería de fotos (Opcional)
+              </label>
+              <div className="flex flex-col gap-4">
+                {galeriaFotos && galeriaFotos.length > 0 && (
                   <div className="flex flex-wrap gap-4">
-                    {Array.from(fotos).map((foto, index) => (
+                    {Array.from(galeriaFotos).map((foto, index) => (
                       <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                        <img 
-                          src={URL.createObjectURL(foto)} 
-                          alt={`Nueva foto ${index + 1}`}
+                        <img
+                          src={URL.createObjectURL(foto)}
+                          alt={`Nueva foto de galería ${index + 1}`}
                           className="object-contain w-full h-full p-1"
                         />
                         <button
                           type="button"
                           onClick={() => {
                             const dt = new DataTransfer();
-                            Array.from(fotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
-                            setFotos(dt.files.length > 0 ? dt.files : null);
+                            Array.from(galeriaFotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
+                            setGaleriaFotos(dt.files.length > 0 ? dt.files : null);
                           }}
                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Eliminar nueva foto"
+                          title="Eliminar nueva foto de galería"
                         >
                           ✕
                         </button>
@@ -233,25 +322,25 @@ export default function CreateEstacionPage() {
 
                 <div>
                   <input
-                    id="file-upload-create"
+                    id="file-upload-galeria-create"
                     type="file"
                     multiple
                     accept="image/*"
                     onChange={(e) => {
-                      const existingFotosCount = fotos?.length || 0;
+                      const existingFotosCount = galeriaFotos?.length || 0;
                       const newFotosCount = e.target.files?.length || 0;
-                      
+
                       if (existingFotosCount + newFotosCount > 5) {
-                        alert(`Puedes tener un máximo de 5 imágenes por estación. Te quedan ${5 - existingFotosCount} espacios.`);
+                        alert(`Puedes tener un máximo de 5 imágenes en la galería. Te quedan ${5 - existingFotosCount} espacios.`);
                       } else {
                         const dt = new DataTransfer();
-                        if (fotos) {
-                          Array.from(fotos).forEach(f => dt.items.add(f));
+                        if (galeriaFotos) {
+                          Array.from(galeriaFotos).forEach(f => dt.items.add(f));
                         }
                         if (e.target.files) {
                           Array.from(e.target.files).forEach(f => dt.items.add(f));
                         }
-                        setFotos(dt.files);
+                        setGaleriaFotos(dt.files);
                       }
                       e.target.value = '';
                     }}
@@ -259,7 +348,7 @@ export default function CreateEstacionPage() {
                   />
                   <button
                     type="button"
-                    onClick={() => document.getElementById('file-upload-create')?.click()}
+                    onClick={() => document.getElementById('file-upload-galeria-create')?.click()}
                     className="btn-secondary px-4 py-2 text-sm shadow-sm"
                   >
                     + Añadir foto
@@ -267,7 +356,7 @@ export default function CreateEstacionPage() {
                 </div>
               </div>
               <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
-                Puedes seleccionar hasta 5 imágenes.
+                Puedes seleccionar hasta 5 imágenes para la galería.
               </p>
             </div>
 

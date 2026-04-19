@@ -91,6 +91,15 @@ export default function EstacionDetailPage() {
   }
 
   const canEdit = canEditContent(user as any);
+  const fotoPortada = estacion?.foto_portada || estacion?.fotos?.[0] || null;
+  const galeriaLegacy = estacion?.fotos
+    ? estacion.foto_portada
+      ? estacion.fotos
+      : estacion.fotos.slice(1)
+    : [];
+  const galeriaFotos = Array.from(
+    new Set([...(estacion?.galeria_fotos || []), ...galeriaLegacy])
+  );
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -125,9 +134,19 @@ export default function EstacionDetailPage() {
                       {estacion.estado.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
                   </div>
+                  {estacion.eslogan && (
+                    <p className="text-[var(--color-secondary)] text-base italic mb-1">
+                      {estacion.eslogan}
+                    </p>
+                  )}
                   <p className="text-[var(--color-secondary)] text-lg">
                     {estacion.localidad}
                   </p>
+                  {estacion.departamento && (
+                    <p className="text-[var(--color-secondary)] text-sm mt-1">
+                      Departamento: {estacion.departamento}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="flex flex-col gap-2 items-end">
@@ -168,41 +187,56 @@ export default function EstacionDetailPage() {
                   <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-3 uppercase tracking-[0.05em]">
                     Descripción General
                   </h3>
-                  <p className="text-[var(--color-on-surface)] whitespace-pre-wrap">
-                    {estacion.descripcion_general || 'No hay descripción disponible.'}
-                  </p>
-                </div>
-                
-                <div className="mt-8">
-                  <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-3 uppercase tracking-[0.05em]">
-                    Ubicación
-                  </h3>
-                  {estacion.latitud !== undefined && estacion.latitud !== null && estacion.longitud !== undefined && estacion.longitud !== null ? (
-                    <div className="w-full">
-                      <Map lat={estacion.latitud} lng={estacion.longitud} label={estacion.nombre} />
-                      <p className="text-xs text-[var(--color-outline)] mt-2">
-                        Latitud: {estacion.latitud} | Longitud: {estacion.longitud}
-                      </p>
-                    </div>
+                  {estacion.descripcion_general ? (
+                    <div
+                      className="text-[var(--color-on-surface)] leading-7 [&_p]:mb-4 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_em]:italic [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_li]:mb-1 [&_a]:underline"
+                      dangerouslySetInnerHTML={{ __html: estacion.descripcion_general }}
+                    />
                   ) : (
-                    <p className="text-[var(--color-outline)]">Coordenadas no especificadas</p>
+                    <p className="text-[var(--color-on-surface)]">
+                      No hay descripción disponible.
+                    </p>
                   )}
                 </div>
+                
               </section>
 
               <hr className="border-[var(--color-outline-variant)]" />
 
               <div className="mt-8">
                 <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
-                  Fotos
+                  Foto de portada
                 </h3>
-                {estacion.fotos && estacion.fotos.length > 0 ? (
+                {fotoPortada ? (
+                  <div className="max-w-sm">
+                    <div className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
+                      <img
+                        src={pb.files.getURL(estacion, fotoPortada)}
+                        alt={`Portada de ${estacion.nombre}`}
+                        className="object-contain w-full h-full p-1"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[var(--color-on-surface-variant)] italic">
+                    No hay foto de portada disponible para esta estación.
+                  </p>
+                )}
+              </div>
+
+              <hr className="border-[var(--color-outline-variant)]" />
+
+              <div className="mt-8">
+                <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
+                  Galería de fotos
+                </h3>
+                {galeriaFotos.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {estacion.fotos.map((foto, index) => (
+                    {galeriaFotos.map((foto, index) => (
                       <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                        <img 
-                          src={pb.files.getURL(estacion, foto)} 
-                          alt={`Foto de ${estacion.nombre}`}
+                        <img
+                          src={pb.files.getURL(estacion, foto)}
+                          alt={`Foto de galería ${index + 1} de ${estacion.nombre}`}
                           className="object-contain w-full h-full p-1"
                         />
                       </div>
@@ -210,8 +244,26 @@ export default function EstacionDetailPage() {
                   </div>
                 ) : (
                   <p className="text-[var(--color-on-surface-variant)] italic">
-                    No hay fotos disponibles para esta estación.
+                    No hay fotos en la galería de esta estación.
                   </p>
+                )}
+              </div>
+
+              <hr className="border-[var(--color-outline-variant)]" />
+
+              <div className="mt-8">
+                <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-3 uppercase tracking-[0.05em]">
+                  Ubicación
+                </h3>
+                {estacion.latitud !== undefined && estacion.latitud !== null && estacion.longitud !== undefined && estacion.longitud !== null ? (
+                  <div className="w-full">
+                    <Map lat={estacion.latitud} lng={estacion.longitud} label={estacion.nombre} />
+                    <p className="text-xs text-[var(--color-outline)] mt-2">
+                      Latitud: {estacion.latitud} | Longitud: {estacion.longitud}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[var(--color-outline)]">Coordenadas no especificadas</p>
                 )}
               </div>
 

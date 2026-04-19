@@ -8,6 +8,8 @@ import RoleGuard from '@/components/RoleGuard';
 export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const { user } = useAuth();
   const pathname = usePathname();
+  const activeLinkClasses = 'bg-[var(--color-primary-container)] text-[var(--color-surface-container)]';
+  const inactiveLinkClasses = 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]';
 
   if (!user) return null;
 
@@ -46,7 +48,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
       <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
         <Link 
           href="/"
-          className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname === '/' ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+          className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname === '/' ? activeLinkClasses : inactiveLinkClasses}`}
         >
           Dashboard
         </Link>
@@ -54,35 +56,35 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         <RoleGuard allowedRoles={['admin', 'editor', 'revisor', 'consultor']}>
           <Link 
             href="/estaciones"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/estaciones') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/estaciones') ? activeLinkClasses : inactiveLinkClasses}`}
           >
             Estaciones
           </Link>
           
           <Link 
             href="/actores"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/actores') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/actores') ? activeLinkClasses : inactiveLinkClasses}`}
           >
             Actores
           </Link>
 
           <Link 
             href="/productos"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/productos') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/productos') ? activeLinkClasses : inactiveLinkClasses}`}
           >
             Productos
           </Link>
 
           <Link 
             href="/experiencias"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/experiencias') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/experiencias') ? activeLinkClasses : inactiveLinkClasses}`}
           >
             Experiencias
           </Link>
 
           <Link 
             href="/imperdibles"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/imperdibles') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/imperdibles') ? activeLinkClasses : inactiveLinkClasses}`}
           >
             Imperdibles
           </Link>
@@ -91,7 +93,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         <RoleGuard allowedRoles={['admin', 'revisor']}>
           <Link 
             href="/revision"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/revision') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/revision') ? activeLinkClasses : inactiveLinkClasses}`}
           >
             Revisión
           </Link>
@@ -100,7 +102,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         <RoleGuard allowedRoles={['admin', 'editor']}>
           <Link 
             href="/borradores"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/borradores') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/borradores') ? activeLinkClasses : inactiveLinkClasses}`}
           >
             Borradores
           </Link>
@@ -109,13 +111,13 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         <RoleGuard allowedRoles={['admin']}>
           <Link 
             href="/usuarios"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/usuarios') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/usuarios') ? activeLinkClasses : inactiveLinkClasses}`}
           >
             Usuarios
           </Link>
           <Link 
             href="/auditoria"
-            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/auditoria') ? 'bg-[var(--color-primary-container)] text-[var(--color-primary)]' : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-variant)]'}`}
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/auditoria') ? activeLinkClasses : inactiveLinkClasses}`}
           >
             Auditoría
           </Link>

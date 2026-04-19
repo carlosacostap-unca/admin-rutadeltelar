@@ -80,7 +80,9 @@ export default function EstacionesPage() {
   const filteredEstaciones = estaciones.filter((e) => {
     const normalizedSearch = normalizeText(searchTerm);
     const matchesSearch = normalizeText(e.nombre).includes(normalizedSearch) || 
-                          normalizeText(e.localidad || '').includes(normalizedSearch);
+                          normalizeText(e.eslogan || '').includes(normalizedSearch) ||
+                          normalizeText(e.localidad || '').includes(normalizedSearch) ||
+                          normalizeText(e.departamento || '').includes(normalizedSearch);
     const matchesLocalidad = localidadFilter ? e.localidad === localidadFilter : true;
     const matchesStatus = statusFilter ? e.estado === statusFilter : true;
     return matchesSearch && matchesLocalidad && matchesStatus;
@@ -108,7 +110,7 @@ export default function EstacionesPage() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Buscar por nombre o localidad..."
+              placeholder="Buscar por nombre, eslogan, localidad o departamento..."
               className="input-field w-full text-[var(--color-on-surface-variant)] placeholder:text-[var(--color-surface-variant)]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -152,7 +154,12 @@ export default function EstacionesPage() {
                     className={`bg-[var(--color-surface-container)] p-5 rounded-xl hover:bg-[var(--color-surface-container-low)] transition-all shadow-sm flex flex-col gap-2 cursor-pointer ${e.estado === 'inactivo' ? 'opacity-60' : ''}`}
                   >
                     <div className="flex justify-between items-start">
-                      <h3 className="text-lg font-bold text-[var(--color-primary)]">{e.nombre}</h3>
+                      <div>
+                        <h3 className="text-lg font-bold text-[var(--color-primary)]">{e.nombre}</h3>
+                        {e.eslogan && (
+                          <p className="text-sm italic text-[var(--color-secondary)] mt-1">{e.eslogan}</p>
+                        )}
+                      </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.05em] shrink-0
                         ${e.estado === 'aprobado' ? 'bg-[var(--color-secondary-container)] text-[var(--color-primary)]' : 
                           e.estado === 'inactivo' ? 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]' : 
@@ -166,7 +173,12 @@ export default function EstacionesPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      {e.localidad}
+                      <span>{e.localidad}</span>
+                      {e.departamento && (
+                        <span className="text-xs uppercase tracking-[0.05em] text-[var(--color-outline)]">
+                          {e.departamento}
+                        </span>
+                      )}
                     </div>
                   </Link>
                 ))}

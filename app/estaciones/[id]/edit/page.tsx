@@ -7,7 +7,7 @@ import pb from '@/lib/pocketbase';
 import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
-import { Estacion } from '@/types/estacion';
+import { CATAMARCA_DEPARTAMENTOS, Estacion } from '@/types/estacion';
 import MapPicker from '@/components/MapPicker';
 
 export default function EditEstacionPage() {
@@ -17,13 +17,17 @@ export default function EditEstacionPage() {
   const id = params.id as string;
   
   const [nombre, setNombre] = useState('');
+  const [eslogan, setEslogan] = useState('');
   const [localidad, setLocalidad] = useState('');
+  const [departamento, setDepartamento] = useState('');
   const [descripcionGeneral, setDescripcionGeneral] = useState('');
   const [latitud, setLatitud] = useState('');
   const [longitud, setLongitud] = useState('');
   const [estado, setEstado] = useState('borrador');
-  const [fotos, setFotos] = useState<FileList | null>(null);
-  const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
+  const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [fotoPortadaParaEliminar, setFotoPortadaParaEliminar] = useState(false);
+  const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
+  const [galeriaFotosParaEliminar, setGaleriaFotosParaEliminar] = useState<string[]>([]);
   const [estacion, setEstacion] = useState<Estacion | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,7 +52,9 @@ export default function EditEstacionPage() {
         
         setEstacion(record);
         setNombre(record.nombre || '');
+        setEslogan(record.eslogan || '');
         setLocalidad(record.localidad || '');
+        setDepartamento(record.departamento || '');
         setDescripcionGeneral(record.descripcion_general || '');
         setLatitud(record.latitud?.toString() || '');
         setLongitud(record.longitud?.toString() || '');
@@ -66,8 +72,8 @@ export default function EditEstacionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre || !localidad) {
-      setError('Nombre y localidad son obligatorios.');
+    if (!nombre || !localidad || !departamento) {
+      setError('Nombre, localidad y departamento son obligatorios.');
       return;
     }
     
@@ -77,7 +83,9 @@ export default function EditEstacionPage() {
     try {
       const formData = new FormData();
       formData.append('nombre', nombre);
+      formData.append('eslogan', eslogan);
       formData.append('localidad', localidad);
+      formData.append('departamento', departamento);
       formData.append('descripcion_general', descripcionGeneral);
       if (latitud) formData.append('latitud', latitud);
       if (longitud) formData.append('longitud', longitud);
@@ -86,15 +94,33 @@ export default function EditEstacionPage() {
         formData.append('updated_by', user.id);
       }
 
-      if (fotosParaEliminar.length > 0) {
-        fotosParaEliminar.forEach(filename => {
-          formData.append('fotos-', filename);
+      if (fotoPortadaParaEliminar) {
+        formData.append('foto_portada', '');
+        if (!estacion?.foto_portada && estacion?.fotos?.[0]) {
+          formData.append('fotos-', estacion.fotos[0]);
+        }
+      }
+
+      if (fotoPortada) {
+        // PocketBase may require zeroing the current single-file field before replacement.
+        if (fotoPortadaActual) {
+          formData.append('foto_portada', '');
+        }
+        formData.append('foto_portada', fotoPortada);
+      }
+
+      if (galeriaFotosParaEliminar.length > 0) {
+        galeriaFotosParaEliminar.forEach(filename => {
+          formData.append('galeria_fotos-', filename);
+          if (estacion?.fotos?.includes(filename)) {
+            formData.append('fotos-', filename);
+          }
         });
       }
 
-      if (fotos && fotos.length > 0) {
-        for (let i = 0; i < fotos.length; i++) {
-          formData.append('fotos+', fotos[i]);
+      if (galeriaFotos && galeriaFotos.length > 0) {
+        for (let i = 0; i < galeriaFotos.length; i++) {
+          formData.append('galeria_fotos+', galeriaFotos[i]);
         }
       }
       
@@ -102,7 +128,15 @@ export default function EditEstacionPage() {
       router.push('/estaciones');
     } catch (err: any) {
       console.error('Error actualizando estación:', err);
-      setError(err?.response?.message || 'Error al actualizar la estación.');
+      const validationErrors = err?.response?.data;
+      if (validationErrors && Object.keys(validationErrors).length > 0) {
+        const errorMessages = Object.entries(validationErrors)
+          .map(([field, details]: [string, any]) => `${field}: ${details.message}`)
+          .join(' | ');
+        setError(`Error de validación: ${errorMessages}`);
+      } else {
+        setError(err?.response?.message || 'Error al actualizar la estación.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -115,6 +149,18 @@ export default function EditEstacionPage() {
       </div>
     );
   }
+
+  const fotoPortadaActual = !fotoPortadaParaEliminar
+    ? estacion?.foto_portada || estacion?.fotos?.[0] || null
+    : null;
+  const galeriaLegacy = estacion?.fotos
+    ? estacion.foto_portada
+      ? estacion.fotos
+      : estacion.fotos.slice(1)
+    : [];
+  const galeriaActual = Array.from(
+    new Set([...(estacion?.galeria_fotos || []), ...galeriaLegacy])
+  ).filter((foto) => !galeriaFotosParaEliminar.includes(foto));
 
   return (
     <div className="h-full bg-[var(--color-surface)] flex flex-col">
@@ -179,6 +225,18 @@ export default function EditEstacionPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                    Eslogan
+                  </label>
+                  <input
+                    type="text"
+                    value={eslogan}
+                    onChange={(e) => setEslogan(e.target.value)}
+                    className="input-field w-full"
+                    placeholder="Ej. Cuna del tejido catamarqueño"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Localidad *
                   </label>
                   <input
@@ -189,6 +247,24 @@ export default function EditEstacionPage() {
                     placeholder="Ej. Belén, Catamarca"
                     required
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                    Departamento *
+                  </label>
+                  <select
+                    value={departamento}
+                    onChange={(e) => setDepartamento(e.target.value)}
+                    className="input-field w-full"
+                    required
+                  >
+                    <option value="">Selecciona un departamento</option>
+                    {CATAMARCA_DEPARTAMENTOS.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -235,23 +311,6 @@ export default function EditEstacionPage() {
 
               <div>
                 <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Seleccionar ubicación en el mapa
-                </label>
-                <p className="text-sm text-[var(--color-outline)] mb-3">
-                  Haz clic en el mapa para establecer las coordenadas automáticamente.
-                </p>
-                <MapPicker 
-                  lat={latitud ? parseFloat(latitud) : null} 
-                  lng={longitud ? parseFloat(longitud) : null} 
-                  onLocationSelect={(lat, lng) => {
-                    setLatitud(lat.toString());
-                    setLongitud(lng.toString());
-                  }} 
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Estado
                 </label>
                 <select
@@ -272,22 +331,104 @@ export default function EditEstacionPage() {
 
               <div>
                 <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Fotos Actuales
+                  Foto de portada
                 </label>
-                {estacion?.fotos && estacion.fotos.length > 0 && estacion.fotos.filter(f => !fotosParaEliminar.includes(f)).length > 0 ? (
+                {fotoPortadaActual ? (
+                  <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                    <img
+                      src={pb.files.getURL(estacion!, fotoPortadaActual)}
+                      alt={`Portada de ${estacion?.nombre}`}
+                      className="object-contain w-full h-full p-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFotoPortadaParaEliminar(true);
+                        setFotoPortada(null);
+                      }}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Eliminar portada"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-[var(--color-on-surface-variant)] text-sm italic">
+                    No hay portada guardada para esta estación.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Cambiar portada (Opcional)
+                </label>
+                <div className="flex flex-col gap-4">
+                  {fotoPortada && (
+                    <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
+                      <img
+                        src={URL.createObjectURL(fotoPortada)}
+                        alt="Nueva portada"
+                        className="object-contain w-full h-full p-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFotoPortada(null)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Eliminar nueva portada"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
+                  <div>
+                    <input
+                      id="file-upload-portada"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setFotoPortada(file);
+                        if (file) {
+                          setFotoPortadaParaEliminar(false);
+                        }
+                        e.target.value = '';
+                      }}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('file-upload-portada')?.click()}
+                      className="btn-secondary px-4 py-2 text-sm shadow-sm"
+                    >
+                      {fotoPortadaActual || fotoPortada ? 'Cambiar portada' : '+ Añadir portada'}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                  Selecciona una sola imagen para la portada principal de la estación.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Fotos actuales de la galería
+                </label>
+                {galeriaActual.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                    {estacion.fotos.filter(f => !fotosParaEliminar.includes(f)).map((foto, index) => (
+                    {galeriaActual.map((foto, index) => (
                       <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                        <img 
-                          src={pb.files.getURL(estacion, foto)} 
-                          alt={`Foto de ${estacion.nombre}`}
+                        <img
+                          src={pb.files.getURL(estacion!, foto)}
+                          alt={`Foto de galería ${index + 1} de ${estacion?.nombre}`}
                           className="object-contain w-full h-full p-1"
                         />
                         <button
                           type="button"
-                          onClick={() => setFotosParaEliminar([...fotosParaEliminar, foto])}
+                          onClick={() => setGaleriaFotosParaEliminar([...galeriaFotosParaEliminar, foto])}
                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Eliminar foto"
+                          title="Eliminar foto de galería"
                         >
                           ✕
                         </button>
@@ -296,34 +437,34 @@ export default function EditEstacionPage() {
                   </div>
                 ) : (
                   <p className="text-[var(--color-on-surface-variant)] text-sm italic">
-                    No hay fotos guardadas para esta estación.
+                    No hay fotos guardadas en la galería.
                   </p>
                 )}
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Añadir Nuevas Fotos (Opcional)
+                  Añadir nuevas fotos a la galería (Opcional)
                 </label>
                 <div className="flex flex-col gap-4">
-                  {fotos && fotos.length > 0 && (
+                  {galeriaFotos && galeriaFotos.length > 0 && (
                     <div className="flex flex-wrap gap-4">
-                      {Array.from(fotos).map((foto, index) => (
+                      {Array.from(galeriaFotos).map((foto, index) => (
                         <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                          <img 
-                            src={URL.createObjectURL(foto)} 
-                            alt={`Nueva foto ${index + 1}`}
+                          <img
+                            src={URL.createObjectURL(foto)}
+                            alt={`Nueva foto de galería ${index + 1}`}
                             className="object-contain w-full h-full p-1"
                           />
                           <button
                             type="button"
                             onClick={() => {
                               const dt = new DataTransfer();
-                              Array.from(fotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
-                              setFotos(dt.files.length > 0 ? dt.files : null);
+                              Array.from(galeriaFotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
+                              setGaleriaFotos(dt.files.length > 0 ? dt.files : null);
                             }}
                             className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Eliminar nueva foto"
+                            title="Eliminar nueva foto de galería"
                           >
                             ✕
                           </button>
@@ -334,35 +475,34 @@ export default function EditEstacionPage() {
 
                   <div>
                     <input
-                      id="file-upload"
+                      id="file-upload-galeria"
                       type="file"
                       multiple
                       accept="image/*"
                       onChange={(e) => {
-                        const currentFotosCount = (estacion?.fotos?.length || 0) - fotosParaEliminar.length;
-                        const existingNewFotosCount = fotos?.length || 0;
+                        const currentFotosCount = galeriaActual.length;
+                        const existingNewFotosCount = galeriaFotos?.length || 0;
                         const newFotosCount = e.target.files?.length || 0;
-                        
+
                         if (currentFotosCount + existingNewFotosCount + newFotosCount > 5) {
-                          alert(`Puedes tener un máximo de 5 imágenes por estación. Te quedan ${5 - (currentFotosCount + existingNewFotosCount)} espacios.`);
+                          alert(`Puedes tener un máximo de 5 imágenes en la galería. Te quedan ${5 - (currentFotosCount + existingNewFotosCount)} espacios.`);
                         } else {
                           const dt = new DataTransfer();
-                          if (fotos) {
-                            Array.from(fotos).forEach(f => dt.items.add(f));
+                          if (galeriaFotos) {
+                            Array.from(galeriaFotos).forEach(f => dt.items.add(f));
                           }
                           if (e.target.files) {
                             Array.from(e.target.files).forEach(f => dt.items.add(f));
                           }
-                          setFotos(dt.files);
+                          setGaleriaFotos(dt.files);
                         }
-                        // Reset input so the same file can be selected again if needed
                         e.target.value = '';
                       }}
                       className="hidden"
                     />
                     <button
                       type="button"
-                      onClick={() => document.getElementById('file-upload')?.click()}
+                      onClick={() => document.getElementById('file-upload-galeria')?.click()}
                       className="btn-secondary px-4 py-2 text-sm shadow-sm"
                     >
                       + Añadir foto
@@ -370,8 +510,25 @@ export default function EditEstacionPage() {
                   </div>
                 </div>
                 <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
-                  Selecciona imágenes si deseas subir nuevas fotos para esta estación. Puedes tener hasta 5 imágenes en total.
+                  Puedes tener hasta 5 imágenes en la galería.
                 </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Seleccionar ubicación en el mapa
+                </label>
+                <p className="text-sm text-[var(--color-outline)] mb-3">
+                  Haz clic en el mapa para establecer las coordenadas automáticamente.
+                </p>
+                <MapPicker 
+                  lat={latitud ? parseFloat(latitud) : null} 
+                  lng={longitud ? parseFloat(longitud) : null} 
+                  onLocationSelect={(lat, lng) => {
+                    setLatitud(lat.toString());
+                    setLongitud(lng.toString());
+                  }} 
+                />
               </div>
 
               <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
