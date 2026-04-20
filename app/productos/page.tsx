@@ -7,6 +7,8 @@ import pb from '@/lib/pocketbase';
 import Link from 'next/link';
 import { Producto, ProductoCategoria } from '@/types/producto';
 import { canEditContent } from '@/lib/permissions';
+import CatalogSelect from '@/components/CatalogSelect';
+import { getCatalogoLabel } from '@/lib/catalogos';
 
 export default function ProductosPage() {
   return (
@@ -32,6 +34,11 @@ function ProductosContent() {
   const [estacionFilter, setEstacionFilter] = useState(initialEstacionId);
   const [estacionNombre, setEstacionNombre] = useState('');
 
+  const getActorDisplayLabel = (actor: any) => {
+    const estacionNombreActor = actor?.expand?.estacion_id?.nombre || '';
+    return `${actor.nombre} (${estacionNombreActor})`;
+  };
+
   useEffect(() => {
     if (estacionFilter) {
       pb.collection('estaciones').getOne(estacionFilter, { requestKey: null })
@@ -54,7 +61,7 @@ function ProductosContent() {
         try {
           const records = await pb.collection('productos').getFullList<Producto>({
             sort: '-created',
-            expand: 'estacion_id,actores_relacionados',
+            expand: 'estacion_id,estaciones_relacionadas,categoria,tecnicas,actores_relacionados,actores_relacionados.estacion_id',
             requestKey: null,
           });
           setProductos(records);
@@ -88,28 +95,29 @@ function ProductosContent() {
   }
 
   const canEdit = canEditContent(user as any);
+  const getProductoEstaciones = (producto: Producto) => {
+    if (producto.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0) {
+      return producto.expand.estaciones_relacionadas;
+    }
+    if (producto.expand?.estacion_id) {
+      return [producto.expand.estacion_id];
+    }
+    return [];
+  };
 
   // Aplicar filtros
   const filteredProductos = productos.filter((p) => {
     const matchesSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategoria = categoriaFilter ? p.categoria === categoriaFilter : true;
     const matchesEstado = estadoFilter ? p.estado === estadoFilter : true;
-    const matchesEstacion = estacionFilter ? p.estacion_id === estacionFilter : true;
+    const estacionesProducto = p.estaciones_relacionadas && p.estaciones_relacionadas.length > 0
+      ? p.estaciones_relacionadas
+      : p.estacion_id
+        ? [p.estacion_id]
+        : [];
+    const matchesEstacion = estacionFilter ? estacionesProducto.includes(estacionFilter) : true;
     return matchesSearch && matchesCategoria && matchesEstado && matchesEstacion;
   });
-
-  const getCategoriaLabel = (categoria: string) => {
-    const labels: Record<string, string> = {
-      textil: 'Textil',
-      ceramica: 'Cerámica',
-      madera: 'Madera',
-      metal: 'Metal',
-      cuero: 'Cuero',
-      gastronomia: 'Gastronomía',
-      otros: 'Otros'
-    };
-    return labels[categoria] || categoria;
-  };
 
   return (
     <div className="h-full bg-[var(--color-surface-dim)]">
@@ -152,20 +160,13 @@ function ProductosContent() {
                 <span>✕</span>
               </button>
             )}
-            <select
-              className="input-field text-[var(--color-on-surface-variant)]"
+            <CatalogSelect
+              collectionName="categorias_producto"
               value={categoriaFilter}
-              onChange={(e) => setCategoriaFilter(e.target.value)}
-            >
-              <option value="">Todas las categorías</option>
-              <option value="textil">Textil</option>
-              <option value="ceramica">Cerámica</option>
-              <option value="madera">Madera</option>
-              <option value="metal">Metal</option>
-              <option value="cuero">Cuero</option>
-              <option value="gastronomia">Gastronomía</option>
-              <option value="otros">Otros</option>
-            </select>
+              onChange={setCategoriaFilter}
+              emptyLabel="Todas las categorías"
+              className="input-field text-[var(--color-on-surface-variant)]"
+            />
             <select
               className="input-field text-[var(--color-on-surface-variant)]"
               value={estadoFilter}
@@ -207,15 +208,15 @@ function ProductosContent() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                         </svg>
-                        {getCategoriaLabel(p.categoria)}
+                        {getCatalogoLabel(p.expand?.categoria, p.categoria)}
                       </span>
-                      {p.expand?.estacion_id?.nombre && (
+                      {getProductoEstaciones(p).length > 0 && (
                         <span className="flex items-center gap-1">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
-                          {p.expand.estacion_id.nombre}
+                          {getProductoEstaciones(p).map((estacion) => estacion.nombre).join(', ')}
                         </span>
                       )}
                       {p.expand?.actores_relacionados && p.expand.actores_relacionados.length > 0 && (
@@ -223,10 +224,22 @@ function ProductosContent() {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                           </svg>
-                          {p.expand.actores_relacionados.map(a => a.nombre).join(', ')}
+                          {p.expand.actores_relacionados.map((a) => getActorDisplayLabel(a)).join(', ')}
                         </span>
                       )}
                     </div>
+                    {p.expand?.tecnicas && p.expand.tecnicas.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {p.expand.tecnicas.map((tecnica) => (
+                          <span
+                            key={tecnica.id}
+                            className="px-2 py-1 rounded-full bg-[var(--color-primary-container)] text-[var(--color-surface-container)] text-xs font-medium"
+                          >
+                            {tecnica.nombre}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </Link>
                 ))}
               </div>

@@ -198,7 +198,6 @@ export const runSeed = async (
           titulo: imp.titulo,
           tipo: imp.tipo,
           descripcion: imp.descripcion,
-          motivo_destaque: imp.motivo_destaque,
           estacion_id: estacionesMap[imp.estacion_ref],
           prioridad: imp.prioridad,
           ubicacion: imp.ubicacion,

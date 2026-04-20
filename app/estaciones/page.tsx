@@ -7,6 +7,7 @@ import pb from '@/lib/pocketbase';
 import Link from 'next/link';
 import { Estacion } from '@/types/estacion';
 import { canEditContent } from '@/lib/permissions';
+import { getCatalogoLabel } from '@/lib/catalogos';
 
 export default function EstacionesPage() {
   const { user, isLoading } = useAuth();
@@ -35,6 +36,7 @@ export default function EstacionesPage() {
           // fetch without requestKey to avoid auto-cancellation
           const records = await pb.collection('estaciones').getFullList<Estacion>({
             sort: '-created',
+            expand: 'departamento',
             requestKey: null,
           });
           setEstaciones(records);
@@ -82,7 +84,7 @@ export default function EstacionesPage() {
     const matchesSearch = normalizeText(e.nombre).includes(normalizedSearch) || 
                           normalizeText(e.eslogan || '').includes(normalizedSearch) ||
                           normalizeText(e.localidad || '').includes(normalizedSearch) ||
-                          normalizeText(e.departamento || '').includes(normalizedSearch);
+                          normalizeText(getCatalogoLabel(e.expand?.departamento, e.departamento)).includes(normalizedSearch);
     const matchesLocalidad = localidadFilter ? e.localidad === localidadFilter : true;
     const matchesStatus = statusFilter ? e.estado === statusFilter : true;
     return matchesSearch && matchesLocalidad && matchesStatus;
@@ -176,7 +178,7 @@ export default function EstacionesPage() {
                       <span>{e.localidad}</span>
                       {e.departamento && (
                         <span className="text-xs uppercase tracking-[0.05em] text-[var(--color-outline)]">
-                          {e.departamento}
+                          {getCatalogoLabel(e.expand?.departamento, e.departamento)}
                         </span>
                       )}
                     </div>

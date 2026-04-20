@@ -8,6 +8,8 @@ import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Producto, ProductoCategoria } from '@/types/producto';
+import { getCatalogoLabel } from '@/lib/catalogos';
+import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 
 export default function ProductoDetailPage() {
   const { user, isLoading } = useAuth();
@@ -18,6 +20,11 @@ export default function ProductoDetailPage() {
   const [producto, setProducto] = useState<Producto | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const getActorDisplayLabel = (actor: any) => {
+    const estacionNombreActor = actor?.expand?.estacion_id?.nombre || '';
+    return `${actor.nombre} (${estacionNombreActor})`;
+  };
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -31,7 +38,7 @@ export default function ProductoDetailPage() {
       
       try {
         const record = await pb.collection('productos').getOne<Producto>(id, {
-          expand: 'estacion_id,actores_relacionados,created_by,updated_by',
+          expand: 'estacion_id,estaciones_relacionadas,categoria,tecnicas,actores_relacionados,actores_relacionados.estacion_id,actores_relacionados.tipo,created_by,updated_by',
           requestKey: null,
         });
         setProducto(record);
@@ -68,19 +75,11 @@ export default function ProductoDetailPage() {
   }
 
   const canEdit = canEditContent(user as any);
-
-  const getCategoriaLabel = (cat: ProductoCategoria | string) => {
-    const labels: Record<string, string> = {
-      textil: 'Textil',
-      ceramica: 'Cerámica',
-      madera: 'Madera',
-      metal: 'Metal',
-      cuero: 'Cuero',
-      gastronomia: 'Gastronomía',
-      otros: 'Otros'
-    };
-    return labels[cat as string] || cat;
-  };
+  const estacionesRelacionadas = producto?.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0
+    ? producto.expand.estaciones_relacionadas
+    : producto?.expand?.estacion_id
+      ? [producto.expand.estacion_id]
+      : [];
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -129,12 +128,20 @@ export default function ProductoDetailPage() {
                 </div>
                 <div className="flex items-center gap-4 text-[var(--color-secondary)] mt-3">
                   <span className="bg-[var(--color-surface-container)] px-3 py-1 rounded-full text-sm">
-                    {getCategoriaLabel(producto.categoria)}
+                    {getCatalogoLabel(producto.expand?.categoria, producto.categoria)}
                   </span>
-                  {producto.expand?.estacion_id && (
-                    <Link href={`/estaciones/${producto.expand.estacion_id.id}`} className="hover:text-[var(--color-primary)] transition-colors flex items-center">
-                      📍 {producto.expand.estacion_id.nombre}
-                    </Link>
+                  {estacionesRelacionadas.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-3">
+                      {estacionesRelacionadas.map((estacion) => (
+                        <Link
+                          key={estacion.id}
+                          href={`/estaciones/${estacion.id}`}
+                          className="hover:text-[var(--color-primary)] transition-colors flex items-center"
+                        >
+                          📍 {estacion.nombre}
+                        </Link>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
@@ -165,6 +172,28 @@ export default function ProductoDetailPage() {
                 <p className="text-[var(--color-on-surface)] whitespace-pre-wrap">
                   {producto.descripcion || 'No hay descripción disponible.'}
                 </p>
+
+                <div className="mt-6">
+                  <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
+                    Técnicas
+                  </h3>
+                  {producto.expand?.tecnicas && producto.expand.tecnicas.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {producto.expand.tecnicas.map((tecnica) => (
+                        <span
+                          key={tecnica.id}
+                          className="px-3 py-1 rounded-full bg-[var(--color-primary-container)] text-[var(--color-surface-container)] text-sm font-medium"
+                        >
+                          {tecnica.nombre}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[var(--color-on-surface-variant)] italic">
+                      No hay técnicas asociadas a este producto.
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -176,10 +205,10 @@ export default function ProductoDetailPage() {
                     producto.expand.actores_relacionados.map(actor => (
                       <div key={actor.id} className="flex items-center p-3 bg-[var(--color-surface)] rounded-md border border-[var(--color-outline-variant)]">
                         <Link href={`/actores/${actor.id}`} className="font-medium text-[var(--color-primary)] hover:underline flex-1">
-                          {actor.nombre}
+                          {getActorDisplayLabel(actor)}
                         </Link>
                         <span className="text-xs text-[var(--color-secondary)] bg-[var(--color-surface-variant)] px-2 py-1 rounded-full capitalize">
-                          {actor.tipo}
+                          {getCatalogoLabel(actor.expand?.tipo, actor.tipo)}
                         </span>
                       </div>
                     ))
@@ -214,6 +243,8 @@ export default function ProductoDetailPage() {
                 </p>
               )}
             </div>
+
+            <EntityFeedbackSection entityType="productos" entityId={producto.id} />
 
             <div className="mt-8 pt-6 border-t border-[var(--color-outline-variant)]">
               <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">

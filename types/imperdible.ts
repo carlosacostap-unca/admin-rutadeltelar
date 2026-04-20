@@ -1,6 +1,8 @@
+import { CatalogoItem } from '@/types/catalogo';
+
 export type ImperdibleEstado = 'borrador' | 'en_revision' | 'aprobado' | 'inactivo';
-export type ImperdibleTipo = 'lugar' | 'actividad' | 'evento' | 'atractivo' | 'otro';
-export type ImperdiblePrioridad = 'alta' | 'media' | 'baja';
+export type ImperdibleTipo = string;
+export type ImperdiblePrioridad = string;
 
 export interface Imperdible {
   id: string;
@@ -8,7 +10,7 @@ export interface Imperdible {
   subtitulo?: string;
   descripcion?: string;
   tipo: ImperdibleTipo | string;
-  motivo_destaque?: string;
+  fecha_hora_evento?: string;
   ubicacion?: string;
   latitud?: number;
   longitud?: number;
@@ -38,6 +40,8 @@ export interface Imperdible {
       nombre: string;
       localidad: string;
     };
+    tipo?: CatalogoItem;
+    prioridad?: CatalogoItem;
     actores_relacionados?: {
       id: string;
       nombre: string;

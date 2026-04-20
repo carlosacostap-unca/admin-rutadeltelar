@@ -1,30 +1,13 @@
+import { CatalogoItem } from '@/types/catalogo';
+
 export type EstacionEstado = 'borrador' | 'en_revision' | 'aprobado' | 'inactivo';
-
-export const CATAMARCA_DEPARTAMENTOS = [
-  'Ambato',
-  'Ancasti',
-  'Andalgalá',
-  'Antofagasta de la Sierra',
-  'Belén',
-  'Capayán',
-  'Capital',
-  'El Alto',
-  'Fray Mamerto Esquiú',
-  'La Paz',
-  'Paclín',
-  'Pomán',
-  'Santa María',
-  'Santa Rosa',
-  'Tinogasta',
-  'Valle Viejo',
-] as const;
-
-export type EstacionDepartamento = typeof CATAMARCA_DEPARTAMENTOS[number];
+export type EstacionDepartamento = string;
 
 export interface Estacion {
   id: string;
   nombre: string;
   eslogan?: string;
+  posee_estacion_inaugurada?: boolean;
   localidad: string;
   departamento?: EstacionDepartamento | string;
   descripcion_general?: string;
@@ -42,5 +25,6 @@ export interface Estacion {
   expand?: {
     created_by?: { name: string; email: string };
     updated_by?: { name: string; email: string };
+    departamento?: CatalogoItem;
   };
 }

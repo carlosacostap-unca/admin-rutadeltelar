@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Actor, ActorTipo } from '@/types/actor';
 import Map from '@/components/Map';
+import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
+import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 
 export default function ActorDetailPage() {
   const { user, isLoading } = useAuth();
@@ -32,7 +34,7 @@ export default function ActorDetailPage() {
       
       try {
         const record = await pb.collection('actores').getOne<Actor>(id, {
-          expand: 'estacion_id,created_by,updated_by',
+          expand: 'estacion_id,tipo,created_by,updated_by',
           requestKey: null
         });
         setActor(record);
@@ -69,17 +71,7 @@ export default function ActorDetailPage() {
   }
 
   const canEdit = canEditContent(user as any);
-
-  const getTipoLabel = (tipo: ActorTipo) => {
-    const labels: Record<ActorTipo, string> = {
-      artesano: 'Artesano',
-      productor: 'Productor',
-      hospedaje: 'Hospedaje',
-      gastronomico: 'Gastronómico',
-      guia: 'Guía de turismo'
-    };
-    return labels[tipo] || tipo;
-  };
+  const tipoSlug = normalizeCatalogName(actor?.expand?.tipo?.nombre || actor?.tipo);
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -129,7 +121,7 @@ export default function ActorDetailPage() {
                 </div>
                 <div className="flex items-center gap-4 text-[var(--color-secondary)]">
                   <span className="bg-[var(--color-surface-container)] px-3 py-1 rounded-full text-sm">
-                    {getTipoLabel(actor.tipo)}
+                    {getCatalogoLabel(actor.expand?.tipo, actor.tipo)}
                   </span>
                   {actor.expand?.estacion_id && (
                     <Link href={`/estaciones/${actor.expand.estacion_id.id}`} className="hover:text-[var(--color-primary)] transition-colors">
@@ -175,6 +167,14 @@ export default function ActorDetailPage() {
                     <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Ubicación / Dirección</span>
                     <span className="text-[var(--color-on-surface)]">{actor.ubicacion || 'No especificada'}</span>
                   </div>
+                  {actor.expand?.estacion_id?.posee_estacion_inaugurada && (
+                    <div>
+                      <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Estación inaugurada</span>
+                      <span className="text-[var(--color-on-surface)]">
+                        {actor.ubicado_en_estacion_inaugurada ? 'Sí, se ubica en la estación inaugurada' : 'No'}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-6">
@@ -220,7 +220,7 @@ export default function ActorDetailPage() {
                 Detalles Específicos
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                {actor.tipo === 'artesano' && (
+                {tipoSlug === 'artesano' && (
                   <>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Técnicas</span><span className="font-medium">{actor.tecnicas || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Materiales</span><span className="font-medium">{actor.materiales || '-'}</span></div>
@@ -229,7 +229,7 @@ export default function ActorDetailPage() {
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Visitas/Demostraciones</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
                   </>
                 )}
-                {actor.tipo === 'productor' && (
+                {tipoSlug === 'productor' && (
                   <>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Rubro productivo</span><span className="font-medium">{actor.rubro_productivo || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Escala de producción</span><span className="font-medium">{actor.escala_produccion || '-'}</span></div>
@@ -238,7 +238,7 @@ export default function ActorDetailPage() {
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Posibilidad de visitas</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
                   </>
                 )}
-                {actor.tipo === 'hospedaje' && (
+                {tipoSlug === 'hospedaje' && (
                   <>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Tipo de hospedaje</span><span className="font-medium">{actor.tipo_hospedaje || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Capacidad</span><span className="font-medium">{actor.capacidad || '-'}</span></div>
@@ -246,7 +246,7 @@ export default function ActorDetailPage() {
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Horarios</span><span className="font-medium">{actor.horarios || '-'}</span></div>
                   </>
                 )}
-                {actor.tipo === 'gastronomico' && (
+                {tipoSlug === 'gastronomico' && (
                   <>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Tipo de propuesta</span><span className="font-medium">{actor.tipo_propuesta || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Modalidad de servicio</span><span className="font-medium">{actor.modalidad_servicio || '-'}</span></div>
@@ -256,7 +256,7 @@ export default function ActorDetailPage() {
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Días y horarios</span><span className="font-medium">{actor.horarios || '-'}</span></div>
                   </>
                 )}
-                {actor.tipo === 'guia' && (
+                {(tipoSlug === 'guia' || tipoSlug === 'guia-de-turismo') && (
                   <>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Especialidad</span><span className="font-medium">{actor.especialidad || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Idiomas</span><span className="font-medium">{actor.idiomas || '-'}</span></div>
@@ -293,6 +293,8 @@ export default function ActorDetailPage() {
                 </p>
               )}
             </div>
+
+            <EntityFeedbackSection entityType="actores" entityId={actor.id} />
 
             <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
               <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">

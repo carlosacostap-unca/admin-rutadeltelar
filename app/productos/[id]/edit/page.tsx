@@ -10,6 +10,8 @@ import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { Producto, ProductoCategoria, ProductoEstado } from '@/types/producto';
+import CatalogSelect from '@/components/CatalogSelect';
+import CatalogTagSelector from '@/components/CatalogTagSelector';
 
 export default function EditProductoPage() {
   const { user, isLoading } = useAuth();
@@ -23,7 +25,8 @@ export default function EditProductoPage() {
 
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] = useState<ProductoCategoria | ''>('');
-  const [estacionId, setEstacionId] = useState('');
+  const [tecnicas, setTecnicas] = useState<string[]>([]);
+  const [estacionesRelacionadas, setEstacionesRelacionadas] = useState<string[]>([]);
   const [descripcion, setDescripcion] = useState('');
   const [actoresRelacionados, setActoresRelacionados] = useState<string[]>([]);
   const [fotos, setFotos] = useState<FileList | null>(null);
@@ -33,6 +36,11 @@ export default function EditProductoPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const getActorDisplayLabel = (actor: Actor) => {
+    const estacionNombre = actor.expand?.estacion_id?.nombre || '';
+    return `${actor.nombre} (${estacionNombre})`;
+  };
 
   useEffect(() => {
     if (!isLoading && (!user || !canEditContent(user as any))) {
@@ -46,9 +54,9 @@ export default function EditProductoPage() {
 
       try {
         const [productoRecord, estacionesRecords, actoresRecords] = await Promise.all([
-          pb.collection('productos').getOne<Producto>(id, { expand: 'estacion_id,actores_relacionados,created_by,updated_by', requestKey: null }),
+          pb.collection('productos').getOne<Producto>(id, { expand: 'estacion_id,estaciones_relacionadas,categoria,tecnicas,actores_relacionados,actores_relacionados.estacion_id,created_by,updated_by', requestKey: null }),
           pb.collection('estaciones').getFullList<Estacion>({ sort: 'nombre', requestKey: null }),
-          pb.collection('actores').getFullList<Actor>({ sort: 'nombre', requestKey: null })
+          pb.collection('actores').getFullList<Actor>({ sort: 'nombre', expand: 'estacion_id', requestKey: null })
         ]);
         
         setEstaciones(estacionesRecords);
@@ -56,8 +64,15 @@ export default function EditProductoPage() {
 
         setNombre(productoRecord.nombre);
         setCategoria(productoRecord.categoria as ProductoCategoria);
-        setEstacionId(productoRecord.estacion_id);
+        setEstacionesRelacionadas(
+          productoRecord.estaciones_relacionadas && productoRecord.estaciones_relacionadas.length > 0
+            ? productoRecord.estaciones_relacionadas
+            : productoRecord.estacion_id
+              ? [productoRecord.estacion_id]
+              : []
+        );
         setDescripcion(productoRecord.descripcion || '');
+        setTecnicas(productoRecord.tecnicas || []);
         setActoresRelacionados(productoRecord.actores_relacionados || []);
         setEstado(productoRecord.estado);
         setProducto(productoRecord);
@@ -77,8 +92,8 @@ export default function EditProductoPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre || !categoria || !estacionId) {
-      setError('Nombre, categoría y estación son obligatorios.');
+    if (!nombre || !categoria) {
+      setError('Nombre y categoría son obligatorios.');
       return;
     }
     
@@ -89,7 +104,15 @@ export default function EditProductoPage() {
       const formData = new FormData();
       formData.append('nombre', nombre);
       formData.append('categoria', categoria);
-      formData.append('estacion_id', estacionId);
+      if (estacionesRelacionadas.length > 0) {
+        estacionesRelacionadas.forEach((estacionId) => {
+          formData.append('estaciones_relacionadas', estacionId);
+        });
+        formData.append('estacion_id', estacionesRelacionadas[0]);
+      } else {
+        formData.append('estaciones_relacionadas', '');
+        formData.append('estacion_id', '');
+      }
       formData.append('estado', estado);
       
       if (user?.id) {
@@ -98,6 +121,14 @@ export default function EditProductoPage() {
 
       if (descripcion) {
         formData.append('descripcion', descripcion);
+      }
+
+      if (tecnicas.length > 0) {
+        tecnicas.forEach((tecnicaId) => {
+          formData.append('tecnicas', tecnicaId);
+        });
+      } else {
+        formData.append('tecnicas', '');
       }
 
       // PocketBase elimina las relaciones anteriores si mandamos una lista nueva, 
@@ -141,8 +172,8 @@ export default function EditProductoPage() {
     }
   };
 
-  const actoresFiltrados = estacionId 
-    ? actores.filter(a => a.estacion_id === estacionId)
+  const actoresFiltrados = estacionesRelacionadas.length > 0
+    ? actores.filter(a => estacionesRelacionadas.includes(a.estacion_id))
     : actores;
 
   if (isLoading || !user || !canEditContent(user as any) || loadingData) {
@@ -215,45 +246,53 @@ export default function EditProductoPage() {
                 <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Categoría *
                 </label>
-                <select
+                <CatalogSelect
+                  collectionName="categorias_producto"
                   value={categoria}
-                  onChange={(e) => setCategoria(e.target.value as ProductoCategoria)}
+                  onChange={(value) => setCategoria(value as ProductoCategoria)}
+                  emptyLabel="Seleccionar categoría..."
                   className="input-field w-full"
                   required
-                >
-                  <option value="" disabled>Seleccionar Categoría...</option>
-                  <option value="textil">Textil</option>
-                  <option value="ceramica">Cerámica</option>
-                  <option value="madera">Madera</option>
-                  <option value="metal">Metal</option>
-                  <option value="cuero">Cuero</option>
-                  <option value="gastronomia">Gastronomía</option>
-                  <option value="otros">Otros</option>
-                </select>
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Estación *
+                  Estaciones relacionadas
                 </label>
-                <select
-                  value={estacionId}
-                  onChange={(e) => {
-                    setEstacionId(e.target.value);
-                    setActoresRelacionados([]); 
-                  }}
-                  className="input-field w-full"
-                  required
-                >
-                  <option value="" disabled>Seleccionar Estación...</option>
+                <div className="bg-[var(--color-surface)] border border-[var(--color-outline)] rounded-md max-h-48 overflow-y-auto p-4 space-y-2">
                   {estaciones.map((estacion) => (
-                    <option key={estacion.id} value={estacion.id}>
-                      {estacion.nombre} - {estacion.localidad}
-                    </option>
+                    <label key={estacion.id} className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={estacionesRelacionadas.includes(estacion.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEstacionesRelacionadas([...estacionesRelacionadas, estacion.id]);
+                          } else {
+                            const nextEstaciones = estacionesRelacionadas.filter((id) => id !== estacion.id);
+                            setEstacionesRelacionadas(nextEstaciones);
+                            setActoresRelacionados((current) =>
+                              current.filter((actorId) => {
+                                const actor = actores.find((item) => item.id === actorId);
+                                return actor ? nextEstaciones.includes(actor.estacion_id) : false;
+                              })
+                            );
+                          }
+                        }}
+                        className="h-4 w-4 text-[var(--color-primary)] rounded border-[var(--color-outline)] focus:ring-[var(--color-primary)]"
+                      />
+                      <span className="text-sm text-[var(--color-on-surface)]">
+                        {estacion.nombre} - {estacion.localidad}
+                      </span>
+                    </label>
                   ))}
-                </select>
+                </div>
+                <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                  Puedes relacionar el producto con ninguna, una o varias estaciones.
+                </p>
               </div>
 
               <div>
@@ -291,6 +330,21 @@ export default function EditProductoPage() {
 
             <div>
               <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Técnicas (opcional)
+              </label>
+              <CatalogTagSelector
+                collectionName="tecnicas_producto"
+                value={tecnicas}
+                onChange={setTecnicas}
+                emptyLabel="No hay técnicas cargadas todavía."
+              />
+              <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                Selecciona una o varias técnicas para etiquetar el producto.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Actores Relacionados (opcional)
               </label>
               <div className="bg-[var(--color-surface)] border border-[var(--color-outline)] rounded-md max-h-48 overflow-y-auto p-4 space-y-2">
@@ -305,8 +359,8 @@ export default function EditProductoPage() {
                         onChange={(e) => {
                           if (e.target.checked) {
                             setActoresRelacionados([...actoresRelacionados, actor.id]);
-                            if (!estacionId && actor.estacion_id) {
-                              setEstacionId(actor.estacion_id);
+                            if (!estacionesRelacionadas.includes(actor.estacion_id)) {
+                              setEstacionesRelacionadas([...estacionesRelacionadas, actor.estacion_id]);
                             }
                           } else {
                             setActoresRelacionados(actoresRelacionados.filter(id => id !== actor.id));
@@ -314,7 +368,7 @@ export default function EditProductoPage() {
                         }}
                         className="h-4 w-4 text-[var(--color-primary)] rounded border-[var(--color-outline)] focus:ring-[var(--color-primary)]"
                       />
-                      <span className="text-sm text-[var(--color-on-surface)]">{actor.nombre} ({actor.tipo})</span>
+                      <span className="text-sm text-[var(--color-on-surface)]">{getActorDisplayLabel(actor)}</span>
                     </label>
                   ))
                 )}

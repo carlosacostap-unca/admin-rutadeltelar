@@ -9,6 +9,8 @@ import { canEditContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Map from '@/components/Map';
+import { getCatalogoLabel } from '@/lib/catalogos';
+import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 
 export default function EstacionDetailPage() {
   const { user, isLoading } = useAuth();
@@ -30,32 +32,46 @@ export default function EstacionDetailPage() {
   useEffect(() => {
     async function fetchEstacion() {
       if (!id || !user) return;
+
+      const countCollection = async (collectionName: string, filters: string[]) => {
+        for (const filter of filters) {
+          try {
+            const records = await pb.collection(collectionName).getFullList({
+              filter,
+              fields: 'id',
+              requestKey: null,
+            });
+            return records.length;
+          } catch (error) {
+            console.warn(`No se pudo contar ${collectionName} con el filtro "${filter}"`, error);
+          }
+        }
+        return 0;
+      };
       
       try {
         const record = await pb.collection('estaciones').getOne<Estacion>(id, {
           requestKey: null,
-          expand: 'created_by,updated_by',
+          expand: 'departamento,created_by,updated_by',
         });
         setEstacion(record);
 
         // Fetch counts for related collections
-        const [
-          actoresRes,
-          productosRes,
-          experienciasRes,
-          imperdiblesRes
-        ] = await Promise.all([
-          pb.collection('actores').getFullList({ filter: `estacion_id = "${id}"`, fields: 'id', requestKey: null }),
-          pb.collection('productos').getFullList({ filter: `estacion_id = "${id}"`, fields: 'id', requestKey: null }),
-          pb.collection('experiencias').getFullList({ filter: `estacion_id = "${id}"`, fields: 'id', requestKey: null }),
-          pb.collection('imperdibles').getFullList({ filter: `estacion_id = "${id}"`, fields: 'id', requestKey: null })
+        const [actoresCount, productosCount, experienciasCount, imperdiblesCount] = await Promise.all([
+          countCollection('actores', [`estacion_id = "${id}"`]),
+          countCollection('productos', [
+            `estacion_id = "${id}" || estaciones_relacionadas ?= "${id}"`,
+            `estacion_id = "${id}"`,
+          ]),
+          countCollection('experiencias', [`estacion_id = "${id}"`]),
+          countCollection('imperdibles', [`estacion_id = "${id}"`]),
         ]);
 
         setCounts({
-          actores: actoresRes.length,
-          productos: productosRes.length,
-          experiencias: experienciasRes.length,
-          imperdibles: imperdiblesRes.length
+          actores: actoresCount,
+          productos: productosCount,
+          experiencias: experienciasCount,
+          imperdibles: imperdiblesCount
         });
 
       } catch (err) {
@@ -144,9 +160,12 @@ export default function EstacionDetailPage() {
                   </p>
                   {estacion.departamento && (
                     <p className="text-[var(--color-secondary)] text-sm mt-1">
-                      Departamento: {estacion.departamento}
+                      Departamento: {getCatalogoLabel(estacion.expand?.departamento, estacion.departamento)}
                     </p>
                   )}
+                  <p className="text-[var(--color-secondary)] text-sm mt-1">
+                    Estación inaugurada: {estacion.posee_estacion_inaugurada ? 'Sí' : 'No'}
+                  </p>
                 </div>
                 
                 <div className="flex flex-col gap-2 items-end">
@@ -290,6 +309,8 @@ export default function EstacionDetailPage() {
                   </Link>
                 </div>
               </section>
+
+              <EntityFeedbackSection entityType="estaciones" entityId={estacion.id} />
 
             </div>
           </>

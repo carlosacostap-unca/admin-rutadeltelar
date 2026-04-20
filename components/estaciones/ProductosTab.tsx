@@ -15,15 +15,19 @@ export default function ProductosTab({ estacionId, user }: ProductosTabProps) {
   const [error, setError] = useState<string | null>(null);
 
   const canEdit = user ? canEditContent(user) : false;
+  const getActorDisplayLabel = (actor: any) => {
+    const estacionNombreActor = actor?.expand?.estacion_id?.nombre || '';
+    return `${actor.nombre} (${estacionNombreActor})`;
+  };
 
   useEffect(() => {
     async function fetchProductos() {
       try {
         const records = await pb.collection('productos').getFullList<Producto>({
-          filter: `estacion_id = "${estacionId}"`,
+          filter: `estacion_id = "${estacionId}" || estaciones_relacionadas ?= "${estacionId}"`,
           sort: '-created',
           requestKey: null,
-          expand: 'actores_relacionados'
+          expand: 'actores_relacionados,actores_relacionados.estacion_id,estaciones_relacionadas'
         });
         setProductos(records);
       } catch (err) {
@@ -104,7 +108,7 @@ export default function ProductosTab({ estacionId, user }: ProductosTabProps) {
 
               {producto.expand?.actores_relacionados && producto.expand.actores_relacionados.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-[var(--color-outline-variant)] text-xs text-[var(--color-secondary)]">
-                  <span className="font-medium">Actores:</span> {producto.expand.actores_relacionados.map(a => a.nombre).join(', ')}
+                  <span className="font-medium">Actores:</span> {producto.expand.actores_relacionados.map((a) => getActorDisplayLabel(a)).join(', ')}
                 </div>
               )}
               

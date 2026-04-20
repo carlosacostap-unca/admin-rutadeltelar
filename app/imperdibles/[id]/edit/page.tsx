@@ -15,6 +15,10 @@ import { Actor } from '@/types/actor';
 import { Producto } from '@/types/producto';
 import { Experiencia } from '@/types/experiencia';
 import { Imperdible, ImperdibleTipo, ImperdiblePrioridad, ImperdibleEstado } from '@/types/imperdible';
+import { CatalogoItem } from '@/types/catalogo';
+import CatalogSelect from '@/components/CatalogSelect';
+import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
+import { getBrowserTimeZoneLabel, localDateTimeInputToUtc, utcToLocalDateTimeInput } from '@/lib/datetime';
 
 export default function EditImperdiblePage() {
   const { user, isLoading } = useAuth();
@@ -27,13 +31,14 @@ export default function EditImperdiblePage() {
   const [actores, setActores] = useState<Actor[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [experiencias, setExperiencias] = useState<Experiencia[]>([]);
+  const [tiposImperdible, setTiposImperdible] = useState<CatalogoItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const [titulo, setTitulo] = useState('');
   const [subtitulo, setSubtitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState<ImperdibleTipo | ''>('');
-  const [motivoDestaque, setMotivoDestaque] = useState('');
+  const [fechaHoraEvento, setFechaHoraEvento] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [latitud, setLatitud] = useState('');
   const [longitud, setLongitud] = useState('');
@@ -66,8 +71,8 @@ export default function EditImperdiblePage() {
       if (!id || !user) return;
       
       try {
-        const [imperdibleRecord, estacionesRecords, actoresRecords, productosRecords, experienciasRecords] = await Promise.all([
-          pb.collection('imperdibles').getOne<Imperdible>(id, { expand: 'estacion_id,actores_relacionados,productos_relacionados,experiencias_relacionadas,created_by,updated_by', requestKey: null }),
+        const [imperdibleRecord, estacionesRecords, actoresRecords, productosRecords, experienciasRecords, tiposImperdibleRecords] = await Promise.all([
+          pb.collection('imperdibles').getOne<Imperdible>(id, { expand: 'estacion_id,tipo,actores_relacionados,productos_relacionados,experiencias_relacionadas,created_by,updated_by', requestKey: null }),
           pb.collection('estaciones').getFullList<Estacion>({
             sort: 'nombre',
             requestKey: null,
@@ -83,6 +88,11 @@ export default function EditImperdiblePage() {
           pb.collection('experiencias').getFullList<Experiencia>({
             sort: 'titulo',
             requestKey: null,
+          }),
+          pb.collection('tipos_imperdible').getFullList<CatalogoItem>({
+            filter: 'activo = true',
+            sort: buildCatalogoSort(),
+            requestKey: null,
           })
         ]);
         
@@ -91,13 +101,14 @@ export default function EditImperdiblePage() {
         setActores(actoresRecords);
         setProductos(productosRecords);
         setExperiencias(experienciasRecords);
+        setTiposImperdible(tiposImperdibleRecords);
         
         // Inicializar form
         setTitulo(imperdibleRecord.titulo);
         setSubtitulo(imperdibleRecord.subtitulo || '');
         setDescripcion(imperdibleRecord.descripcion || '');
         setTipo(imperdibleRecord.tipo as ImperdibleTipo);
-        setMotivoDestaque(imperdibleRecord.motivo_destaque || '');
+        setFechaHoraEvento(utcToLocalDateTimeInput(imperdibleRecord.fecha_hora_evento));
         setUbicacion(imperdibleRecord.ubicacion || '');
         setLatitud(imperdibleRecord.latitud?.toString() || '');
         setLongitud(imperdibleRecord.longitud?.toString() || '');
@@ -127,10 +138,24 @@ export default function EditImperdiblePage() {
     }
   }, [id, user]);
 
+  const tipoSeleccionado = tiposImperdible.find((item) => item.id === tipo);
+  const esEvento = normalizeCatalogName(tipoSeleccionado?.nombre || tipo) === 'evento';
+  const gmtLabel = getBrowserTimeZoneLabel(fechaHoraEvento || imperdible?.fecha_hora_evento || undefined);
+
+  useEffect(() => {
+    if (!esEvento && fechaHoraEvento) {
+      setFechaHoraEvento('');
+    }
+  }, [esEvento, fechaHoraEvento]);
+
   const handleSubmit = async (e: React.FormEvent, action: 'guardar' | 'publicar') => {
     e.preventDefault();
     if (!titulo || !tipo || !estacionId || !prioridad) {
       setError('Título, tipo, prioridad y estación son obligatorios.');
+      return;
+    }
+    if (esEvento && !fechaHoraEvento) {
+      setError('Para los imperdibles de tipo evento, la fecha y hora son obligatorias.');
       return;
     }
     
@@ -159,9 +184,9 @@ export default function EditImperdiblePage() {
       
       if (descripcion) formData.append('descripcion', descripcion);
       else formData.append('descripcion', '');
-      
-      if (motivoDestaque) formData.append('motivo_destaque', motivoDestaque);
-      else formData.append('motivo_destaque', '');
+
+      if (esEvento && fechaHoraEvento) formData.append('fecha_hora_evento', localDateTimeInputToUtc(fechaHoraEvento));
+      else formData.append('fecha_hora_evento', '');
       
       if (ubicacion) formData.append('ubicacion', ubicacion);
       else formData.append('ubicacion', '');
@@ -351,19 +376,14 @@ export default function EditImperdiblePage() {
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Tipo *
                   </label>
-                  <select
+                  <CatalogSelect
+                    collectionName="tipos_imperdible"
                     value={tipo}
-                    onChange={(e) => setTipo(e.target.value as ImperdibleTipo)}
+                    onChange={(value) => setTipo(value as ImperdibleTipo)}
+                    emptyLabel="Seleccionar..."
                     className="input-field w-full"
                     required
-                  >
-                    <option value="" disabled>Seleccionar...</option>
-                    <option value="lugar">Lugar</option>
-                    <option value="actividad">Actividad</option>
-                    <option value="evento">Evento</option>
-                    <option value="atractivo">Atractivo</option>
-                    <option value="otro">Otro</option>
-                  </select>
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
@@ -392,17 +412,14 @@ export default function EditImperdiblePage() {
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Prioridad *
                   </label>
-                  <select
+                  <CatalogSelect
+                    collectionName="prioridades_imperdible"
                     value={prioridad}
-                    onChange={(e) => setPrioridad(e.target.value as ImperdiblePrioridad)}
+                    onChange={(value) => setPrioridad(value as ImperdiblePrioridad)}
+                    emptyLabel="Seleccionar..."
                     className="input-field w-full"
                     required
-                  >
-                    <option value="" disabled>Seleccionar...</option>
-                    <option value="alta">Alta</option>
-                    <option value="media">Media</option>
-                    <option value="baja">Baja</option>
-                  </select>
+                  />
                 </div>
               </div>
             
@@ -419,18 +436,24 @@ export default function EditImperdiblePage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Motivo de Destaque
-                </label>
-                <textarea
-                  value={motivoDestaque}
-                  onChange={(e) => setMotivoDestaque(e.target.value)}
-                  className="input-field w-full min-h-[80px] resize-y"
-                  placeholder="¿Por qué es un imperdible?"
-                />
-              </div>
-              
+              {esEvento && (
+                <div>
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                    Fecha y hora del evento *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={fechaHoraEvento}
+                    onChange={(e) => setFechaHoraEvento(e.target.value)}
+                    className="input-field w-full md:w-1/2"
+                    required={esEvento}
+                  />
+                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                    Se usa el huso horario del navegador ({gmtLabel}) y se guarda en UTC/GMT 0.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">

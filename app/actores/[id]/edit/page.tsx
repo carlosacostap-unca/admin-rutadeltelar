@@ -10,6 +10,9 @@ import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor, ActorTipo, ActorEstado } from '@/types/actor';
 import MapPicker from '@/components/MapPicker';
+import CatalogSelect from '@/components/CatalogSelect';
+import { CatalogoItem } from '@/types/catalogo';
+import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 
 export default function EditActorPage() {
   const { user, isLoading } = useAuth();
@@ -19,12 +22,14 @@ export default function EditActorPage() {
   
   const [actor, setActor] = useState<Actor | null>(null);
   const [estaciones, setEstaciones] = useState<Estacion[]>([]);
+  const [tiposActor, setTiposActor] = useState<CatalogoItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   // Common Fields
   const [nombre, setNombre] = useState('');
-  const [tipo, setTipo] = useState<ActorTipo>('artesano');
+  const [tipo, setTipo] = useState<ActorTipo>('');
   const [estacionId, setEstacionId] = useState('');
+  const [ubicadoEnEstacionInaugurada, setUbicadoEnEstacionInaugurada] = useState(false);
   const [descripcion, setDescripcion] = useState('');
   const [contactoTelefono, setContactoTelefono] = useState('');
   const [contactoEmail, setContactoEmail] = useState('');
@@ -77,18 +82,25 @@ export default function EditActorPage() {
       if (!id || !user || !canEditContent(user as any)) return;
       
       try {
-        const [actorRecord, estacionesRecords] = await Promise.all([
+        const [actorRecord, estacionesRecords, tiposRecords] = await Promise.all([
           pb.collection('actores').getOne<Actor>(id, { expand: 'estacion_id,created_by,updated_by', requestKey: null }),
-          pb.collection('estaciones').getFullList<Estacion>({ sort: 'nombre', requestKey: null })
+          pb.collection('estaciones').getFullList<Estacion>({ sort: 'nombre', requestKey: null }),
+          pb.collection('tipos_actor').getFullList<CatalogoItem>({
+            filter: 'activo = true',
+            sort: buildCatalogoSort(),
+            requestKey: null,
+          }),
         ]);
         
         setActor(actorRecord);
         setEstaciones(estacionesRecords);
+        setTiposActor(tiposRecords);
         
         // Initialize form fields
         setNombre(actorRecord.nombre || '');
-        setTipo(actorRecord.tipo || 'artesano');
+        setTipo(actorRecord.tipo || '');
         setEstacionId(actorRecord.estacion_id || '');
+        setUbicadoEnEstacionInaugurada(actorRecord.ubicado_en_estacion_inaugurada || false);
         setDescripcion(actorRecord.descripcion || '');
         setContactoTelefono(actorRecord.contacto_telefono || '');
         setContactoEmail(actorRecord.contacto_email || '');
@@ -134,6 +146,15 @@ export default function EditActorPage() {
     fetchData();
   }, [id, user]);
 
+  const estacionSeleccionada = estaciones.find((estacion) => estacion.id === estacionId);
+  const puedeIndicarEstacionInaugurada = !!estacionSeleccionada?.posee_estacion_inaugurada;
+
+  useEffect(() => {
+    if (!puedeIndicarEstacionInaugurada && ubicadoEnEstacionInaugurada) {
+      setUbicadoEnEstacionInaugurada(false);
+    }
+  }, [puedeIndicarEstacionInaugurada, ubicadoEnEstacionInaugurada]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre || !estacionId || !tipo) {
@@ -149,6 +170,7 @@ export default function EditActorPage() {
       formData.append('nombre', nombre);
       formData.append('tipo', tipo);
       formData.append('estacion_id', estacionId);
+      formData.append('ubicado_en_estacion_inaugurada', String(puedeIndicarEstacionInaugurada && ubicadoEnEstacionInaugurada));
       formData.append('descripcion', descripcion);
       formData.append('contacto_telefono', contactoTelefono);
       formData.append('contacto_email', contactoEmail);
@@ -161,31 +183,31 @@ export default function EditActorPage() {
         formData.append('updated_by', user.id);
       }
 
-      if (tipo === 'artesano') {
+      if (tipoSlug === 'artesano') {
         formData.append('tecnicas', tecnicas);
         formData.append('materiales', materiales);
         formData.append('productos_ofrecidos', productosOfrecidos);
         formData.append('visitas_demostraciones', String(visitasDemostraciones));
         formData.append('disponibilidad', disponibilidad);
-      } else if (tipo === 'productor') {
+      } else if (tipoSlug === 'productor') {
         formData.append('rubro_productivo', rubroProductivo);
         formData.append('escala_produccion', escalaProduccion);
         formData.append('modalidad_venta', modalidadVenta);
         formData.append('productos_ofrecidos', productosOfrecidos);
         formData.append('visitas_demostraciones', String(visitasDemostraciones));
-      } else if (tipo === 'hospedaje') {
+      } else if (tipoSlug === 'hospedaje') {
         formData.append('tipo_hospedaje', tipoHospedaje);
         formData.append('capacidad', capacidad);
         formData.append('servicios', servicios);
         formData.append('horarios', horarios);
-      } else if (tipo === 'gastronomico') {
+      } else if (tipoSlug === 'gastronomico') {
         formData.append('tipo_propuesta', tipoPropuesta);
         formData.append('especialidades', especialidades);
         formData.append('platos_destacados', platosDestacados);
         formData.append('modalidad_servicio', modalidadServicio);
         formData.append('servicios_adicionales', serviciosAdicionales);
         formData.append('horarios', horarios);
-      } else if (tipo === 'guia') {
+      } else if (tipoSlug === 'guia-de-turismo' || tipoSlug === 'guia') {
         formData.append('especialidad', especialidad);
         formData.append('idiomas', idiomas);
         formData.append('recorridos_ofrecidos', recorridosOfrecidos);
@@ -225,6 +247,9 @@ export default function EditActorPage() {
       </div>
     );
   }
+
+  const tipoSeleccionado = tiposActor.find((item) => item.id === tipo);
+  const tipoSlug = normalizeCatalogName(tipoSeleccionado?.nombre || tipo);
 
   return (
     <div className="h-full bg-[var(--color-surface)] flex flex-col">
@@ -298,18 +323,14 @@ export default function EditActorPage() {
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Tipo de Actor *
                   </label>
-                  <select
+                  <CatalogSelect
+                    collectionName="tipos_actor"
                     value={tipo}
-                    onChange={(e) => setTipo(e.target.value as ActorTipo)}
+                    onChange={(value) => setTipo(value as ActorTipo)}
+                    emptyLabel="Seleccionar tipo..."
                     className="input-field w-full"
                     required
-                  >
-                    <option value="artesano">Artesano</option>
-                    <option value="productor">Productor</option>
-                    <option value="hospedaje">Hospedaje</option>
-                    <option value="gastronomico">Gastronómico</option>
-                    <option value="guia">Guía</option>
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -347,12 +368,12 @@ export default function EditActorPage() {
               {/* CAMPOS DINÁMICOS SEGÚN TIPO */}
               <div className="p-6 bg-[var(--color-surface-container-low)] rounded-md border border-[var(--color-outline-variant)]">
                 <h3 className="text-lg font-bold text-[var(--color-on-surface)] mb-4 border-b border-[var(--color-surface-variant)] pb-2 uppercase tracking-[0.05em]">
-                  Detalles Específicos: {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                  Detalles Específicos: {tipoSeleccionado?.nombre || 'Selecciona un tipo'}
                 </h3>
                 <div className="space-y-4">
                   
                   {/* Artesano */}
-                  {tipo === 'artesano' && (
+                {tipoSlug === 'artesano' && (
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -382,7 +403,7 @@ export default function EditActorPage() {
                   )}
 
                   {/* Productor */}
-                  {tipo === 'productor' && (
+                {tipoSlug === 'productor' && (
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -412,7 +433,7 @@ export default function EditActorPage() {
                   )}
 
                   {/* Hospedaje */}
-                  {tipo === 'hospedaje' && (
+                {tipoSlug === 'hospedaje' && (
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -436,7 +457,7 @@ export default function EditActorPage() {
                   )}
 
                   {/* Gastronómico */}
-                  {tipo === 'gastronomico' && (
+                {tipoSlug === 'gastronomico' && (
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -470,7 +491,7 @@ export default function EditActorPage() {
                   )}
 
                   {/* Guía de turismo */}
-                  {tipo === 'guia' && (
+                {tipoSlug === 'guia' && (
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -555,6 +576,20 @@ export default function EditActorPage() {
                   placeholder="Ej. Calle Principal 123, Barrio Centro"
                 />
               </div>
+
+              {puedeIndicarEstacionInaugurada && (
+                <div className="flex items-center gap-3">
+                  <input
+                    id="ubicado-en-estacion-inaugurada"
+                    type="checkbox"
+                    checked={ubicadoEnEstacionInaugurada}
+                    onChange={(e) => setUbicadoEnEstacionInaugurada(e.target.checked)}
+                  />
+                  <label htmlFor="ubicado-en-estacion-inaugurada" className="text-sm font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em]">
+                    Se encuentra ubicado en la estación inaugurada
+                  </label>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

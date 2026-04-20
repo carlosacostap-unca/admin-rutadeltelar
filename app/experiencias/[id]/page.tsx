@@ -8,6 +8,8 @@ import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Experiencia, ExperienciaCategoria } from '@/types/experiencia';
+import { getCatalogoLabel } from '@/lib/catalogos';
+import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 
 export default function ExperienciaDetailPage() {
   const { user, isLoading } = useAuth();
@@ -31,7 +33,7 @@ export default function ExperienciaDetailPage() {
       
       try {
         const record = await pb.collection('experiencias').getOne<Experiencia>(id, {
-          expand: 'estacion_id,responsable,created_by,updated_by',
+          expand: 'estacion_id,categoria,responsable,created_by,updated_by',
           requestKey: null,
         });
         setExperiencia(record);
@@ -68,18 +70,6 @@ export default function ExperienciaDetailPage() {
   }
 
   const canEdit = canEditContent(user as any);
-
-  const getCategoriaLabel = (cat: ExperienciaCategoria | string) => {
-    const labels: Record<string, string> = {
-      taller: 'Taller',
-      recorrido: 'Recorrido',
-      degustacion: 'Degustación',
-      demostracion: 'Demostración',
-      convivencia: 'Convivencia',
-      otros: 'Otros'
-    };
-    return labels[cat as string] || cat;
-  };
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -121,7 +111,7 @@ export default function ExperienciaDetailPage() {
                   </div>
                   <div className="flex items-center gap-4 text-[var(--color-secondary)] mt-3">
                     <span className="bg-[var(--color-surface-variant)] px-3 py-1 rounded-full text-sm">
-                      {getCategoriaLabel(experiencia.categoria)}
+                      {getCatalogoLabel(experiencia.expand?.categoria, experiencia.categoria)}
                     </span>
                     {experiencia.expand?.estacion_id && (
                       <Link href={`/estaciones/${experiencia.expand.estacion_id.id}`} className="hover:text-[var(--color-primary)] transition-colors flex items-center">
@@ -247,6 +237,10 @@ export default function ExperienciaDetailPage() {
                   </p>
                 )}
               </div>
+
+              <hr className="border-[var(--color-outline-variant)]" />
+
+              <EntityFeedbackSection entityType="experiencias" entityId={experiencia.id} />
 
               <hr className="border-[var(--color-outline-variant)]" />
 

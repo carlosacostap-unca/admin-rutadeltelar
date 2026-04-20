@@ -1,4 +1,6 @@
-export type ActorTipo = 'artesano' | 'productor' | 'hospedaje' | 'gastronomico' | 'guia';
+import { CatalogoItem } from '@/types/catalogo';
+
+export type ActorTipo = string;
 export type ActorEstado = 'borrador' | 'en_revision' | 'aprobado' | 'inactivo';
 
 export interface Actor {
@@ -6,6 +8,7 @@ export interface Actor {
   nombre: string;
   tipo: ActorTipo;
   estacion_id: string; // Relación con la colección estaciones
+  ubicado_en_estacion_inaugurada?: boolean;
   descripcion?: string; // Biografía corta o descripción
   contacto_telefono?: string;
   contacto_email?: string;
@@ -70,7 +73,9 @@ export interface Actor {
       id: string;
       nombre: string;
       localidad: string;
+      posee_estacion_inaugurada?: boolean;
     };
+    tipo?: CatalogoItem;
     created_by?: { name: string; email: string };
     updated_by?: { name: string; email: string };
   };

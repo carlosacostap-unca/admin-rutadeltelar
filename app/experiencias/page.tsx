@@ -7,6 +7,8 @@ import pb from '@/lib/pocketbase';
 import Link from 'next/link';
 import { Experiencia, ExperienciaCategoria } from '@/types/experiencia';
 import { canEditContent } from '@/lib/permissions';
+import CatalogSelect from '@/components/CatalogSelect';
+import { getCatalogoLabel } from '@/lib/catalogos';
 
 export default function ExperienciasPage() {
   return (
@@ -54,7 +56,7 @@ function ExperienciasContent() {
         try {
           const records = await pb.collection('experiencias').getFullList<Experiencia>({
             sort: '-created',
-            expand: 'estacion_id,responsable',
+            expand: 'estacion_id,categoria,responsable',
             requestKey: null,
           });
           setExperiencias(records);
@@ -98,18 +100,6 @@ function ExperienciasContent() {
     return matchesSearch && matchesCategoria && matchesEstado && matchesEstacion;
   });
 
-  const getCategoriaLabel = (categoria: string) => {
-    const labels: Record<string, string> = {
-      taller: 'Taller',
-      recorrido: 'Recorrido',
-      degustacion: 'Degustación',
-      demostracion: 'Demostración',
-      convivencia: 'Convivencia',
-      otros: 'Otros'
-    };
-    return labels[categoria] || categoria;
-  };
-
   return (
     <div className="h-full bg-[var(--color-surface-dim)]">
       <main className="mx-auto px-6 py-8">
@@ -148,19 +138,13 @@ function ExperienciasContent() {
                 <span>✕</span>
               </button>
             )}
-            <select
-              className="input-field text-[var(--color-on-surface-variant)]"
+            <CatalogSelect
+              collectionName="categorias_experiencia"
               value={categoriaFilter}
-              onChange={(e) => setCategoriaFilter(e.target.value)}
-            >
-              <option value="">Todas las categorías</option>
-              <option value="taller">Taller</option>
-              <option value="recorrido">Recorrido</option>
-              <option value="degustacion">Degustación</option>
-              <option value="demostracion">Demostración</option>
-              <option value="convivencia">Convivencia</option>
-              <option value="otros">Otros</option>
-            </select>
+              onChange={setCategoriaFilter}
+              emptyLabel="Todas las categorías"
+              className="input-field text-[var(--color-on-surface-variant)]"
+            />
             <select
               className="input-field text-[var(--color-on-surface-variant)]"
               value={estadoFilter}
@@ -203,7 +187,7 @@ function ExperienciasContent() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                         </svg>
-                        {getCategoriaLabel(e.categoria)}
+                        {getCatalogoLabel(e.expand?.categoria, e.categoria)}
                       </span>
                       {e.expand?.estacion_id?.nombre && (
                         <span className="flex items-center gap-1.5 border-l border-[var(--color-outline-variant)] pl-4">

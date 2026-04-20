@@ -10,6 +10,7 @@ import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { Experiencia, ExperienciaCategoria, ExperienciaEstado } from '@/types/experiencia';
+import CatalogSelect from '@/components/CatalogSelect';
 
 export default function EditExperienciaPage() {
   const { user, isLoading } = useAuth();
@@ -244,20 +245,14 @@ export default function EditExperienciaPage() {
                 <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Categoría *
                 </label>
-                <select
+                <CatalogSelect
+                  collectionName="categorias_experiencia"
                   value={categoria}
-                  onChange={(e) => setCategoria(e.target.value as ExperienciaCategoria)}
+                  onChange={(value) => setCategoria(value as ExperienciaCategoria)}
+                  emptyLabel="Seleccionar categoría..."
                   className="input-field w-full"
                   required
-                >
-                  <option value="" disabled>Seleccionar Categoría...</option>
-                  <option value="taller">Taller</option>
-                  <option value="recorrido">Recorrido</option>
-                  <option value="degustacion">Degustación</option>
-                  <option value="demostracion">Demostración</option>
-                  <option value="convivencia">Convivencia</option>
-                  <option value="otros">Otros</option>
-                </select>
+                />
               </div>
             </div>
 

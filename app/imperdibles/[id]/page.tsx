@@ -9,6 +9,9 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { canEditContent } from '@/lib/permissions';
 import { Imperdible, ImperdibleTipo } from '@/types/imperdible';
+import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
+import { formatUtcToBrowserLocale, getBrowserTimeZoneLabel } from '@/lib/datetime';
+import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false }) as React.FC<{ lat: number; lng: number; zoom?: number; label?: string }>;
 
@@ -34,7 +37,7 @@ export default function ImperdibleDetailPage() {
       
       try {
         const record = await pb.collection('imperdibles').getOne<Imperdible>(id, {
-          expand: 'estacion_id,actores_relacionados,productos_relacionados,experiencias_relacionadas,created_by,updated_by',
+          expand: 'estacion_id,tipo,prioridad,actores_relacionados,productos_relacionados,experiencias_relacionadas,created_by,updated_by',
           requestKey: null,
         });
         setImperdible(record);
@@ -71,17 +74,9 @@ export default function ImperdibleDetailPage() {
   }
 
   const canEdit = canEditContent(user as any);
-
-  const getTipoLabel = (tipo: ImperdibleTipo | string) => {
-    const labels: Record<string, string> = {
-      lugar: 'Lugar',
-      actividad: 'Actividad',
-      evento: 'Evento',
-      atractivo: 'Atractivo',
-      otro: 'Otro'
-    };
-    return labels[tipo as string] || tipo;
-  };
+  const esEvento = normalizeCatalogName(imperdible?.expand?.tipo?.nombre || imperdible?.tipo) === 'evento';
+  const fechaHoraEventoLabel = formatUtcToBrowserLocale(imperdible?.fecha_hora_evento);
+  const gmtLabel = getBrowserTimeZoneLabel(imperdible?.fecha_hora_evento);
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -128,13 +123,13 @@ export default function ImperdibleDetailPage() {
                   )}
                   <div className="flex items-center gap-4 text-[var(--color-secondary)] mt-3">
                     <span className="bg-[var(--color-surface)] border border-[var(--color-outline-variant)] px-3 py-1 rounded-full text-sm font-medium">
-                      {getTipoLabel(imperdible.tipo)}
+                      {getCatalogoLabel(imperdible.expand?.tipo, imperdible.tipo)}
                     </span>
                     <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-[0.05em] 
-                      ${imperdible.prioridad === 'alta' ? 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]' : 
-                        imperdible.prioridad === 'media' ? 'bg-[var(--color-primary-container)] text-[var(--color-on-primary-container)]' : 
-                        'bg-[var(--color-surface-variant)] text-[var(--color-on-surface-variant)]'}`}>
-                      Prioridad: {imperdible.prioridad}
+                      ${normalizeCatalogName(imperdible.expand?.prioridad?.nombre || imperdible.prioridad) === 'alta' ? 'bg-[var(--color-error-container)] text-[var(--color-surface-container)]' : 
+                        normalizeCatalogName(imperdible.expand?.prioridad?.nombre || imperdible.prioridad) === 'media' ? 'bg-[var(--color-primary-container)] text-[var(--color-surface-container)]' : 
+                        'bg-[var(--color-surface-variant)] text-[var(--color-surface-container)]'}`}>
+                      Prioridad: {getCatalogoLabel(imperdible.expand?.prioridad, imperdible.prioridad)}
                     </span>
                     {imperdible.expand?.estacion_id && (
                       <Link href={`/estaciones/${imperdible.expand.estacion_id.id}`} className="hover:text-[var(--color-primary)] transition-colors flex items-center font-medium">
@@ -142,6 +137,11 @@ export default function ImperdibleDetailPage() {
                       </Link>
                     )}
                   </div>
+                  {esEvento && fechaHoraEventoLabel && (
+                    <p className="text-sm text-[var(--color-secondary)] mt-3">
+                      Fecha y hora del evento: {fechaHoraEventoLabel} ({gmtLabel})
+                    </p>
+                  )}
                 </div>
                 
                 <div className="flex flex-col gap-2 items-end">
@@ -185,17 +185,6 @@ export default function ImperdibleDetailPage() {
                   </p>
                 </div>
 
-                {imperdible.motivo_destaque && (
-                  <div>
-                    <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
-                      Motivo de Destaque
-                    </h3>
-                    <p className="text-[var(--color-on-surface)] whitespace-pre-wrap bg-[var(--color-surface-container)] p-4 rounded-md italic">
-                      {imperdible.motivo_destaque}
-                    </p>
-                  </div>
-                )}
-
                 <div>
                   <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                     Recomendaciones
@@ -229,6 +218,14 @@ export default function ImperdibleDetailPage() {
                       <span className="text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em]">Duración Sugerida:</span>
                       <span className="font-medium text-[var(--color-on-surface)] text-right">{imperdible.duracion_sugerida || 'No especificada'}</span>
                     </div>
+                    {esEvento && fechaHoraEventoLabel && (
+                      <div className="flex justify-between border-b border-[var(--color-surface-variant)] pb-2">
+                        <span className="text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em]">Fecha y hora:</span>
+                        <span className="font-medium text-[var(--color-on-surface)] text-right">
+                          {fechaHoraEventoLabel} ({gmtLabel})
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between border-b border-[var(--color-surface-variant)] pb-2">
                       <span className="text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em]">Accesibilidad:</span>
                       <span className="font-medium text-[var(--color-on-surface)] text-right">{imperdible.accesibilidad || 'No especificada'}</span>
@@ -342,6 +339,10 @@ export default function ImperdibleDetailPage() {
                 </p>
               )}
             </div>
+
+            <hr className="border-[var(--color-outline-variant)]" />
+
+            <EntityFeedbackSection entityType="imperdibles" entityId={imperdible.id} />
 
             <hr className="border-[var(--color-outline-variant)]" />
 

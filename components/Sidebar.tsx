@@ -110,6 +110,12 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
 
         <RoleGuard allowedRoles={['admin']}>
           <Link 
+            href="/parametrizaciones"
+            className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/parametrizaciones') ? activeLinkClasses : inactiveLinkClasses}`}
+          >
+            Parámetros
+          </Link>
+          <Link 
             href="/usuarios"
             className={`block px-4 py-3 rounded-md text-sm font-bold uppercase tracking-[0.05em] transition-colors ${pathname.startsWith('/usuarios') ? activeLinkClasses : inactiveLinkClasses}`}
           >

@@ -7,8 +7,9 @@ import pb from '@/lib/pocketbase';
 import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
-import { CATAMARCA_DEPARTAMENTOS, Estacion } from '@/types/estacion';
+import { Estacion } from '@/types/estacion';
 import MapPicker from '@/components/MapPicker';
+import CatalogSelect from '@/components/CatalogSelect';
 
 export default function EditEstacionPage() {
   const { user, isLoading } = useAuth();
@@ -20,6 +21,7 @@ export default function EditEstacionPage() {
   const [eslogan, setEslogan] = useState('');
   const [localidad, setLocalidad] = useState('');
   const [departamento, setDepartamento] = useState('');
+  const [poseeEstacionInaugurada, setPoseeEstacionInaugurada] = useState(false);
   const [descripcionGeneral, setDescripcionGeneral] = useState('');
   const [latitud, setLatitud] = useState('');
   const [longitud, setLongitud] = useState('');
@@ -55,6 +57,7 @@ export default function EditEstacionPage() {
         setEslogan(record.eslogan || '');
         setLocalidad(record.localidad || '');
         setDepartamento(record.departamento || '');
+        setPoseeEstacionInaugurada(record.posee_estacion_inaugurada || false);
         setDescripcionGeneral(record.descripcion_general || '');
         setLatitud(record.latitud?.toString() || '');
         setLongitud(record.longitud?.toString() || '');
@@ -86,6 +89,7 @@ export default function EditEstacionPage() {
       formData.append('eslogan', eslogan);
       formData.append('localidad', localidad);
       formData.append('departamento', departamento);
+      formData.append('posee_estacion_inaugurada', String(poseeEstacionInaugurada));
       formData.append('descripcion_general', descripcionGeneral);
       if (latitud) formData.append('latitud', latitud);
       if (longitud) formData.append('longitud', longitud);
@@ -252,20 +256,27 @@ export default function EditEstacionPage() {
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Departamento *
                   </label>
-                  <select
+                  <CatalogSelect
+                    collectionName="departamentos"
                     value={departamento}
-                    onChange={(e) => setDepartamento(e.target.value)}
+                    onChange={setDepartamento}
+                    emptyLabel="Selecciona un departamento"
                     className="input-field w-full"
                     required
-                  >
-                    <option value="">Selecciona un departamento</option>
-                    {CATAMARCA_DEPARTAMENTOS.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  id="posee-estacion-inaugurada"
+                  type="checkbox"
+                  checked={poseeEstacionInaugurada}
+                  onChange={(e) => setPoseeEstacionInaugurada(e.target.checked)}
+                />
+                <label htmlFor="posee-estacion-inaugurada" className="text-sm font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em]">
+                  Posee estación inaugurada
+                </label>
               </div>
 
               <div>

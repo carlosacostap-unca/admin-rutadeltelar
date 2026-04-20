@@ -1,5 +1,7 @@
+import { CatalogoItem } from '@/types/catalogo';
+
 export type ExperienciaEstado = 'borrador' | 'en_revision' | 'aprobado' | 'inactivo';
-export type ExperienciaCategoria = 'taller' | 'recorrido' | 'degustacion' | 'demostracion' | 'convivencia' | 'otros';
+export type ExperienciaCategoria = string;
 
 export interface Experiencia {
   id: string;
@@ -26,6 +28,7 @@ export interface Experiencia {
       nombre: string;
       localidad: string;
     };
+    categoria?: CatalogoItem;
     responsable?: {
       id: string;
       nombre: string;

@@ -12,7 +12,11 @@ import { Actor } from '@/types/actor';
 import { Producto } from '@/types/producto';
 import { Experiencia } from '@/types/experiencia';
 import { ImperdibleTipo, ImperdiblePrioridad, ImperdibleEstado } from '@/types/imperdible';
+import { CatalogoItem } from '@/types/catalogo';
 import dynamic from 'next/dynamic';
+import CatalogSelect from '@/components/CatalogSelect';
+import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
+import { getBrowserTimeZoneLabel, localDateTimeInputToUtc } from '@/lib/datetime';
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false }) as React.FC<{ lat: number; lng: number; zoom?: number; label?: string }>;
 
@@ -25,13 +29,14 @@ function CreateImperdibleForm() {
   const [actores, setActores] = useState<Actor[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [experiencias, setExperiencias] = useState<Experiencia[]>([]);
+  const [tiposImperdible, setTiposImperdible] = useState<CatalogoItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const [titulo, setTitulo] = useState('');
   const [subtitulo, setSubtitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState<ImperdibleTipo | ''>('');
-  const [motivoDestaque, setMotivoDestaque] = useState('');
+  const [fechaHoraEvento, setFechaHoraEvento] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [latitud, setLatitud] = useState('');
   const [longitud, setLongitud] = useState('');
@@ -61,7 +66,7 @@ function CreateImperdibleForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [estacionesRecords, actoresRecords, productosRecords, experienciasRecords] = await Promise.all([
+        const [estacionesRecords, actoresRecords, productosRecords, experienciasRecords, tiposImperdibleRecords] = await Promise.all([
           pb.collection('estaciones').getFullList<Estacion>({
             sort: 'nombre',
             requestKey: null,
@@ -77,12 +82,18 @@ function CreateImperdibleForm() {
           pb.collection('experiencias').getFullList<Experiencia>({
             sort: 'titulo',
             requestKey: null,
+          }),
+          pb.collection('tipos_imperdible').getFullList<CatalogoItem>({
+            filter: 'activo = true',
+            sort: buildCatalogoSort(),
+            requestKey: null,
           })
         ]);
         setEstaciones(estacionesRecords);
         setActores(actoresRecords);
         setProductos(productosRecords);
         setExperiencias(experienciasRecords);
+        setTiposImperdible(tiposImperdibleRecords);
       } catch (err) {
         console.error('Error fetching data:', err);
       } finally {
@@ -95,10 +106,24 @@ function CreateImperdibleForm() {
     }
   }, [user]);
 
+  const tipoSeleccionado = tiposImperdible.find((item) => item.id === tipo);
+  const esEvento = normalizeCatalogName(tipoSeleccionado?.nombre || tipo) === 'evento';
+  const gmtLabel = getBrowserTimeZoneLabel(fechaHoraEvento || undefined);
+
+  useEffect(() => {
+    if (!esEvento && fechaHoraEvento) {
+      setFechaHoraEvento('');
+    }
+  }, [esEvento, fechaHoraEvento]);
+
   const handleSubmit = async (e: React.FormEvent, action: 'borrador' | 'continuar') => {
     e.preventDefault();
     if (!titulo || !tipo || !estacionId || !prioridad) {
       setError('Título, tipo, prioridad y estación son obligatorios.');
+      return;
+    }
+    if (esEvento && !fechaHoraEvento) {
+      setError('Para los imperdibles de tipo evento, la fecha y hora son obligatorias.');
       return;
     }
     
@@ -120,7 +145,7 @@ function CreateImperdibleForm() {
 
       if (subtitulo) formData.append('subtitulo', subtitulo);
       if (descripcion) formData.append('descripcion', descripcion);
-      if (motivoDestaque) formData.append('motivo_destaque', motivoDestaque);
+      if (esEvento && fechaHoraEvento) formData.append('fecha_hora_evento', localDateTimeInputToUtc(fechaHoraEvento));
       if (ubicacion) formData.append('ubicacion', ubicacion);
       if (latitud) formData.append('latitud', latitud);
       if (longitud) formData.append('longitud', longitud);
@@ -231,19 +256,14 @@ function CreateImperdibleForm() {
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Tipo *
                   </label>
-                  <select
+                  <CatalogSelect
+                    collectionName="tipos_imperdible"
                     value={tipo}
-                    onChange={(e) => setTipo(e.target.value as ImperdibleTipo)}
+                    onChange={(value) => setTipo(value as ImperdibleTipo)}
+                    emptyLabel="Seleccionar..."
                     className="input-field w-full"
                     required
-                  >
-                    <option value="" disabled>Seleccionar...</option>
-                    <option value="lugar">Lugar</option>
-                    <option value="actividad">Actividad</option>
-                    <option value="evento">Evento</option>
-                    <option value="atractivo">Atractivo</option>
-                    <option value="otro">Otro</option>
-                  </select>
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
@@ -272,17 +292,14 @@ function CreateImperdibleForm() {
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                     Prioridad *
                   </label>
-                  <select
+                  <CatalogSelect
+                    collectionName="prioridades_imperdible"
                     value={prioridad}
-                    onChange={(e) => setPrioridad(e.target.value as ImperdiblePrioridad)}
+                    onChange={(value) => setPrioridad(value as ImperdiblePrioridad)}
+                    emptyLabel="Seleccionar..."
                     className="input-field w-full"
                     required
-                  >
-                    <option value="" disabled>Seleccionar...</option>
-                    <option value="alta">Alta</option>
-                    <option value="media">Media</option>
-                    <option value="baja">Baja</option>
-                  </select>
+                  />
                 </div>
               </div>
             
@@ -299,18 +316,24 @@ function CreateImperdibleForm() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Motivo de Destaque
-                </label>
-                <textarea
-                  value={motivoDestaque}
-                  onChange={(e) => setMotivoDestaque(e.target.value)}
-                  className="input-field w-full min-h-[80px] resize-y"
-                  placeholder="¿Por qué es un imperdible?"
-                />
-              </div>
-              
+              {esEvento && (
+                <div>
+                  <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                    Fecha y hora del evento *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={fechaHoraEvento}
+                    onChange={(e) => setFechaHoraEvento(e.target.value)}
+                    className="input-field w-full md:w-1/2"
+                    required={esEvento}
+                  />
+                  <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                    Se usa el huso horario del navegador ({gmtLabel}) y se guarda en UTC/GMT 0.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">

@@ -90,3 +90,29 @@ body {
   box-shadow: 0 0 0 1px var(--color-primary); /* 1px primary ghost border */
   outline: none;
 }
+
+.input-field[type="datetime-local"] {
+  color-scheme: light;
+}
+
+.input-field[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+.input-field[type="datetime-local"]::-webkit-datetime-edit,
+.input-field[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper,
+.input-field[type="datetime-local"]::-webkit-datetime-edit-text,
+.input-field[type="datetime-local"]::-webkit-datetime-edit-month-field,
+.input-field[type="datetime-local"]::-webkit-datetime-edit-day-field,
+.input-field[type="datetime-local"]::-webkit-datetime-edit-year-field,
+.input-field[type="datetime-local"]::-webkit-datetime-edit-hour-field,
+.input-field[type="datetime-local"]::-webkit-datetime-edit-minute-field {
+  color: var(--color-primary);
+  background-color: var(--color-surface-container-highest);
+}
+
+.input-field[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.85;
+  filter: brightness(0) saturate(100%) invert(16%) sepia(30%) saturate(1127%) hue-rotate(165deg) brightness(94%) contrast(92%);
+}

@@ -10,6 +10,9 @@ import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { ActorTipo, ActorEstado } from '@/types/actor';
 import MapPicker from '@/components/MapPicker';
+import CatalogSelect from '@/components/CatalogSelect';
+import { CatalogoItem } from '@/types/catalogo';
+import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 
 function CreateActorForm() {
   const { user, isLoading } = useAuth();
@@ -17,12 +20,14 @@ function CreateActorForm() {
   const searchParams = useSearchParams();
   
   const [estaciones, setEstaciones] = useState<Estacion[]>([]);
+  const [tiposActor, setTiposActor] = useState<CatalogoItem[]>([]);
   const [loadingEstaciones, setLoadingEstaciones] = useState(true);
 
   // Common Fields
   const [nombre, setNombre] = useState('');
-  const [tipo, setTipo] = useState<ActorTipo>('artesano');
+  const [tipo, setTipo] = useState<ActorTipo>('');
   const [estacionId, setEstacionId] = useState(searchParams.get('estacion_id') || '');
+  const [ubicadoEnEstacionInaugurada, setUbicadoEnEstacionInaugurada] = useState(false);
   const [descripcion, setDescripcion] = useState('');
   const [contactoTelefono, setContactoTelefono] = useState('');
   const [contactoEmail, setContactoEmail] = useState('');
@@ -72,11 +77,19 @@ function CreateActorForm() {
   useEffect(() => {
     const fetchEstaciones = async () => {
       try {
-        const records = await pb.collection('estaciones').getFullList<Estacion>({
-          sort: 'nombre',
-          requestKey: null,
-        });
-        setEstaciones(records);
+        const [estacionesRecords, tiposRecords] = await Promise.all([
+          pb.collection('estaciones').getFullList<Estacion>({
+            sort: 'nombre',
+            requestKey: null,
+          }),
+          pb.collection('tipos_actor').getFullList<CatalogoItem>({
+            filter: 'activo = true',
+            sort: buildCatalogoSort(),
+            requestKey: null,
+          }),
+        ]);
+        setEstaciones(estacionesRecords);
+        setTiposActor(tiposRecords);
       } catch (err) {
         console.error('Error fetching estaciones:', err);
       } finally {
@@ -88,6 +101,15 @@ function CreateActorForm() {
       fetchEstaciones();
     }
   }, [user]);
+
+  const estacionSeleccionada = estaciones.find((estacion) => estacion.id === estacionId);
+  const puedeIndicarEstacionInaugurada = !!estacionSeleccionada?.posee_estacion_inaugurada;
+
+  useEffect(() => {
+    if (!puedeIndicarEstacionInaugurada && ubicadoEnEstacionInaugurada) {
+      setUbicadoEnEstacionInaugurada(false);
+    }
+  }, [puedeIndicarEstacionInaugurada, ubicadoEnEstacionInaugurada]);
 
   const handleSubmit = async (e: React.FormEvent, action: 'borrador' | 'continuar') => {
     e.preventDefault();
@@ -104,6 +126,7 @@ function CreateActorForm() {
       formData.append('nombre', nombre);
       formData.append('tipo', tipo);
       formData.append('estacion_id', estacionId);
+      formData.append('ubicado_en_estacion_inaugurada', String(puedeIndicarEstacionInaugurada && ubicadoEnEstacionInaugurada));
       formData.append('descripcion', descripcion);
       formData.append('contacto_telefono', contactoTelefono);
       formData.append('contacto_email', contactoEmail);
@@ -117,31 +140,31 @@ function CreateActorForm() {
         formData.append('updated_by', user.id);
       }
 
-      if (tipo === 'artesano') {
+      if (tipoSlug === 'artesano') {
         formData.append('tecnicas', tecnicas);
         formData.append('materiales', materiales);
         formData.append('productos_ofrecidos', productosOfrecidos);
         formData.append('visitas_demostraciones', String(visitasDemostraciones));
         formData.append('disponibilidad', disponibilidad);
-      } else if (tipo === 'productor') {
+      } else if (tipoSlug === 'productor') {
         formData.append('rubro_productivo', rubroProductivo);
         formData.append('escala_produccion', escalaProduccion);
         formData.append('modalidad_venta', modalidadVenta);
         formData.append('productos_ofrecidos', productosOfrecidos);
         formData.append('visitas_demostraciones', String(visitasDemostraciones));
-      } else if (tipo === 'hospedaje') {
+      } else if (tipoSlug === 'hospedaje') {
         formData.append('tipo_hospedaje', tipoHospedaje);
         formData.append('capacidad', capacidad);
         formData.append('servicios', servicios);
         formData.append('horarios', horarios);
-      } else if (tipo === 'gastronomico') {
+      } else if (tipoSlug === 'gastronomico') {
         formData.append('tipo_propuesta', tipoPropuesta);
         formData.append('especialidades', especialidades);
         formData.append('platos_destacados', platosDestacados);
         formData.append('modalidad_servicio', modalidadServicio);
         formData.append('servicios_adicionales', serviciosAdicionales);
         formData.append('horarios', horarios);
-      } else if (tipo === 'guia') {
+      } else if (tipoSlug === 'guia-de-turismo' || tipoSlug === 'guia') {
         formData.append('especialidad', especialidad);
         formData.append('idiomas', idiomas);
         formData.append('recorridos_ofrecidos', recorridosOfrecidos);
@@ -168,6 +191,9 @@ function CreateActorForm() {
       setIsSubmitting(false);
     }
   };
+
+  const tipoSeleccionado = tiposActor.find((item) => item.id === tipo);
+  const tipoSlug = normalizeCatalogName(tipoSeleccionado?.nombre || tipo);
 
   if (isLoading || !user || !canEditContent(user as any) || loadingEstaciones) {
     return (
@@ -214,18 +240,14 @@ function CreateActorForm() {
                 <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                   Tipo de Actor *
                 </label>
-                <select
+                <CatalogSelect
+                  collectionName="tipos_actor"
                   value={tipo}
-                  onChange={(e) => setTipo(e.target.value as ActorTipo)}
+                  onChange={(value) => setTipo(value as ActorTipo)}
+                  emptyLabel="Seleccionar tipo..."
                   className="input-field w-full"
                   required
-                >
-                  <option value="artesano">Artesano</option>
-                  <option value="productor">Productor</option>
-                  <option value="hospedaje">Hospedaje</option>
-                  <option value="gastronomico">Gastronómico</option>
-                  <option value="guia">Guía de turismo</option>
-                </select>
+                />
               </div>
             </div>
 
@@ -263,12 +285,12 @@ function CreateActorForm() {
             {/* CAMPOS DINÁMICOS SEGÚN TIPO */}
             <div className="p-6 bg-[var(--color-surface-container-low)] rounded-md border border-[var(--color-outline-variant)]">
               <h3 className="text-lg font-bold text-[var(--color-on-surface)] mb-4 border-b border-[var(--color-surface-variant)] pb-2 uppercase tracking-[0.05em]">
-                Detalles Específicos: {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                Detalles Específicos: {tipoSeleccionado?.nombre || 'Selecciona un tipo'}
               </h3>
               <div className="space-y-4">
                 
                 {/* Artesano */}
-                {tipo === 'artesano' && (
+                {tipoSlug === 'artesano' && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -298,7 +320,7 @@ function CreateActorForm() {
                 )}
 
                 {/* Productor */}
-                {tipo === 'productor' && (
+                {tipoSlug === 'productor' && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -328,7 +350,7 @@ function CreateActorForm() {
                 )}
 
                 {/* Hospedaje */}
-                {tipo === 'hospedaje' && (
+                {tipoSlug === 'hospedaje' && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -352,7 +374,7 @@ function CreateActorForm() {
                 )}
 
                 {/* Gastronómico */}
-                {tipo === 'gastronomico' && (
+                {tipoSlug === 'gastronomico' && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -386,7 +408,7 @@ function CreateActorForm() {
                 )}
 
                 {/* Guía de turismo */}
-                {tipo === 'guia' && (
+                {tipoSlug === 'guia' && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -471,6 +493,20 @@ function CreateActorForm() {
                 placeholder="Ej. Calle Principal 123 o coordenadas"
               />
             </div>
+
+            {puedeIndicarEstacionInaugurada && (
+              <div className="flex items-center gap-3">
+                <input
+                  id="ubicado-en-estacion-inaugurada"
+                  type="checkbox"
+                  checked={ubicadoEnEstacionInaugurada}
+                  onChange={(e) => setUbicadoEnEstacionInaugurada(e.target.checked)}
+                />
+                <label htmlFor="ubicado-en-estacion-inaugurada" className="text-sm font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em]">
+                  Se encuentra ubicado en la estación inaugurada
+                </label>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>

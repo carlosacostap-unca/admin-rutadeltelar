@@ -7,6 +7,8 @@ import pb from '@/lib/pocketbase';
 import Link from 'next/link';
 import { Imperdible, ImperdibleTipo, ImperdiblePrioridad } from '@/types/imperdible';
 import { canEditContent } from '@/lib/permissions';
+import CatalogSelect from '@/components/CatalogSelect';
+import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
 
 export default function ImperdiblesPage() {
   return (
@@ -55,7 +57,7 @@ function ImperdiblesContent() {
         try {
           const records = await pb.collection('imperdibles').getFullList<Imperdible>({
             sort: '-created',
-            expand: 'estacion_id,actor_relacionado',
+            expand: 'estacion_id,tipo,prioridad,actores_relacionados',
             requestKey: null,
           });
           setImperdibles(records);
@@ -100,17 +102,6 @@ function ImperdiblesContent() {
     return matchesSearch && matchesTipo && matchesPrioridad && matchesEstado && matchesEstacion;
   });
 
-  const getTipoLabel = (tipo: string) => {
-    const labels: Record<string, string> = {
-      lugar: 'Lugar',
-      actividad: 'Actividad',
-      evento: 'Evento',
-      atractivo: 'Atractivo',
-      otro: 'Otro'
-    };
-    return labels[tipo] || tipo;
-  };
-
   return (
     <div className="h-full bg-[var(--color-surface-dim)]">
       <main className="mx-auto px-6 py-8">
@@ -149,28 +140,20 @@ function ImperdiblesContent() {
                 <span>✕</span>
               </button>
             )}
-            <select
-              className="input-field text-[var(--color-on-surface-variant)]"
+            <CatalogSelect
+              collectionName="tipos_imperdible"
               value={tipoFilter}
-              onChange={(e) => setTipoFilter(e.target.value)}
-            >
-              <option value="">Todos los tipos</option>
-              <option value="lugar">Lugar</option>
-              <option value="actividad">Actividad</option>
-              <option value="evento">Evento</option>
-              <option value="atractivo">Atractivo</option>
-              <option value="otro">Otro</option>
-            </select>
-            <select
+              onChange={setTipoFilter}
+              emptyLabel="Todos los tipos"
               className="input-field text-[var(--color-on-surface-variant)]"
+            />
+            <CatalogSelect
+              collectionName="prioridades_imperdible"
               value={prioridadFilter}
-              onChange={(e) => setPrioridadFilter(e.target.value)}
-            >
-              <option value="">Todas las prioridades</option>
-              <option value="alta">Alta</option>
-              <option value="media">Media</option>
-              <option value="baja">Baja</option>
-            </select>
+              onChange={setPrioridadFilter}
+              emptyLabel="Todas las prioridades"
+              className="input-field text-[var(--color-on-surface-variant)]"
+            />
             <select
               className="input-field text-[var(--color-on-surface-variant)]"
               value={estadoFilter}
@@ -201,10 +184,10 @@ function ImperdiblesContent() {
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-bold text-[var(--color-primary)]">{i.titulo}</h3>
                         <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-[0.05em] 
-                          ${i.prioridad === 'alta' ? 'bg-[var(--color-primary)] text-[var(--color-surface)]' : 
-                            i.prioridad === 'media' ? 'bg-[var(--color-primary-container)] text-[var(--color-surface)]' : 
-                            'bg-[var(--color-surface-variant)] text-[var(--color-primary)]'}`}>
-                          {i.prioridad.toUpperCase()}
+                          ${normalizeCatalogName(i.expand?.prioridad?.nombre || i.prioridad) === 'alta' ? 'bg-[var(--color-primary)] text-[var(--color-surface-container)]' : 
+                            normalizeCatalogName(i.expand?.prioridad?.nombre || i.prioridad) === 'media' ? 'bg-[var(--color-primary-container)] text-[var(--color-surface-container)]' : 
+                            'bg-[var(--color-surface-variant)] text-[var(--color-surface-container)]'}`}>
+                          {getCatalogoLabel(i.expand?.prioridad, i.prioridad).toUpperCase()}
                         </span>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.05em] shrink-0
@@ -221,7 +204,7 @@ function ImperdiblesContent() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                         </svg>
-                        {getTipoLabel(i.tipo)}
+                        {getCatalogoLabel(i.expand?.tipo, i.tipo)}
                       </span>
                       {i.expand?.estacion_id?.nombre && (
                         <span className="flex items-center gap-1.5 border-l border-[var(--color-outline-variant)] pl-4">
