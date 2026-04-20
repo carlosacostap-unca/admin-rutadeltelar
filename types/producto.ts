@@ -7,6 +7,7 @@ export interface Producto {
   id: string;
   nombre: string;
   categoria: ProductoCategoria | string;
+  subcategoria?: string;
   tecnicas?: string[];
   descripcion?: string;
   estacion_id?: string; // Relación legacy con una estación principal
@@ -33,6 +34,7 @@ export interface Producto {
       localidad: string;
     }>;
     categoria?: CatalogoItem;
+    subcategoria?: CatalogoItem;
     tecnicas?: CatalogoItem[];
     actores_relacionados?: {
       id: string;

@@ -8,11 +8,11 @@ import { hasAnyRole } from '@/lib/permissions';
 import { CATALOGOS_CONFIG, CatalogoCollectionName, CatalogoItem } from '@/types/catalogo';
 import { buildCatalogoSort } from '@/lib/catalogos';
 
-type DraftsState = Record<CatalogoCollectionName, { nombre: string }>;
+type DraftsState = Record<CatalogoCollectionName, { nombre: string; categoria_padre?: string }>;
 type ItemsState = Record<CatalogoCollectionName, CatalogoItem[]>;
 
 const emptyDrafts = CATALOGOS_CONFIG.reduce((acc, config) => {
-  acc[config.collectionName] = { nombre: '' };
+  acc[config.collectionName] = { nombre: '', categoria_padre: '' };
   return acc;
 }, {} as DraftsState);
 
@@ -40,6 +40,7 @@ export default function ParametrizacionesPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const categoriasProducto = itemsByCollection.categorias_producto || [];
 
   useEffect(() => {
     if (!isLoading && !hasAnyRole(user as any, ['admin'])) {
@@ -91,7 +92,7 @@ export default function ParametrizacionesPage() {
 
   const handleDraftChange = (
     collectionName: CatalogoCollectionName,
-    field: 'nombre',
+    field: 'nombre' | 'categoria_padre',
     value: string
   ) => {
     setDrafts((current) => {
@@ -108,10 +109,14 @@ export default function ParametrizacionesPage() {
     setSavingKey(`create:${collectionName}`);
     setError(null);
     try {
-      const created = await pb.collection(collectionName).create<CatalogoItem>({
+      const payload: Record<string, any> = {
         nombre: draft.nombre.trim(),
         activo: true,
-      });
+      };
+      if (collectionName === 'subcategorias_producto') {
+        payload.categoria_padre = draft.categoria_padre || '';
+      }
+      const created = await pb.collection(collectionName).create<CatalogoItem>(payload);
 
       setItemsByCollection((current) => ({
         ...current,
@@ -119,7 +124,7 @@ export default function ParametrizacionesPage() {
       }));
       setDrafts((current) => ({
         ...current,
-        [collectionName]: { nombre: '' },
+        [collectionName]: { nombre: '', categoria_padre: '' },
       }));
     } catch (err: any) {
       console.error('Error creating catalog item:', err);
@@ -133,10 +138,14 @@ export default function ParametrizacionesPage() {
     setSavingKey(`update:${collectionName}:${item.id}`);
     setError(null);
     try {
-      const updated = await pb.collection(collectionName).update<CatalogoItem>(item.id, {
+      const payload: Record<string, any> = {
         nombre: item.nombre.trim(),
         activo: item.activo ?? true,
-      });
+      };
+      if (collectionName === 'subcategorias_producto') {
+        payload.categoria_padre = item.categoria_padre || '';
+      }
+      const updated = await pb.collection(collectionName).update<CatalogoItem>(item.id, payload);
 
       setItemsByCollection((current) => ({
         ...current,
@@ -230,6 +239,20 @@ export default function ParametrizacionesPage() {
                   className="input-field w-full"
                   placeholder="Nombre"
                 />
+                {section.collectionName === 'subcategorias_producto' && (
+                  <select
+                    value={section.draft.categoria_padre || ''}
+                    onChange={(e) => handleDraftChange(section.collectionName, 'categoria_padre', e.target.value)}
+                    className="input-field w-full"
+                  >
+                    <option value="">Seleccionar categoría padre...</option>
+                    {categoriasProducto.map((categoria) => (
+                      <option key={categoria.id} value={categoria.id}>
+                        {categoria.nombre}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <button
                   type="button"
                   onClick={() => handleCreate(section.collectionName)}
@@ -247,7 +270,7 @@ export default function ParametrizacionesPage() {
                   section.items.map((item) => (
                     <div
                       key={item.id}
-                      className="grid grid-cols-1 md:grid-cols-[1fr_100px_auto_auto] gap-3 items-center border border-[var(--color-outline-variant)] rounded-md p-3"
+                      className={`grid grid-cols-1 ${section.collectionName === 'subcategorias_producto' ? 'md:grid-cols-[1fr_1fr_100px_auto_auto]' : 'md:grid-cols-[1fr_100px_auto_auto]'} gap-3 items-center border border-[var(--color-outline-variant)] rounded-md p-3`}
                     >
                       <input
                         type="text"
@@ -255,6 +278,20 @@ export default function ParametrizacionesPage() {
                         onChange={(e) => handleItemChange(section.collectionName, item.id, 'nombre', e.target.value)}
                         className="input-field w-full"
                       />
+                      {section.collectionName === 'subcategorias_producto' && (
+                        <select
+                          value={item.categoria_padre || ''}
+                          onChange={(e) => handleItemChange(section.collectionName, item.id, 'categoria_padre', e.target.value)}
+                          className="input-field w-full"
+                        >
+                          <option value="">Seleccionar categoría padre...</option>
+                          {categoriasProducto.map((categoria) => (
+                            <option key={categoria.id} value={categoria.id}>
+                              {categoria.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       <label className="flex items-center gap-2 text-sm text-[var(--color-on-surface)]">
                         <input
                           type="checkbox"

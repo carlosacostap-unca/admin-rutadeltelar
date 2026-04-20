@@ -10,6 +10,7 @@ import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { Producto, ProductoCategoria, ProductoEstado } from '@/types/producto';
+import { CatalogoItem } from '@/types/catalogo';
 import CatalogSelect from '@/components/CatalogSelect';
 import CatalogTagSelector from '@/components/CatalogTagSelector';
 
@@ -21,10 +22,12 @@ export default function EditProductoPage() {
   
   const [estaciones, setEstaciones] = useState<Estacion[]>([]);
   const [actores, setActores] = useState<Actor[]>([]);
+  const [subcategorias, setSubcategorias] = useState<CatalogoItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] = useState<ProductoCategoria | ''>('');
+  const [subcategoria, setSubcategoria] = useState('');
   const [tecnicas, setTecnicas] = useState<string[]>([]);
   const [estacionesRelacionadas, setEstacionesRelacionadas] = useState<string[]>([]);
   const [descripcion, setDescripcion] = useState('');
@@ -53,17 +56,25 @@ export default function EditProductoPage() {
       if (!id || !user) return;
 
       try {
-        const [productoRecord, estacionesRecords, actoresRecords] = await Promise.all([
-          pb.collection('productos').getOne<Producto>(id, { expand: 'estacion_id,estaciones_relacionadas,categoria,tecnicas,actores_relacionados,actores_relacionados.estacion_id,created_by,updated_by', requestKey: null }),
+        const [productoRecord, estacionesRecords, actoresRecords, subcategoriasRecords] = await Promise.all([
+          pb.collection('productos').getOne<Producto>(id, { expand: 'estacion_id,estaciones_relacionadas,categoria,subcategoria,tecnicas,actores_relacionados,created_by,updated_by', requestKey: null }),
           pb.collection('estaciones').getFullList<Estacion>({ sort: 'nombre', requestKey: null }),
           pb.collection('actores').getFullList<Actor>({ sort: 'nombre', expand: 'estacion_id', requestKey: null })
+          ,
+          pb.collection('subcategorias_producto').getFullList<CatalogoItem>({
+            filter: 'activo = true',
+            sort: 'nombre',
+            requestKey: null,
+          })
         ]);
         
         setEstaciones(estacionesRecords);
         setActores(actoresRecords);
+        setSubcategorias(subcategoriasRecords);
 
         setNombre(productoRecord.nombre);
         setCategoria(productoRecord.categoria as ProductoCategoria);
+        setSubcategoria(productoRecord.subcategoria || '');
         setEstacionesRelacionadas(
           productoRecord.estaciones_relacionadas && productoRecord.estaciones_relacionadas.length > 0
             ? productoRecord.estaciones_relacionadas
@@ -90,6 +101,16 @@ export default function EditProductoPage() {
     }
   }, [id, user]);
 
+  const subcategoriasDisponibles = subcategorias.filter((item) => item.categoria_padre === categoria);
+
+  useEffect(() => {
+    if (!subcategoria) return;
+    const subcategoriaValida = subcategoriasDisponibles.some((item) => item.id === subcategoria);
+    if (!subcategoriaValida) {
+      setSubcategoria('');
+    }
+  }, [categoria, subcategoria, subcategoriasDisponibles]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre || !categoria) {
@@ -104,6 +125,7 @@ export default function EditProductoPage() {
       const formData = new FormData();
       formData.append('nombre', nombre);
       formData.append('categoria', categoria);
+      formData.append('subcategoria', subcategoria || '');
       if (estacionesRelacionadas.length > 0) {
         estacionesRelacionadas.forEach((estacionId) => {
           formData.append('estaciones_relacionadas', estacionId);
@@ -254,6 +276,27 @@ export default function EditProductoPage() {
                   className="input-field w-full"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Subcategoría
+                </label>
+                <select
+                  value={subcategoria}
+                  onChange={(e) => setSubcategoria(e.target.value)}
+                  className="input-field w-full"
+                  disabled={!categoria}
+                >
+                  <option value="">
+                    {categoria ? 'Seleccionar subcategoría...' : 'Primero selecciona una categoría'}
+                  </option>
+                  {subcategoriasDisponibles.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

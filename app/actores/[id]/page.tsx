@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
@@ -42,7 +42,7 @@ export default function ActorDetailPage() {
           }),
           pb.collection('productos').getFullList<Producto>({
             sort: 'nombre',
-            expand: 'estacion_id,estaciones_relacionadas',
+            expand: 'estacion_id,estaciones_relacionadas,categoria,subcategoria',
             requestKey: null,
           }),
         ]);
@@ -90,6 +90,54 @@ export default function ActorDetailPage() {
     }
     return producto.expand?.estacion_id?.nombre || '';
   };
+  const productosAgrupados = useMemo(() => {
+    const grouped: Array<{
+      categoriaKey: string;
+      categoriaLabel: string;
+      subcategorias: Array<{
+        subcategoriaKey: string;
+        subcategoriaLabel: string;
+        productos: Producto[];
+      }>;
+    }> = [];
+
+    productosRelacionados.forEach((producto) => {
+      const categoriaLabel = getCatalogoLabel(producto.expand?.categoria, producto.categoria);
+      const subcategoriaLabel = getCatalogoLabel(producto.expand?.subcategoria, producto.subcategoria || 'Sin subcategoría');
+      const categoriaKey = producto.categoria || categoriaLabel;
+      const subcategoriaKey = producto.subcategoria || '__sin_subcategoria__';
+
+      let categoriaGroup = grouped.find((item) => item.categoriaKey === categoriaKey);
+      if (!categoriaGroup) {
+        categoriaGroup = {
+          categoriaKey,
+          categoriaLabel,
+          subcategorias: [],
+        };
+        grouped.push(categoriaGroup);
+      }
+
+      let subcategoriaGroup = categoriaGroup.subcategorias.find((item) => item.subcategoriaKey === subcategoriaKey);
+      if (!subcategoriaGroup) {
+        subcategoriaGroup = {
+          subcategoriaKey,
+          subcategoriaLabel,
+          productos: [],
+        };
+        categoriaGroup.subcategorias.push(subcategoriaGroup);
+      }
+
+      subcategoriaGroup.productos.push(producto);
+    });
+
+    return grouped.map((categoriaGroup) => ({
+      categoriaLabel: categoriaGroup.categoriaLabel,
+      subcategorias: categoriaGroup.subcategorias.map((subcategoriaGroup) => ({
+        subcategoriaLabel: subcategoriaGroup.subcategoriaLabel,
+        productos: subcategoriaGroup.productos,
+      })),
+    }));
+  }, [productosRelacionados]);
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -242,7 +290,6 @@ export default function ActorDetailPage() {
                   <>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Técnicas</span><span className="font-medium">{actor.tecnicas || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Materiales</span><span className="font-medium">{actor.materiales || '-'}</span></div>
-                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Productos ofrecidos</span><span className="font-medium">{actor.productos_ofrecidos || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Disponibilidad</span><span className="font-medium">{actor.disponibilidad || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Visitas/Demostraciones</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
                   </>
@@ -252,7 +299,6 @@ export default function ActorDetailPage() {
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Rubro productivo</span><span className="font-medium">{actor.rubro_productivo || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Escala de producción</span><span className="font-medium">{actor.escala_produccion || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Modalidad de venta</span><span className="font-medium">{actor.modalidad_venta || '-'}</span></div>
-                    <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Productos ofrecidos</span><span className="font-medium">{actor.productos_ofrecidos || '-'}</span></div>
                     <div><span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Posibilidad de visitas</span><span className="font-medium">{actor.visitas_demostraciones ? 'Sí' : 'No'}</span></div>
                   </>
                 )}
@@ -294,20 +340,38 @@ export default function ActorDetailPage() {
                 Productos Relacionados
               </h3>
               {productosRelacionados.length > 0 ? (
-                <div className="space-y-3">
-                  {productosRelacionados.map((producto) => (
-                    <Link
-                      key={producto.id}
-                      href={`/productos/${producto.id}`}
-                      className="block bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] rounded-md p-4 hover:bg-[var(--color-surface)] transition-colors"
-                    >
-                      <div className="font-medium text-[var(--color-primary)]">{producto.nombre}</div>
-                      {getProductoEstaciones(producto) && (
-                        <div className="text-sm text-[var(--color-on-surface-variant)] mt-1">
-                          {getProductoEstaciones(producto)}
-                        </div>
-                      )}
-                    </Link>
+                <div className="space-y-6">
+                  {productosAgrupados.map((categoria) => (
+                    <div key={categoria.categoriaLabel} className="space-y-4">
+                      <h4 className="text-sm font-bold text-[var(--color-primary)] uppercase tracking-[0.05em]">
+                        {categoria.categoriaLabel}
+                      </h4>
+                      <div className="space-y-4">
+                        {categoria.subcategorias.map((subcategoria) => (
+                          <div key={`${categoria.categoriaLabel}-${subcategoria.subcategoriaLabel}`} className="space-y-3">
+                            <p className="text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em]">
+                              {subcategoria.subcategoriaLabel}
+                            </p>
+                            <div className="space-y-3">
+                              {subcategoria.productos.map((producto) => (
+                                <Link
+                                  key={producto.id}
+                                  href={`/productos/${producto.id}`}
+                                  className="block bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] rounded-md p-4 hover:bg-[var(--color-surface)] transition-colors"
+                                >
+                                  <div className="font-medium text-[var(--color-primary)]">{producto.nombre}</div>
+                                  {getProductoEstaciones(producto) && (
+                                    <div className="text-sm text-[var(--color-on-surface-variant)] mt-1">
+                                      {getProductoEstaciones(producto)}
+                                    </div>
+                                  )}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (

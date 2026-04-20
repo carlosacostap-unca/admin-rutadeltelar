@@ -10,6 +10,7 @@ import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { ProductoCategoria, ProductoEstado } from '@/types/producto';
+import { CatalogoItem } from '@/types/catalogo';
 import CatalogSelect from '@/components/CatalogSelect';
 import CatalogTagSelector from '@/components/CatalogTagSelector';
 
@@ -20,10 +21,12 @@ function CreateProductoForm() {
   
   const [estaciones, setEstaciones] = useState<Estacion[]>([]);
   const [actores, setActores] = useState<Actor[]>([]);
+  const [subcategorias, setSubcategorias] = useState<CatalogoItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] = useState<ProductoCategoria | ''>('');
+  const [subcategoria, setSubcategoria] = useState('');
   const [tecnicas, setTecnicas] = useState<string[]>([]);
   const initialEstacionId = searchParams.get('estacion_id') || '';
   const [estacionesRelacionadas, setEstacionesRelacionadas] = useState<string[]>(initialEstacionId ? [initialEstacionId] : []);
@@ -49,7 +52,7 @@ function CreateProductoForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [estacionesRecords, actoresRecords] = await Promise.all([
+        const [estacionesRecords, actoresRecords, subcategoriasRecords] = await Promise.all([
           pb.collection('estaciones').getFullList<Estacion>({
             sort: 'nombre',
             requestKey: null,
@@ -58,10 +61,16 @@ function CreateProductoForm() {
             sort: 'nombre',
             expand: 'estacion_id',
             requestKey: null,
-          })
+          }),
+          pb.collection('subcategorias_producto').getFullList<CatalogoItem>({
+            filter: 'activo = true',
+            sort: 'nombre',
+            requestKey: null,
+          }),
         ]);
         setEstaciones(estacionesRecords);
         setActores(actoresRecords);
+        setSubcategorias(subcategoriasRecords);
       } catch (err) {
         console.error('Error fetching data:', err);
       } finally {
@@ -73,6 +82,16 @@ function CreateProductoForm() {
       fetchData();
     }
   }, [user]);
+
+  const subcategoriasDisponibles = subcategorias.filter((item) => item.categoria_padre === categoria);
+
+  useEffect(() => {
+    if (!subcategoria) return;
+    const subcategoriaValida = subcategoriasDisponibles.some((item) => item.id === subcategoria);
+    if (!subcategoriaValida) {
+      setSubcategoria('');
+    }
+  }, [categoria, subcategoria, subcategoriasDisponibles]);
 
   const handleSubmit = async (e: React.FormEvent, action: 'borrador' | 'continuar') => {
     e.preventDefault();
@@ -88,6 +107,7 @@ function CreateProductoForm() {
       const formData = new FormData();
       formData.append('nombre', nombre);
       formData.append('categoria', categoria);
+      formData.append('subcategoria', subcategoria || '');
       if (estacionesRelacionadas.length > 0) {
         estacionesRelacionadas.forEach((estacionId) => {
           formData.append('estaciones_relacionadas', estacionId);
@@ -205,6 +225,27 @@ function CreateProductoForm() {
                   className="input-field w-full"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Subcategoría
+                </label>
+                <select
+                  value={subcategoria}
+                  onChange={(e) => setSubcategoria(e.target.value)}
+                  className="input-field w-full"
+                  disabled={!categoria}
+                >
+                  <option value="">
+                    {categoria ? 'Seleccionar subcategoría...' : 'Primero selecciona una categoría'}
+                  </option>
+                  {subcategoriasDisponibles.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

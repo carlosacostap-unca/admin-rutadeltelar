@@ -38,7 +38,7 @@ export default function ProductoDetailPage() {
       
       try {
         const record = await pb.collection('productos').getOne<Producto>(id, {
-          expand: 'estacion_id,estaciones_relacionadas,categoria,tecnicas,actores_relacionados,actores_relacionados.estacion_id,actores_relacionados.tipo,created_by,updated_by',
+          expand: 'estacion_id,estaciones_relacionadas,categoria,subcategoria,tecnicas,actores_relacionados,actores_relacionados.estacion_id,actores_relacionados.tipo,created_by,updated_by',
           requestKey: null,
         });
         setProducto(record);
@@ -130,6 +130,11 @@ export default function ProductoDetailPage() {
                   <span className="bg-[var(--color-surface-container)] px-3 py-1 rounded-full text-sm">
                     {getCatalogoLabel(producto.expand?.categoria, producto.categoria)}
                   </span>
+                  {producto.subcategoria && (
+                    <span className="bg-[var(--color-surface)] px-3 py-1 rounded-full text-sm">
+                      {getCatalogoLabel(producto.expand?.subcategoria, producto.subcategoria)}
+                    </span>
+                  )}
                   {estacionesRelacionadas.length > 0 && (
                     <div className="flex flex-wrap items-center gap-3">
                       {estacionesRelacionadas.map((estacion) => (
