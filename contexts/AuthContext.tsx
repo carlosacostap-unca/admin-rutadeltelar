@@ -32,15 +32,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const clearSession = () => {
+    pb.authStore.clear();
+    setUser(null);
+    setActiveRoleState(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('activeRole');
+    }
+  };
+
+  const getAuthErrorMessage = (error: any) => {
+    const status = error?.status;
+    const message = String(error?.response?.message || error?.message || '').toLowerCase();
+
+    if (
+      status === 0 ||
+      message.includes('failed to fetch') ||
+      message.includes('networkerror') ||
+      message.includes('network error') ||
+      message.includes('load failed')
+    ) {
+      return 'No se pudo conectar con el servidor de autenticación. Inténtalo nuevamente en unos minutos.';
+    }
+
+    if (status === 401 || status === 403) {
+      return 'Tu sesión venció o quedó desactualizada. Vuelve a iniciar sesión.';
+    }
+
+    return 'No se pudo validar tu sesión actual. Vuelve a iniciar sesión.';
+  };
+
   useEffect(() => {
+    let mounted = true;
+
     // Verificar si el usuario actual cumple con las condiciones (estar activo)
     const checkAndSetUser = (model: AuthModel | null) => {
+      if (!mounted) return;
+
       if (model) {
         // Asumimos que hay un campo booleano 'active' en la colección users
         // o si es necesario un campo 'role', ajusta la condición según corresponda.
         if (model.active === true || model.active === undefined) {
           // Nota: si tu PocketBase requiere que 'active' sea estrictamente true,
           // cambia la condición a: model.active === true
+          setError(null);
           setUser(model);
           
           if (model.roles && model.roles.length > 0) {
@@ -58,9 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           // El usuario existe pero está inactivo
-          pb.authStore.clear();
-          setUser(null);
-          setActiveRoleState(null);
+          clearSession();
           setError('Tu usuario está inactivo. Contacta a un administrador.');
         }
       } else {
@@ -69,9 +102,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Inicializar el estado de usuario basado en el authStore actual
-    checkAndSetUser(pb.authStore.model);
-    setIsLoading(false);
+    const initializeAuth = async () => {
+      try {
+        if (pb.authStore.isValid) {
+          const authData = await pb.collection('users').authRefresh();
+          checkAndSetUser(authData.record);
+        } else {
+          checkAndSetUser(pb.authStore.model);
+        }
+      } catch (error) {
+        console.error('No se pudo refrescar la sesión:', error);
+        clearSession();
+        if (mounted) {
+          setError(getAuthErrorMessage(error));
+          router.push('/login');
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
 
     // Escuchar cambios en el authStore de PocketBase
     const unsubscribe = pb.authStore.onChange((token, model) => {
@@ -79,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
+      mounted = false;
       unsubscribe();
     };
   }, []);
@@ -91,8 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Verificamos si el usuario creado o autenticado está activo (US-02)
       if (authData.record && authData.record.active === false) {
-        pb.authStore.clear();
-        setUser(null);
+        clearSession();
         setError('Acceso denegado: Usuario inactivo o no autorizado.');
         return;
       }
@@ -114,14 +167,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error de autenticación con Google:', err);
       // Si el usuario cancela o hay un error, lo mostramos
       setError('No se pudo iniciar sesión o el usuario no existe internamente.');
-      pb.authStore.clear();
-      setUser(null);
+      clearSession();
     }
   };
 
   const logout = () => {
-    pb.authStore.clear();
-    setUser(null);
+    clearSession();
     router.push('/login');
   };
 
