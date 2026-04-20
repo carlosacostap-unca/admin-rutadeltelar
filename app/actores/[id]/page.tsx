@@ -41,14 +41,15 @@ export default function ActorDetailPage() {
             requestKey: null
           }),
           pb.collection('productos').getFullList<Producto>({
-            filter: `actores_relacionados ?= "${id}"`,
             sort: 'nombre',
             expand: 'estacion_id,estaciones_relacionadas',
             requestKey: null,
           }),
         ]);
         setActor(record);
-        setProductosRelacionados(productosRecords);
+        setProductosRelacionados(
+          productosRecords.filter((producto) => (producto.actores_relacionados || []).includes(id))
+        );
       } catch (err) {
         console.error('Error fetching actor:', err);
         setError('No se pudo cargar el actor. Es posible que no exista.');

@@ -85,7 +85,7 @@ export default function EditActorPage() {
       if (!id || !user || !canEditContent(user as any)) return;
       
       try {
-        const [actorRecord, estacionesRecords, tiposRecords, productosRecords, productosRelacionadosRecords] = await Promise.all([
+        const [actorRecord, estacionesRecords, tiposRecords, productosRecords] = await Promise.all([
           pb.collection('actores').getOne<Actor>(id, { expand: 'estacion_id,created_by,updated_by', requestKey: null }),
           pb.collection('estaciones').getFullList<Estacion>({ sort: 'nombre', requestKey: null }),
           pb.collection('tipos_actor').getFullList<CatalogoItem>({
@@ -98,18 +98,17 @@ export default function EditActorPage() {
             expand: 'estacion_id,estaciones_relacionadas',
             requestKey: null,
           }),
-          pb.collection('productos').getFullList<Producto>({
-            filter: `actores_relacionados ?= "${id}"`,
-            fields: 'id',
-            requestKey: null,
-          }),
         ]);
         
         setActor(actorRecord);
         setEstaciones(estacionesRecords);
         setTiposActor(tiposRecords);
         setProductos(productosRecords);
-        setProductosRelacionados(productosRelacionadosRecords.map((producto) => producto.id));
+        setProductosRelacionados(
+          productosRecords
+            .filter((producto) => (producto.actores_relacionados || []).includes(id))
+            .map((producto) => producto.id)
+        );
         
         // Initialize form fields
         setNombre(actorRecord.nombre || '');

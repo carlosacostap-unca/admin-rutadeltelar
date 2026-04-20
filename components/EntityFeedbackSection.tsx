@@ -52,7 +52,10 @@ export default function EntityFeedbackSection({
           setPuntuaciones(puntuacionesRecords);
         }
       } catch (error) {
-        console.warn(`No se pudo cargar el feedback para ${entityType}/${entityId}:`, error);
+        const status = (error as any)?.status;
+        if (status !== 404) {
+          console.warn(`No se pudo cargar el feedback para ${entityType}/${entityId}:`, error);
+        }
         if (!cancelled) {
           setComentarios([]);
           setPuntuaciones([]);
