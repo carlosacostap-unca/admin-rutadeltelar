@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor, ActorTipo, ActorEstado } from '@/types/actor';
+import { Producto } from '@/types/producto';
 import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
 import { CatalogoItem } from '@/types/catalogo';
@@ -22,6 +23,7 @@ export default function EditActorPage() {
   
   const [actor, setActor] = useState<Actor | null>(null);
   const [estaciones, setEstaciones] = useState<Estacion[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
   const [tiposActor, setTiposActor] = useState<CatalogoItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
@@ -30,6 +32,7 @@ export default function EditActorPage() {
   const [tipo, setTipo] = useState<ActorTipo>('');
   const [estacionId, setEstacionId] = useState('');
   const [ubicadoEnEstacionInaugurada, setUbicadoEnEstacionInaugurada] = useState(false);
+  const [productosRelacionados, setProductosRelacionados] = useState<string[]>([]);
   const [descripcion, setDescripcion] = useState('');
   const [contactoTelefono, setContactoTelefono] = useState('');
   const [contactoEmail, setContactoEmail] = useState('');
@@ -82,7 +85,7 @@ export default function EditActorPage() {
       if (!id || !user || !canEditContent(user as any)) return;
       
       try {
-        const [actorRecord, estacionesRecords, tiposRecords] = await Promise.all([
+        const [actorRecord, estacionesRecords, tiposRecords, productosRecords, productosRelacionadosRecords] = await Promise.all([
           pb.collection('actores').getOne<Actor>(id, { expand: 'estacion_id,created_by,updated_by', requestKey: null }),
           pb.collection('estaciones').getFullList<Estacion>({ sort: 'nombre', requestKey: null }),
           pb.collection('tipos_actor').getFullList<CatalogoItem>({
@@ -90,11 +93,23 @@ export default function EditActorPage() {
             sort: buildCatalogoSort(),
             requestKey: null,
           }),
+          pb.collection('productos').getFullList<Producto>({
+            sort: 'nombre',
+            expand: 'estacion_id,estaciones_relacionadas',
+            requestKey: null,
+          }),
+          pb.collection('productos').getFullList<Producto>({
+            filter: `actores_relacionados ?= "${id}"`,
+            fields: 'id',
+            requestKey: null,
+          }),
         ]);
         
         setActor(actorRecord);
         setEstaciones(estacionesRecords);
         setTiposActor(tiposRecords);
+        setProductos(productosRecords);
+        setProductosRelacionados(productosRelacionadosRecords.map((producto) => producto.id));
         
         // Initialize form fields
         setNombre(actorRecord.nombre || '');
@@ -154,6 +169,57 @@ export default function EditActorPage() {
       setUbicadoEnEstacionInaugurada(false);
     }
   }, [puedeIndicarEstacionInaugurada, ubicadoEnEstacionInaugurada]);
+
+  const getProductoEstaciones = (producto: Producto) => {
+    if (producto.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0) {
+      return producto.expand.estaciones_relacionadas;
+    }
+    if (producto.expand?.estacion_id) {
+      return [producto.expand.estacion_id];
+    }
+    return [];
+  };
+
+  const getProductoDisplayLabel = (producto: Producto) => {
+    const estacionesLabel = getProductoEstaciones(producto).map((item) => item.nombre).join(', ');
+    return estacionesLabel ? `${producto.nombre} (${estacionesLabel})` : producto.nombre;
+  };
+
+  const productosDisponibles = productos.filter((producto) => {
+    if (productosRelacionados.includes(producto.id)) return true;
+    if (!estacionId) return true;
+    const estacionesProducto = producto.estaciones_relacionadas && producto.estaciones_relacionadas.length > 0
+      ? producto.estaciones_relacionadas
+      : producto.estacion_id
+        ? [producto.estacion_id]
+        : [];
+    return estacionesProducto.includes(estacionId);
+  });
+
+  const syncProductosRelacionados = async (actorId: string, selectedProductIds: string[]) => {
+    const productosActualmenteRelacionados = productos.filter((producto) =>
+      (producto.actores_relacionados || []).includes(actorId)
+    );
+    const idsActuales = productosActualmenteRelacionados.map((producto) => producto.id);
+
+    const idsParaAgregar = selectedProductIds.filter((productId) => !idsActuales.includes(productId));
+    const idsParaQuitar = idsActuales.filter((productId) => !selectedProductIds.includes(productId));
+
+    await Promise.all([
+      ...idsParaAgregar.map(async (productId) => {
+        const producto = productos.find((item) => item.id === productId);
+        if (!producto) return;
+        const nextActores = Array.from(new Set([...(producto.actores_relacionados || []), actorId]));
+        await pb.collection('productos').update(producto.id, { actores_relacionados: nextActores }, { requestKey: null });
+      }),
+      ...idsParaQuitar.map(async (productId) => {
+        const producto = productos.find((item) => item.id === productId);
+        if (!producto) return;
+        const nextActores = (producto.actores_relacionados || []).filter((currentId) => currentId !== actorId);
+        await pb.collection('productos').update(producto.id, { actores_relacionados: nextActores }, { requestKey: null });
+      }),
+    ]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,6 +297,7 @@ export default function EditActorPage() {
       }
       
       await updateRecordWithAudit('actores', id, formData, user);
+      await syncProductosRelacionados(id, productosRelacionados);
       router.push('/actores');
     } catch (err: any) {
       console.error('Error actualizando actor:', err);
@@ -575,6 +642,40 @@ export default function EditActorPage() {
                   className="input-field w-full"
                   placeholder="Ej. Calle Principal 123, Barrio Centro"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Productos relacionados
+                </label>
+                <div className="bg-[var(--color-surface)] border border-[var(--color-outline)] rounded-md max-h-56 overflow-y-auto p-4 space-y-2">
+                  {productosDisponibles.length > 0 ? (
+                    productosDisponibles.map((producto) => (
+                      <label key={producto.id} className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={productosRelacionados.includes(producto.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setProductosRelacionados([...productosRelacionados, producto.id]);
+                            } else {
+                              setProductosRelacionados(productosRelacionados.filter((currentId) => currentId !== producto.id));
+                            }
+                          }}
+                          className="h-4 w-4 text-[var(--color-primary)] rounded border-[var(--color-outline)] focus:ring-[var(--color-primary)]"
+                        />
+                        <span className="text-sm text-[var(--color-on-surface)]">{getProductoDisplayLabel(producto)}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-sm text-[var(--color-on-surface-variant)] italic">
+                      No hay productos disponibles para relacionar.
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
+                  Puedes gestionar aquí los productos vinculados a este actor, igual que desde la edición de productos.
+                </p>
               </div>
 
               {puedeIndicarEstacionInaugurada && (

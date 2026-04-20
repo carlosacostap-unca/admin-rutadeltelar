@@ -8,6 +8,7 @@ import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Actor, ActorTipo } from '@/types/actor';
+import { Producto } from '@/types/producto';
 import Map from '@/components/Map';
 import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
@@ -19,6 +20,7 @@ export default function ActorDetailPage() {
   const id = params.id as string;
   
   const [actor, setActor] = useState<Actor | null>(null);
+  const [productosRelacionados, setProductosRelacionados] = useState<Producto[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,11 +35,20 @@ export default function ActorDetailPage() {
       if (!id || !user) return;
       
       try {
-        const record = await pb.collection('actores').getOne<Actor>(id, {
-          expand: 'estacion_id,tipo,created_by,updated_by',
-          requestKey: null
-        });
+        const [record, productosRecords] = await Promise.all([
+          pb.collection('actores').getOne<Actor>(id, {
+            expand: 'estacion_id,tipo,created_by,updated_by',
+            requestKey: null
+          }),
+          pb.collection('productos').getFullList<Producto>({
+            filter: `actores_relacionados ?= "${id}"`,
+            sort: 'nombre',
+            expand: 'estacion_id,estaciones_relacionadas',
+            requestKey: null,
+          }),
+        ]);
         setActor(record);
+        setProductosRelacionados(productosRecords);
       } catch (err) {
         console.error('Error fetching actor:', err);
         setError('No se pudo cargar el actor. Es posible que no exista.');
@@ -72,6 +83,12 @@ export default function ActorDetailPage() {
 
   const canEdit = canEditContent(user as any);
   const tipoSlug = normalizeCatalogName(actor?.expand?.tipo?.nombre || actor?.tipo);
+  const getProductoEstaciones = (producto: Producto) => {
+    if (producto.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0) {
+      return producto.expand.estaciones_relacionadas.map((item) => item.nombre).join(', ');
+    }
+    return producto.expand?.estacion_id?.nombre || '';
+  };
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -269,6 +286,34 @@ export default function ActorDetailPage() {
                   </>
                 )}
               </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
+              <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
+                Productos Relacionados
+              </h3>
+              {productosRelacionados.length > 0 ? (
+                <div className="space-y-3">
+                  {productosRelacionados.map((producto) => (
+                    <Link
+                      key={producto.id}
+                      href={`/productos/${producto.id}`}
+                      className="block bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] rounded-md p-4 hover:bg-[var(--color-surface)] transition-colors"
+                    >
+                      <div className="font-medium text-[var(--color-primary)]">{producto.nombre}</div>
+                      {getProductoEstaciones(producto) && (
+                        <div className="text-sm text-[var(--color-on-surface-variant)] mt-1">
+                          {getProductoEstaciones(producto)}
+                        </div>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[var(--color-on-surface-variant)] italic">
+                  No hay productos relacionados con este actor.
+                </p>
+              )}
             </div>
 
             <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
