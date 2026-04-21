@@ -182,7 +182,6 @@ export default function ActorDetailPage() {
               recordId={actor.id}
               currentState={actor.estado}
               observaciones={actor.observaciones_revision}
-              expand="estacion_id,tipo,created_by,updated_by"
               user={user}
               onStatusChange={(updatedRecord) => setActor(updatedRecord as Actor)}
             />

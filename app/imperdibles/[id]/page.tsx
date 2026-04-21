@@ -166,7 +166,6 @@ export default function ImperdibleDetailPage() {
                     recordId={imperdible.id}
                     currentState={imperdible.estado}
                     observaciones={imperdible.observaciones_revision}
-                    expand="estacion_id,tipo,prioridad,actores_relacionados,productos_relacionados,experiencias_relacionadas,created_by,updated_by"
                     user={user}
                     onStatusChange={(updatedRecord) => setImperdible(updatedRecord as Imperdible)}
                   />

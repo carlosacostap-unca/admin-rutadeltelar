@@ -190,7 +190,6 @@ export default function EstacionDetailPage() {
                     recordId={estacion.id}
                     currentState={estacion.estado}
                     observaciones={estacion.observaciones_revision}
-                    expand="departamento,created_by,updated_by"
                     user={user}
                     onStatusChange={(updated) => setEstacion(updated)}
                   />

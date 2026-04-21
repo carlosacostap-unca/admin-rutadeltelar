@@ -8,7 +8,6 @@ interface ContentStatusManagerProps {
   recordId: string;
   currentState: string;
   observaciones?: string;
-  expand?: string;
   user: any;
   onStatusChange: (updatedRecord: any) => void;
 }
@@ -18,7 +17,6 @@ export default function ContentStatusManager({
   recordId,
   currentState,
   observaciones,
-  expand,
   user,
   onStatusChange
 }: ContentStatusManagerProps) {
@@ -47,14 +45,7 @@ export default function ContentStatusManager({
       }
 
       const updatedRecord = await pb.collection(collectionName).update(recordId, dataToUpdate);
-      const hydratedRecord = expand
-        ? await pb.collection(collectionName).getOne(recordId, {
-            expand,
-            requestKey: null,
-          })
-        : updatedRecord;
-
-      onStatusChange(hydratedRecord);
+      onStatusChange(updatedRecord);
       setShowRejectModal(false);
       setRejectReason('');
       

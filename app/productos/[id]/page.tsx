@@ -124,7 +124,6 @@ export default function ProductoDetailPage() {
               recordId={producto.id}
               currentState={producto.estado}
               observaciones={producto.observaciones_revision}
-              expand="estacion_id,estaciones_relacionadas,categoria,subcategoria,tecnicas,actores_relacionados,actores_relacionados.estacion_id,actores_relacionados.tipo,created_by,updated_by"
               user={user}
               onStatusChange={(updatedRecord) => setProducto(updatedRecord as Producto)}
             />

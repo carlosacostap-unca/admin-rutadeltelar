@@ -143,7 +143,6 @@ export default function ExperienciaDetailPage() {
                     recordId={experiencia.id}
                     currentState={experiencia.estado}
                     observaciones={experiencia.observaciones_revision}
-                    expand="estacion_id,categoria,responsable,created_by,updated_by"
                     user={user}
                     onStatusChange={(updatedRecord) => setExperiencia(updatedRecord as Experiencia)}
                   />
