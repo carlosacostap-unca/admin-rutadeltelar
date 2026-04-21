@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import pb from '@/lib/pocketbase';
+import pb, { updateRecordAndReload } from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent, hasAnyRole } from '@/lib/permissions';
@@ -67,8 +67,13 @@ export default function ActorDetailPage() {
     
     try {
       const newStatus = actor.estado === 'inactivo' ? 'borrador' : 'inactivo';
-      const updatedRecord = await pb.collection('actores').update<Actor>(id, { estado: newStatus });
-      setActor({ ...actor, estado: updatedRecord.estado });
+      const refreshedRecord = await updateRecordAndReload<Actor>(
+        'actores',
+        id,
+        { estado: newStatus },
+        'estacion_id,tipo,created_by,updated_by'
+      );
+      setActor(refreshedRecord);
     } catch (error) {
       console.error('Error toggling actor status:', error);
       alert('Error al cambiar el estado del actor');
@@ -182,6 +187,7 @@ export default function ActorDetailPage() {
               recordId={actor.id}
               currentState={actor.estado}
               observaciones={actor.observaciones_revision}
+              expand="estacion_id,tipo,created_by,updated_by"
               user={user}
               onStatusChange={(updatedRecord) => setActor(updatedRecord as Actor)}
             />

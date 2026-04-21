@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import pb from '@/lib/pocketbase';
+import pb, { updateRecordAndReload } from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent, hasAnyRole } from '@/lib/permissions';
@@ -54,8 +54,13 @@ export default function ExperienciaDetailPage() {
     
     try {
       const newStatus = experiencia.estado === 'inactivo' ? 'borrador' : 'inactivo';
-      const updatedRecord = await pb.collection('experiencias').update<Experiencia>(id, { estado: newStatus });
-      setExperiencia({ ...experiencia, estado: updatedRecord.estado });
+      const refreshedRecord = await updateRecordAndReload<Experiencia>(
+        'experiencias',
+        id,
+        { estado: newStatus },
+        'estacion_id,categoria,responsable,created_by,updated_by'
+      );
+      setExperiencia(refreshedRecord);
     } catch (error) {
       console.error('Error toggling experiencia status:', error);
       alert('Error al cambiar el estado de la experiencia');
@@ -143,6 +148,7 @@ export default function ExperienciaDetailPage() {
                     recordId={experiencia.id}
                     currentState={experiencia.estado}
                     observaciones={experiencia.observaciones_revision}
+                    expand="estacion_id,categoria,responsable,created_by,updated_by"
                     user={user}
                     onStatusChange={(updatedRecord) => setExperiencia(updatedRecord as Experiencia)}
                   />

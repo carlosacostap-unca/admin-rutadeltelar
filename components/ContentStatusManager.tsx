@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
-import pb from '@/lib/pocketbase';
+import { updateRecordAndReload } from '@/lib/pocketbase';
 
 interface ContentStatusManagerProps {
   collectionName: string;
   recordId: string;
   currentState: string;
   observaciones?: string;
+  expand?: string;
   user: any;
   onStatusChange: (updatedRecord: any) => void;
 }
@@ -17,6 +18,7 @@ export default function ContentStatusManager({
   recordId,
   currentState,
   observaciones,
+  expand,
   user,
   onStatusChange
 }: ContentStatusManagerProps) {
@@ -44,8 +46,14 @@ export default function ContentStatusManager({
         dataToUpdate.observaciones_revision = ''; // Clear previous reasons
       }
 
-      const updatedRecord = await pb.collection(collectionName).update(recordId, dataToUpdate);
-      onStatusChange(updatedRecord);
+      const hydratedRecord = await updateRecordAndReload(
+        collectionName,
+        recordId,
+        dataToUpdate,
+        expand
+      );
+
+      onStatusChange(hydratedRecord);
       setShowRejectModal(false);
       setRejectReason('');
       

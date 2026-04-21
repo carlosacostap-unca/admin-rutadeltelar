@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import pb from '@/lib/pocketbase';
+import pb, { updateRecordAndReload } from '@/lib/pocketbase';
 import Link from 'next/link';
 import { canEditContent, hasAnyRole } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
@@ -91,8 +91,13 @@ export default function EstacionDetailPage() {
     
     try {
       const newStatus = estacion.estado === 'inactivo' ? 'borrador' : 'inactivo';
-      const updatedRecord = await pb.collection('estaciones').update<Estacion>(id, { estado: newStatus });
-      setEstacion(updatedRecord);
+      const refreshedRecord = await updateRecordAndReload<Estacion>(
+        'estaciones',
+        id,
+        { estado: newStatus },
+        'departamento,created_by,updated_by'
+      );
+      setEstacion(refreshedRecord);
     } catch (error) {
       console.error('Error toggling estacion status:', error);
       alert('Error al cambiar el estado de la estación');
@@ -190,6 +195,7 @@ export default function EstacionDetailPage() {
                     recordId={estacion.id}
                     currentState={estacion.estado}
                     observaciones={estacion.observaciones_revision}
+                    expand="departamento,created_by,updated_by"
                     user={user}
                     onStatusChange={(updated) => setEstacion(updated)}
                   />
