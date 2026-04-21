@@ -6,10 +6,11 @@ import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, hasAnyRole } from '@/lib/permissions';
 import { Producto, ProductoCategoria } from '@/types/producto';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
+import { deleteRecordWithAudit } from '@/lib/audit';
 
 export default function ProductoDetailPage() {
   const { user, isLoading } = useAuth();
@@ -66,6 +67,20 @@ export default function ProductoDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!producto || !hasAnyRole(user as any, ['admin'])) return;
+    const confirmed = window.confirm(`¿Seguro que deseas eliminar el producto "${producto.nombre}"? Esta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteRecordWithAudit('productos', producto.id, user);
+      router.push('/productos');
+    } catch (error) {
+      console.error('Error deleting producto:', error);
+      alert('Error al eliminar el producto');
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -75,6 +90,7 @@ export default function ProductoDetailPage() {
   }
 
   const canEdit = canEditContent(user as any);
+  const canDelete = hasAnyRole(user as any, ['admin']);
   const estacionesRelacionadas = producto?.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0
     ? producto.expand.estaciones_relacionadas
     : producto?.expand?.estacion_id
@@ -159,6 +175,14 @@ export default function ProductoDetailPage() {
                   >
                     {producto.estado === 'inactivo' ? 'Restaurar' : 'Desactivar'}
                   </button>
+                  {canDelete && (
+                    <button
+                      onClick={handleDelete}
+                      className="font-medium transition-colors px-4 py-2 border rounded-full text-sm border-red-700 text-red-700 hover:bg-red-50"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                   <Link
                     href={`/productos/${producto.id}/edit`}
                     className="btn-primary px-4 py-2 text-sm shadow-md"

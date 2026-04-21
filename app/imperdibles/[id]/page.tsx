@@ -7,11 +7,12 @@ import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, hasAnyRole } from '@/lib/permissions';
 import { Imperdible, ImperdibleTipo } from '@/types/imperdible';
 import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
 import { formatUtcToBrowserLocale, getBrowserTimeZoneLabel } from '@/lib/datetime';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
+import { deleteRecordWithAudit } from '@/lib/audit';
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false }) as React.FC<{ lat: number; lng: number; zoom?: number; label?: string }>;
 
@@ -65,6 +66,20 @@ export default function ImperdibleDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!imperdible || !hasAnyRole(user as any, ['admin'])) return;
+    const confirmed = window.confirm(`¿Seguro que deseas eliminar el imperdible "${imperdible.titulo}"? Esta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteRecordWithAudit('imperdibles', imperdible.id, user);
+      router.push('/imperdibles');
+    } catch (error) {
+      console.error('Error deleting imperdible:', error);
+      alert('Error al eliminar el imperdible');
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -74,6 +89,7 @@ export default function ImperdibleDetailPage() {
   }
 
   const canEdit = canEditContent(user as any);
+  const canDelete = hasAnyRole(user as any, ['admin']);
   const esEvento = normalizeCatalogName(imperdible?.expand?.tipo?.nombre || imperdible?.tipo) === 'evento';
   const fechaHoraEventoLabel = formatUtcToBrowserLocale(imperdible?.fecha_hora_evento);
   const gmtLabel = getBrowserTimeZoneLabel(imperdible?.fecha_hora_evento);
@@ -161,6 +177,14 @@ export default function ImperdibleDetailPage() {
                       >
                         {imperdible.estado === 'inactivo' ? 'Restaurar' : 'Desactivar'}
                       </button>
+                      {canDelete && (
+                        <button
+                          onClick={handleDelete}
+                          className="font-medium transition-colors px-4 py-2 border rounded-full text-sm border-red-700 text-red-700 hover:bg-red-50"
+                        >
+                          Eliminar
+                        </button>
+                      )}
                       <Link
                         href={`/imperdibles/${imperdible.id}/edit`}
                         className="btn-primary px-4 py-2 text-sm shadow-md"

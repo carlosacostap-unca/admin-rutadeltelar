@@ -6,12 +6,13 @@ import { useEffect, useMemo, useState } from 'react';
 import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, hasAnyRole } from '@/lib/permissions';
 import { Actor, ActorTipo } from '@/types/actor';
 import { Producto } from '@/types/producto';
 import Map from '@/components/Map';
 import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
+import { deleteRecordWithAudit } from '@/lib/audit';
 
 export default function ActorDetailPage() {
   const { user, isLoading } = useAuth();
@@ -74,6 +75,20 @@ export default function ActorDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!actor || !hasAnyRole(user as any, ['admin'])) return;
+    const confirmed = window.confirm(`¿Seguro que deseas eliminar el actor "${actor.nombre}"? Esta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteRecordWithAudit('actores', actor.id, user);
+      router.push('/actores');
+    } catch (error) {
+      console.error('Error deleting actor:', error);
+      alert('Error al eliminar el actor');
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -83,6 +98,7 @@ export default function ActorDetailPage() {
   }
 
   const canEdit = canEditContent(user as any);
+  const canDelete = hasAnyRole(user as any, ['admin']);
   const tipoSlug = normalizeCatalogName(actor?.expand?.tipo?.nombre || actor?.tipo);
   const getProductoEstaciones = (producto: Producto) => {
     if (producto.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0) {
@@ -205,6 +221,14 @@ export default function ActorDetailPage() {
                   >
                     {actor.estado === 'inactivo' ? 'Restaurar' : 'Desactivar'}
                   </button>
+                  {canDelete && (
+                    <button
+                      onClick={handleDelete}
+                      className="font-medium transition-colors px-4 py-2 border rounded-full text-sm border-red-700 text-red-700 hover:bg-red-50"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                   <Link
                     href={`/actores/${actor.id}/edit`}
                     className="btn-primary px-4 py-2 text-sm shadow-md"

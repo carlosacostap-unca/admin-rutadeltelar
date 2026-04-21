@@ -6,10 +6,11 @@ import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
-import { canEditContent } from '@/lib/permissions';
+import { canEditContent, hasAnyRole } from '@/lib/permissions';
 import { Experiencia, ExperienciaCategoria } from '@/types/experiencia';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
+import { deleteRecordWithAudit } from '@/lib/audit';
 
 export default function ExperienciaDetailPage() {
   const { user, isLoading } = useAuth();
@@ -61,6 +62,20 @@ export default function ExperienciaDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!experiencia || !hasAnyRole(user as any, ['admin'])) return;
+    const confirmed = window.confirm(`¿Seguro que deseas eliminar la experiencia "${experiencia.titulo}"? Esta acción no se puede deshacer.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteRecordWithAudit('experiencias', experiencia.id, user);
+      router.push('/experiencias');
+    } catch (error) {
+      console.error('Error deleting experiencia:', error);
+      alert('Error al eliminar la experiencia');
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -70,6 +85,7 @@ export default function ExperienciaDetailPage() {
   }
 
   const canEdit = canEditContent(user as any);
+  const canDelete = hasAnyRole(user as any, ['admin']);
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -138,6 +154,14 @@ export default function ExperienciaDetailPage() {
                       >
                         {experiencia.estado === 'inactivo' ? 'Restaurar' : 'Desactivar'}
                       </button>
+                      {canDelete && (
+                        <button
+                          onClick={handleDelete}
+                          className="font-medium transition-colors px-4 py-2 border rounded-full text-sm border-red-700 text-red-700 hover:bg-red-50"
+                        >
+                          Eliminar
+                        </button>
+                      )}
                       <Link
                         href={`/experiencias/${experiencia.id}/edit`}
                         className="btn-primary px-4 py-2 text-sm shadow-md"
