@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import pb, { updateRecordAndReload } from '@/lib/pocketbase';
+import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -58,13 +58,8 @@ export default function ImperdibleDetailPage() {
     
     try {
       const newStatus = imperdible.estado === 'inactivo' ? 'borrador' : 'inactivo';
-      const refreshedRecord = await updateRecordAndReload<Imperdible>(
-        'imperdibles',
-        id,
-        { estado: newStatus },
-        'estacion_id,tipo,prioridad,actores_relacionados,productos_relacionados,experiencias_relacionadas,created_by,updated_by'
-      );
-      setImperdible(refreshedRecord);
+      const updatedRecord = await pb.collection('imperdibles').update<Imperdible>(id, { estado: newStatus });
+      setImperdible({ ...imperdible, estado: updatedRecord.estado });
     } catch (error) {
       console.error('Error toggling imperdible status:', error);
       alert('Error al cambiar el estado del imperdible');

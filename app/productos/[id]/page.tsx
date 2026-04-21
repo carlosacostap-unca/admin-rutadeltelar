@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import pb, { updateRecordAndReload } from '@/lib/pocketbase';
+import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent, hasAnyRole } from '@/lib/permissions';
@@ -59,13 +59,8 @@ export default function ProductoDetailPage() {
     
     try {
       const newStatus = producto.estado === 'inactivo' ? 'borrador' : 'inactivo';
-      const refreshedRecord = await updateRecordAndReload<Producto>(
-        'productos',
-        id,
-        { estado: newStatus },
-        'estacion_id,estaciones_relacionadas,categoria,subcategoria,tecnicas,actores_relacionados,actores_relacionados.estacion_id,actores_relacionados.tipo,created_by,updated_by'
-      );
-      setProducto(refreshedRecord);
+      const updatedRecord = await pb.collection('productos').update<Producto>(id, { estado: newStatus });
+      setProducto({ ...producto, estado: updatedRecord.estado });
     } catch (error) {
       console.error('Error toggling producto status:', error);
       alert('Error al cambiar el estado del producto');
