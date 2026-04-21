@@ -56,22 +56,31 @@ export default function MapPicker({ lat, lng, zoom = 13, label = "Ubicación sel
     );
   }
 
+  const hasValidCoordinates =
+    lat !== null &&
+    lng !== null &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180;
+
   // Default center if no lat/lng is provided (e.g., Catamarca, Argentina as a sensible default for Ruta del Telar)
   const defaultCenter: [number, number] = [-27.4692, -65.7795];
-  const center: [number, number] = lat !== null && lng !== null ? [lat, lng] : defaultCenter;
+  const center: [number, number] = hasValidCoordinates ? [lat, lng] : defaultCenter;
+  const mapZoom = hasValidCoordinates ? zoom : 6;
 
   return (
     <div className="w-full h-[300px] rounded-lg overflow-hidden border border-[var(--color-outline)] z-0 relative">
       <MapContainer 
         center={center} 
-        zoom={lat !== null && lng !== null ? zoom : 6} 
+        zoom={mapZoom} 
         style={{ height: "100%", width: "100%", zIndex: 0 }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <LocationMarker lat={lat} lng={lng} onLocationSelect={onLocationSelect} label={label} icon={icon} />
+        <LocationMarker lat={hasValidCoordinates ? lat : null} lng={hasValidCoordinates ? lng : null} onLocationSelect={onLocationSelect} label={label} icon={icon} />
       </MapContainer>
     </div>
   );

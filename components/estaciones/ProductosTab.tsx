@@ -24,12 +24,22 @@ export default function ProductosTab({ estacionId, user }: ProductosTabProps) {
     async function fetchProductos() {
       try {
         const records = await pb.collection('productos').getFullList<Producto>({
-          filter: `estacion_id = "${estacionId}" || estaciones_relacionadas ?= "${estacionId}"`,
           sort: '-created',
           requestKey: null,
           expand: 'actores_relacionados,actores_relacionados.estacion_id,estaciones_relacionadas'
         });
-        setProductos(records);
+        const productosFiltrados = records.filter((producto) => {
+          const estacionesRelacionadas =
+            producto.estaciones_relacionadas && producto.estaciones_relacionadas.length > 0
+              ? producto.estaciones_relacionadas
+              : producto.estacion_id
+                ? [producto.estacion_id]
+                : [];
+
+          return estacionesRelacionadas.includes(estacionId);
+        });
+
+        setProductos(productosFiltrados);
       } catch (err) {
         console.error('Error fetching productos for estacion:', err);
         setError('No se pudieron cargar los productos asociados.');

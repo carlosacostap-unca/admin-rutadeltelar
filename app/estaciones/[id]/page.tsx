@@ -7,6 +7,7 @@ import pb from '@/lib/pocketbase';
 import Link from 'next/link';
 import { canEditContent, hasAnyRole } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
+import { Producto } from '@/types/producto';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Map from '@/components/Map';
 import { getCatalogoLabel } from '@/lib/catalogos';
@@ -49,6 +50,29 @@ export default function EstacionDetailPage() {
         }
         return 0;
       };
+
+      const countProductosForEstacion = async (estacionId: string) => {
+        try {
+          const productos = await pb.collection('productos').getFullList<Producto>({
+            fields: 'id,estacion_id,estaciones_relacionadas',
+            requestKey: null,
+          });
+
+          return productos.filter((producto) => {
+            const estacionesRelacionadas =
+              producto.estaciones_relacionadas && producto.estaciones_relacionadas.length > 0
+                ? producto.estaciones_relacionadas
+                : producto.estacion_id
+                  ? [producto.estacion_id]
+                  : [];
+
+            return estacionesRelacionadas.includes(estacionId);
+          }).length;
+        } catch (error) {
+          console.warn('No se pudieron contar los productos relacionados con la estación', error);
+          return 0;
+        }
+      };
       
       try {
         const record = await pb.collection('estaciones').getOne<Estacion>(id, {
@@ -60,10 +84,7 @@ export default function EstacionDetailPage() {
         // Fetch counts for related collections
         const [actoresCount, productosCount, experienciasCount, imperdiblesCount] = await Promise.all([
           countCollection('actores', [`estacion_id = "${id}"`]),
-          countCollection('productos', [
-            `estacion_id = "${id}" || estaciones_relacionadas ?= "${id}"`,
-            `estacion_id = "${id}"`,
-          ]),
+          countProductosForEstacion(id),
           countCollection('experiencias', [`estacion_id = "${id}"`]),
           countCollection('imperdibles', [`estacion_id = "${id}"`]),
         ]);
