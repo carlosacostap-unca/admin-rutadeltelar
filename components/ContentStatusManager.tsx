@@ -75,6 +75,17 @@ export default function ContentStatusManager({
           </button>
         )}
 
+        {/* Enviar a revisión desde aprobado */}
+        {(canEdit || canReview) && currentState === 'aprobado' && (
+          <button
+            onClick={() => handleStatusChange('en_revision')}
+            disabled={isSubmitting}
+            className="btn-primary px-4 py-2 text-sm shadow-md bg-blue-600 hover:bg-blue-700"
+          >
+            {isSubmitting ? 'Guardando...' : 'Enviar a revisión'}
+          </button>
+        )}
+
         {/* Aprobar */}
         {canReview && currentState === 'en_revision' && (
           <button
