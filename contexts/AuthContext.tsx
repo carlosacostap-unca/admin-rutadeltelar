@@ -17,6 +17,8 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const SESSION_STARTED_AT_KEY = 'sessionStartedAt';
+const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthModel | null>(null);
@@ -32,12 +34,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const getSessionStartedAt = () => {
+    if (typeof window === 'undefined') return null;
+
+    const startedAt = Number(localStorage.getItem(SESSION_STARTED_AT_KEY));
+    return Number.isFinite(startedAt) ? startedAt : null;
+  };
+
+  const ensureSessionStartedAt = () => {
+    if (typeof window === 'undefined') return Date.now();
+
+    const startedAt = getSessionStartedAt();
+    if (startedAt) return startedAt;
+
+    const now = Date.now();
+    localStorage.setItem(SESSION_STARTED_AT_KEY, String(now));
+    return now;
+  };
+
+  const isSessionExpired = () => {
+    const startedAt = getSessionStartedAt();
+    return startedAt !== null && Date.now() - startedAt >= SESSION_DURATION_MS;
+  };
+
   const clearSession = () => {
     pb.authStore.clear();
     setUser(null);
     setActiveRoleState(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('activeRole');
+      localStorage.removeItem(SESSION_STARTED_AT_KEY);
     }
   };
 
@@ -70,6 +96,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
 
       if (model) {
+        if (isSessionExpired()) {
+          clearSession();
+          setError('Tu sesión venció. Vuelve a iniciar sesión.');
+          router.push('/login');
+          return;
+        }
+
+        ensureSessionStartedAt();
+
         // Asumimos que hay un campo booleano 'active' en la colección users
         // o si es necesario un campo 'role', ajusta la condición según corresponda.
         if (model.active === true || model.active === undefined) {
@@ -126,6 +161,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth();
 
+    const sessionTimer = window.setInterval(() => {
+      if (pb.authStore.model && isSessionExpired()) {
+        clearSession();
+        setError('Tu sesión venció. Vuelve a iniciar sesión.');
+        router.push('/login');
+      }
+    }, 60 * 1000);
+
     // Escuchar cambios en el authStore de PocketBase
     const unsubscribe = pb.authStore.onChange((token, model) => {
       checkAndSetUser(model);
@@ -133,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
+      window.clearInterval(sessionTimer);
       unsubscribe();
     };
   }, []);
@@ -161,6 +205,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(SESSION_STARTED_AT_KEY, String(Date.now()));
+      }
       setUser(authData.record);
       router.push('/');
     } catch (err: any) {
