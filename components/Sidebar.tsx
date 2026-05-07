@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import RoleGuard from '@/components/RoleGuard';
@@ -29,10 +30,15 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         }`}
       >
         <div className="px-6 py-6 border-b border-[var(--color-surface-variant)] flex justify-between items-center">
-          <Link href="/">
-            <h1 className="text-2xl font-extrabold tracking-[-0.02em] font-display text-[var(--color-primary)] leading-tight">
-              Ruta del<br />Telar
-            </h1>
+          <Link href="/" className="block">
+            <Image
+              src="/imagotipo.svg"
+              alt="Ruta del Telar"
+              width={532}
+              height={284}
+              priority
+              className="h-[3.9rem] w-auto"
+            />
           </Link>
           <button 
             onClick={onClose}
