@@ -32,7 +32,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         <div className="px-6 py-6 border-b border-[var(--color-surface-variant)] flex justify-between items-center">
           <Link href="/" className="block">
             <Image
-              src="/imagotipo.svg"
+              src="/imagotipo.png"
               alt="Ruta del Telar"
               width={532}
               height={284}
