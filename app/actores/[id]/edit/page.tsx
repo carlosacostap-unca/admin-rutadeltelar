@@ -1,10 +1,12 @@
 'use client';
 
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
+import { updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
@@ -75,14 +77,14 @@ export default function EditActorPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && (!user || !canEditContent(user as any))) {
+    if (!isLoading && (!user || !canEditContent(user))) {
       router.push('/actores');
     }
   }, [user, isLoading, router]);
 
   useEffect(() => {
     async function fetchData() {
-      if (!id || !user || !canEditContent(user as any)) return;
+      if (!id || !user || !canEditContent(user)) return;
       
       try {
         const [actorRecord, estacionesRecords, tiposRecords, productosRecords] = await Promise.all([
@@ -298,15 +300,15 @@ export default function EditActorPage() {
       await updateRecordWithAudit('actores', id, formData, user);
       await syncProductosRelacionados(id, productosRelacionados);
       router.push('/actores');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error actualizando actor:', err);
-      setError(err?.response?.message || 'Error al actualizar el actor.');
+      setError(asPocketBaseError(err)?.response?.message || 'Error al actualizar el actor.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading || !user || !canEditContent(user as any)) {
+  if (isLoading || !user || !canEditContent(user)) {
     return (
       <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
@@ -750,7 +752,7 @@ export default function EditActorPage() {
                   {/* Current Photos */}
                   {actor?.fotos?.filter(f => !fotosParaEliminar.includes(f)).map((foto, index) => (
                     <div key={`current-${index}`} className="relative aspect-square bg-[var(--color-surface)] rounded-md border border-[var(--color-outline-variant)] overflow-hidden">
-                      <img 
+                      <Image unoptimized width={800} height={600} 
                         src={pb.files.getURL(actor, foto)} 
                         alt={`Current ${index}`} 
                         className="object-contain w-full h-full p-1"
@@ -769,7 +771,7 @@ export default function EditActorPage() {
                   {/* New Photos Previews */}
                   {fotos && Array.from(fotos).map((file, index) => (
                     <div key={`new-${index}`} className="relative aspect-square bg-[var(--color-surface)] rounded-md border border-[var(--color-outline-variant)] overflow-hidden">
-                      <img 
+                      <Image unoptimized width={800} height={600} 
                         src={URL.createObjectURL(file)} 
                         alt={`Preview ${index}`} 
                         className="object-contain w-full h-full p-1"
@@ -873,7 +875,7 @@ export default function EditActorPage() {
                 >
                   <option value="borrador">Borrador</option>
                   <option value="en_revision">En revisión</option>
-                  {canReviewContent(user as any) && (
+                  {canReviewContent(user) && (
                     <>
                       <option value="aprobado">Aprobado</option>
                       <option value="inactivo">Inactivo</option>

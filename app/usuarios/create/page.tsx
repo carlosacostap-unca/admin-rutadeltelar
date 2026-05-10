@@ -1,10 +1,10 @@
 'use client';
 
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import pb from '@/lib/pocketbase';
-import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
+import { createRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 
 export default function CreateUserPage() {
@@ -68,9 +68,9 @@ export default function CreateUserPage() {
       
       await createRecordWithAudit('users', data, user);
       router.push('/usuarios');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creando usuario:', err);
-      setError(err?.response?.message || 'Error al crear el usuario. Verifica que el correo no esté ya registrado.');
+      setError(asPocketBaseError(err)?.response?.message || 'Error al crear el usuario. Verifica que el correo no esté ya registrado.');
     } finally {
       setIsSubmitting(false);
     }

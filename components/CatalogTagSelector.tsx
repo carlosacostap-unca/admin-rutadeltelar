@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
 import { buildCatalogoSort } from '@/lib/catalogos';
 import { CatalogoCollectionName, CatalogoItem } from '@/types/catalogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,7 +28,7 @@ export default function CatalogTagSelector({
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canCreateItems = hasAnyRole(user as any, ['admin']);
+  const canCreateItems = hasAnyRole(user, ['admin']);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,9 +92,9 @@ export default function CatalogTagSelector({
       setItems((current) => [...current, created].sort((a, b) => a.nombre.localeCompare(b.nombre)));
       onChange([...value, created.id]);
       setNewItemName('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error creating catalog item in ${collectionName}:`, error);
-      setError(error?.response?.message || 'No se pudo crear la etiqueta.');
+      setError(asPocketBaseError(error).response?.message || 'No se pudo crear la etiqueta.');
     } finally {
       setIsCreating(false);
     }

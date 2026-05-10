@@ -11,7 +11,9 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
   
   // Close sidebar on path change
   useEffect(() => {
-    setIsSidebarOpen(false);
+    const timeoutId = window.setTimeout(() => setIsSidebarOpen(false), 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [pathname]);
   
   // No layout on login page

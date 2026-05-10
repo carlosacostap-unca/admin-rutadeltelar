@@ -6,7 +6,11 @@ import Link from 'next/link';
 import { Actor, ActorTipo } from '@/types/actor';
 import { canEditContent } from '@/lib/permissions';
 
-export default function ActoresTab({ estacionId, user }: { estacionId: string, user: any }) {
+type UserWithRoles = {
+  roles?: string[] | null;
+};
+
+export default function ActoresTab({ estacionId, user }: { estacionId: string, user: UserWithRoles }) {
   const [actores, setActores] = useState<Actor[]>([]);
   const [loading, setLoading] = useState(true);
 

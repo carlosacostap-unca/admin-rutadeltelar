@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
 import { useRouter } from 'next/navigation';
 import { AuthModel } from 'pocketbase';
@@ -20,6 +20,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const SESSION_STARTED_AT_KEY = 'sessionStartedAt';
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
+type AuthError = {
+  status?: number;
+  response?: {
+    message?: unknown;
+  };
+  message?: unknown;
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,14 +42,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const getSessionStartedAt = () => {
+  const getSessionStartedAt = useCallback(() => {
     if (typeof window === 'undefined') return null;
 
     const startedAt = Number(localStorage.getItem(SESSION_STARTED_AT_KEY));
     return Number.isFinite(startedAt) ? startedAt : null;
-  };
+  }, []);
 
-  const ensureSessionStartedAt = () => {
+  const ensureSessionStartedAt = useCallback(() => {
     if (typeof window === 'undefined') return Date.now();
 
     const startedAt = getSessionStartedAt();
@@ -50,14 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const now = Date.now();
     localStorage.setItem(SESSION_STARTED_AT_KEY, String(now));
     return now;
-  };
+  }, [getSessionStartedAt]);
 
-  const isSessionExpired = () => {
+  const isSessionExpired = useCallback(() => {
     const startedAt = getSessionStartedAt();
     return startedAt !== null && Date.now() - startedAt >= SESSION_DURATION_MS;
-  };
+  }, [getSessionStartedAt]);
 
-  const clearSession = () => {
+  const clearSession = useCallback(() => {
     pb.authStore.clear();
     setUser(null);
     setActiveRoleState(null);
@@ -65,11 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('activeRole');
       localStorage.removeItem(SESSION_STARTED_AT_KEY);
     }
-  };
+  }, []);
 
-  const getAuthErrorMessage = (error: any) => {
-    const status = error?.status;
-    const message = String(error?.response?.message || error?.message || '').toLowerCase();
+  const getAuthErrorMessage = useCallback((error: unknown) => {
+    const authError = error as AuthError;
+    const status = authError?.status;
+    const message = String(authError?.response?.message || authError?.message || '').toLowerCase();
 
     if (
       status === 0 ||
@@ -86,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return 'No se pudo validar tu sesión actual. Vuelve a iniciar sesión.';
-  };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -179,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.clearInterval(sessionTimer);
       unsubscribe();
     };
-  }, []);
+  }, [clearSession, ensureSessionStartedAt, getAuthErrorMessage, isSessionExpired, router]);
 
   const loginWithGoogle = async () => {
     try {
@@ -210,7 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setUser(authData.record);
       router.push('/');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error de autenticación con Google:', err);
       // Si el usuario cancela o hay un error, lo mostramos
       setError('No se pudo iniciar sesión o el usuario no existe internamente.');

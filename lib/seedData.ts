@@ -1,4 +1,5 @@
 import pb from '@/lib/pocketbase';
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
 
 export interface SeedResult {
   estaciones: number;
@@ -27,11 +28,12 @@ export const runSeed = async (
     errors: [],
   };
 
-  const handleError = (context: string, err: any) => {
+  const handleError = (context: string, err: unknown) => {
+    const pocketBaseError = asPocketBaseError(err);
     console.error(`Error en ${context}:`, err);
-    let errorDetail = err.message || err.toString();
-    if (err.response?.data) {
-      errorDetail += ' - Detalles: ' + JSON.stringify(err.response.data);
+    let errorDetail = pocketBaseError.message || String(err);
+    if (pocketBaseError.response?.data) {
+      errorDetail += ' - Detalles: ' + JSON.stringify(pocketBaseError.response.data);
     }
     result.errors.push(`${context}: ${errorDetail}`);
   };

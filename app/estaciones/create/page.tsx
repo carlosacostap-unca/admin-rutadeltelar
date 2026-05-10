@@ -1,10 +1,11 @@
 'use client';
 
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import pb from '@/lib/pocketbase';
-import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
+import { createRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import MapPicker from '@/components/MapPicker';
@@ -30,7 +31,7 @@ export default function CreateEstacionPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && (!user || !canEditContent(user as any))) {
+    if (!isLoading && (!user || !canEditContent(user))) {
       router.push('/estaciones');
     }
   }, [user, isLoading, router]);
@@ -71,18 +72,18 @@ export default function CreateEstacionPage() {
         }
       }
       
-      const record = await createRecordWithAudit('estaciones', formData, user);
+      await createRecordWithAudit('estaciones', formData, user);
       
       router.push('/estaciones');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creando estación:', err);
-      setError(err?.response?.message || 'Error al crear la estación.');
+      setError(asPocketBaseError(err)?.response?.message || 'Error al crear la estación.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading || !user || !canEditContent(user as any)) {
+  if (isLoading || !user || !canEditContent(user)) {
     return (
       <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
@@ -243,7 +244,7 @@ export default function CreateEstacionPage() {
               >
                 <option value="borrador">Borrador</option>
                 <option value="en_revision">En revisión</option>
-                {canReviewContent(user as any) && (
+                {canReviewContent(user) && (
                   <option value="aprobado">Aprobado</option>
                 )}
               </select>
@@ -256,7 +257,7 @@ export default function CreateEstacionPage() {
               <div className="flex flex-col gap-4">
                 {fotoPortada && (
                   <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                    <img
+                    <Image unoptimized width={800} height={600}
                       src={URL.createObjectURL(fotoPortada)}
                       alt="Vista previa de la foto de portada"
                       className="object-contain w-full h-full p-1"
@@ -307,7 +308,7 @@ export default function CreateEstacionPage() {
                   <div className="flex flex-wrap gap-4">
                     {Array.from(galeriaFotos).map((foto, index) => (
                       <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                        <img
+                        <Image unoptimized width={800} height={600}
                           src={URL.createObjectURL(foto)}
                           alt={`Nueva foto de galería ${index + 1}`}
                           className="object-contain w-full h-full p-1"

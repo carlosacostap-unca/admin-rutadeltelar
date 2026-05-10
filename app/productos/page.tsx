@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
 import Link from 'next/link';
-import { Producto, ProductoCategoria } from '@/types/producto';
+import { Producto } from '@/types/producto';
 import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel } from '@/lib/catalogos';
+
+type ProductoActor = NonNullable<NonNullable<Producto['expand']>['actores_relacionados']>[number];
 
 export default function ProductosPage() {
   return (
@@ -34,7 +36,7 @@ function ProductosContent() {
   const [estacionFilter, setEstacionFilter] = useState(initialEstacionId);
   const [estacionNombre, setEstacionNombre] = useState('');
 
-  const getActorDisplayLabel = (actor: any) => {
+  const getActorDisplayLabel = (actor: ProductoActor) => {
     const estacionNombreActor = actor?.expand?.estacion_id?.nombre || '';
     return `${actor.nombre} (${estacionNombreActor})`;
   };
@@ -75,17 +77,6 @@ function ProductosContent() {
     fetchProductos();
   }, [user]);
 
-  const toggleProductoStatus = async (id: string, currentStatus: string) => {
-    try {
-      const newStatus = currentStatus === 'inactivo' ? 'borrador' : 'inactivo';
-      await pb.collection('productos').update(id, { estado: newStatus });
-      setProductos(productos.map(p => p.id === id ? { ...p, estado: newStatus } : p));
-    } catch (error) {
-      console.error('Error toggling producto status:', error);
-      alert('Error al cambiar el estado del producto');
-    }
-  };
-
   if (isLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -94,7 +85,7 @@ function ProductosContent() {
     );
   }
 
-  const canEdit = canEditContent(user as any);
+  const canEdit = canEditContent(user);
   const getProductoEstaciones = (producto: Producto) => {
     if (producto.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0) {
       return producto.expand.estaciones_relacionadas;

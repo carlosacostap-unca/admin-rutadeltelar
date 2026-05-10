@@ -1,10 +1,11 @@
 'use client';
 
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
+import { updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import { User } from '@/types/user';
 
@@ -89,9 +90,9 @@ export default function EditUserPage() {
       
       await updateRecordWithAudit('users', userId, data, user);
       router.push('/usuarios');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error editando usuario:', err);
-      setError(err?.response?.message || 'Error al actualizar el usuario.');
+      setError(asPocketBaseError(err)?.response?.message || 'Error al actualizar el usuario.');
     } finally {
       setIsSubmitting(false);
     }

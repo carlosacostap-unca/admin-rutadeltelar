@@ -1,10 +1,12 @@
 'use client';
 
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
+import { updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
@@ -37,7 +39,7 @@ export default function EditEstacionPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && (!user || !canEditContent(user as any))) {
+    if (!isLoading && (!user || !canEditContent(user))) {
       router.push('/estaciones');
     }
   }, [user, isLoading, router]);
@@ -130,23 +132,23 @@ export default function EditEstacionPage() {
       
       await updateRecordWithAudit('estaciones', id, formData, user);
       router.push('/estaciones');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error actualizando estación:', err);
-      const validationErrors = err?.response?.data;
+      const validationErrors = asPocketBaseError(err)?.response?.data;
       if (validationErrors && Object.keys(validationErrors).length > 0) {
         const errorMessages = Object.entries(validationErrors)
-          .map(([field, details]: [string, any]) => `${field}: ${details.message}`)
+          .map(([field, details]: [string, { message?: string }]) => `${field}: ${details.message}`)
           .join(' | ');
         setError(`Error de validación: ${errorMessages}`);
       } else {
-        setError(err?.response?.message || 'Error al actualizar la estación.');
+        setError(asPocketBaseError(err)?.response?.message || 'Error al actualizar la estación.');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading || !user || !canEditContent(user as any)) {
+  if (isLoading || !user || !canEditContent(user)) {
     return (
       <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
@@ -331,7 +333,7 @@ export default function EditEstacionPage() {
                 >
                   <option value="borrador">Borrador</option>
                   <option value="en_revision">En revisión</option>
-                  {canReviewContent(user as any) && (
+                  {canReviewContent(user) && (
                     <>
                       <option value="aprobado">Aprobado</option>
                       <option value="inactivo">Inactivo</option>
@@ -346,7 +348,7 @@ export default function EditEstacionPage() {
                 </label>
                 {fotoPortadaActual ? (
                   <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                    <img
+                    <Image unoptimized width={800} height={600}
                       src={pb.files.getURL(estacion!, fotoPortadaActual)}
                       alt={`Portada de ${estacion?.nombre}`}
                       className="object-contain w-full h-full p-1"
@@ -377,7 +379,7 @@ export default function EditEstacionPage() {
                 <div className="flex flex-col gap-4">
                   {fotoPortada && (
                     <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                      <img
+                      <Image unoptimized width={800} height={600}
                         src={URL.createObjectURL(fotoPortada)}
                         alt="Nueva portada"
                         className="object-contain w-full h-full p-1"
@@ -430,7 +432,7 @@ export default function EditEstacionPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                     {galeriaActual.map((foto, index) => (
                       <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                        <img
+                        <Image unoptimized width={800} height={600}
                           src={pb.files.getURL(estacion!, foto)}
                           alt={`Foto de galería ${index + 1} de ${estacion?.nombre}`}
                           className="object-contain w-full h-full p-1"
@@ -462,7 +464,7 @@ export default function EditEstacionPage() {
                     <div className="flex flex-wrap gap-4">
                       {Array.from(galeriaFotos).map((foto, index) => (
                         <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                          <img
+                          <Image unoptimized width={800} height={600}
                             src={URL.createObjectURL(foto)}
                             alt={`Nueva foto de galería ${index + 1}`}
                             className="object-contain w-full h-full p-1"

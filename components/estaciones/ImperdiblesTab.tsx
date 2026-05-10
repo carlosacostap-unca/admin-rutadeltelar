@@ -6,7 +6,9 @@ import { Imperdible } from '@/types/imperdible';
 
 interface ImperdiblesTabProps {
   estacionId: string;
-  user: any;
+  user: {
+    roles?: string[] | null;
+  };
 }
 
 export default function ImperdiblesTab({ estacionId, user }: ImperdiblesTabProps) {

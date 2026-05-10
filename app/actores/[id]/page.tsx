@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -7,7 +8,7 @@ import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent, hasAnyRole } from '@/lib/permissions';
-import { Actor, ActorTipo } from '@/types/actor';
+import { Actor } from '@/types/actor';
 import { Producto } from '@/types/producto';
 import Map from '@/components/Map';
 import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
@@ -76,7 +77,7 @@ export default function ActorDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!actor || !hasAnyRole(user as any, ['admin'])) return;
+    if (!actor || !hasAnyRole(user, ['admin'])) return;
     const confirmed = window.confirm(`¿Seguro que deseas eliminar el actor "${actor.nombre}"? Esta acción no se puede deshacer.`);
     if (!confirmed) return;
 
@@ -89,23 +90,6 @@ export default function ActorDetailPage() {
     }
   };
 
-  if (isLoading || !user) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p>Cargando...</p>
-      </div>
-    );
-  }
-
-  const canEdit = canEditContent(user as any);
-  const canDelete = hasAnyRole(user as any, ['admin']);
-  const tipoSlug = normalizeCatalogName(actor?.expand?.tipo?.nombre || actor?.tipo);
-  const getProductoEstaciones = (producto: Producto) => {
-    if (producto.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0) {
-      return producto.expand.estaciones_relacionadas.map((item) => item.nombre).join(', ');
-    }
-    return producto.expand?.estacion_id?.nombre || '';
-  };
   const productosAgrupados = useMemo(() => {
     const grouped: Array<{
       categoriaKey: string;
@@ -155,6 +139,23 @@ export default function ActorDetailPage() {
     }));
   }, [productosRelacionados]);
 
+  if (isLoading || !user) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p>Cargando...</p>
+      </div>
+    );
+  }
+
+  const canEdit = canEditContent(user);
+  const canDelete = hasAnyRole(user, ['admin']);
+  const tipoSlug = normalizeCatalogName(actor?.expand?.tipo?.nombre || actor?.tipo);
+  const getProductoEstaciones = (producto: Producto) => {
+    if (producto.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0) {
+      return producto.expand.estaciones_relacionadas.map((item) => item.nombre).join(', ');
+    }
+    return producto.expand?.estacion_id?.nombre || '';
+  };
   return (
     <div className="h-full bg-[var(--color-surface)]">
       <main className="mx-auto px-6 py-8">
@@ -413,7 +414,7 @@ export default function ActorDetailPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {actor.fotos.map((foto, index) => (
                     <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                      <img 
+                      <Image unoptimized width={800} height={600} 
                         src={pb.files.getURL(actor, foto)} 
                         alt={`Foto de ${actor.nombre}`}
                         className="object-contain w-full h-full p-1"

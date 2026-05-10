@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -28,14 +28,8 @@ function LocationMarker({ lat, lng, onLocationSelect, label, icon }: { lat: numb
 }
 
 export default function MapPicker({ lat, lng, zoom = 13, label = "Ubicación seleccionada", onLocationSelect }: MapPickerProps) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const icon = useMemo(() => {
-    if (typeof window === "undefined") return null as unknown as L.Icon;
+  const icon = useMemo<L.Icon | null>(() => {
+    if (typeof window === "undefined") return null;
     return L.icon({
       iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
       iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -48,7 +42,7 @@ export default function MapPicker({ lat, lng, zoom = 13, label = "Ubicación sel
     });
   }, []);
 
-  if (!isMounted || !icon) {
+  if (!icon) {
     return (
       <div className="w-full h-[300px] bg-gray-100 flex items-center justify-center rounded-lg border border-[var(--color-outline)]">
         <p className="text-[var(--color-on-surface-variant)]">Cargando mapa...</p>

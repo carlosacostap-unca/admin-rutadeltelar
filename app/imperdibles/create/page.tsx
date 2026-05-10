@@ -1,12 +1,14 @@
 'use client';
 
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
-import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
+import { createRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import { canEditContent, canReviewContent } from '@/lib/permissions';
+import { canEditContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { Producto } from '@/types/producto';
@@ -50,7 +52,7 @@ function CreateImperdibleForm() {
   const [estacionalidad, setEstacionalidad] = useState('');
   const [prioridad, setPrioridad] = useState<ImperdiblePrioridad | ''>('');
   const [estacionId, setEstacionId] = useState(searchParams.get('estacion_id') || '');
-  const [estado, setEstado] = useState<ImperdibleEstado>('borrador');
+  const estado: ImperdibleEstado = 'borrador';
   const [videosEnlaces, setVideosEnlaces] = useState('');
   const [fotos, setFotos] = useState<FileList | null>(null);
   
@@ -58,7 +60,7 @@ function CreateImperdibleForm() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && (!user || !canEditContent(user as any))) {
+    if (!isLoading && (!user || !canEditContent(user))) {
       router.push('/imperdibles');
     }
   }, [user, isLoading, router]);
@@ -101,7 +103,7 @@ function CreateImperdibleForm() {
       }
     };
     
-    if (user && canEditContent(user as any)) {
+    if (user && canEditContent(user)) {
       fetchData();
     }
   }, [user]);
@@ -165,19 +167,19 @@ function CreateImperdibleForm() {
         }
       }
       
-      const record = await createRecordWithAudit('imperdibles', formData, user);
+      await createRecordWithAudit('imperdibles', formData, user);
       
       router.push('/imperdibles');
-    } catch (err: any) {
-      console.error('Error creando imperdible:', err?.message, err?.response?.data);
-      const validationErrors = err?.response?.data;
+    } catch (err: unknown) {
+      console.error('Error creando imperdible:', asPocketBaseError(err)?.message, asPocketBaseError(err)?.response?.data);
+      const validationErrors = asPocketBaseError(err)?.response?.data;
       if (validationErrors && Object.keys(validationErrors).length > 0) {
         const errorMessages = Object.entries(validationErrors)
-          .map(([field, details]: [string, any]) => `${field}: ${details.message}`)
+          .map(([field, details]: [string, { message?: string }]) => `${field}: ${details.message}`)
           .join(' | ');
         setError(`Error de validación: ${errorMessages}`);
       } else {
-        setError(err?.response?.message || 'Error al crear el imperdible. Verifica que la colección "imperdibles" esté correctamente configurada en PocketBase.');
+        setError(asPocketBaseError(err)?.response?.message || 'Error al crear el imperdible. Verifica que la colección "imperdibles" esté correctamente configurada en PocketBase.');
       }
     } finally {
       setIsSubmitting(false);
@@ -196,7 +198,7 @@ function CreateImperdibleForm() {
     ? experiencias.filter(e => e.estacion_id === estacionId)
     : experiencias;
 
-  if (isLoading || !user || !canEditContent(user as any) || loadingData) {
+  if (isLoading || !user || !canEditContent(user) || loadingData) {
     return (
       <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
@@ -575,7 +577,7 @@ function CreateImperdibleForm() {
                     <div className="flex flex-wrap gap-4">
                       {Array.from(fotos).map((foto, index) => (
                         <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                          <img 
+                          <Image unoptimized width={800} height={600} 
                             src={URL.createObjectURL(foto)} 
                             alt={`Nueva foto ${index + 1}`}
                             className="object-contain w-full h-full p-1"

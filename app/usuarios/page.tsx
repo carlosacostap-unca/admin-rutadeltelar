@@ -43,16 +43,6 @@ export default function UsuariosPage() {
     fetchUsers();
   }, [user]);
 
-  const toggleUserStatus = async (id: string, currentStatus: boolean) => {
-    try {
-      await pb.collection('users').update(id, { active: !currentStatus });
-      setUsers(users.map(u => u.id === id ? { ...u, active: !currentStatus } : u));
-    } catch (error) {
-      console.error('Error toggling user status:', error);
-      alert('Error al cambiar el estado del usuario');
-    }
-  };
-
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
       // Filtro de texto (nombre o correo)
@@ -68,30 +58,11 @@ export default function UsuariosPage() {
       // Filtro de rol
       const matchesRole = 
         roleFilter === 'todos' ? true : 
-        u.roles?.includes(roleFilter as any);
+        u.roles?.includes(roleFilter as User['roles'][number]);
 
       return matchesSearch && matchesStatus && matchesRole;
     });
   }, [users, searchTerm, statusFilter, roleFilter]);
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
-    try {
-      // Reemplazar espacio por 'T' para asegurar compatibilidad con el formato de fecha de PocketBase
-      const date = new Date(dateString.replace(' ', 'T'));
-      if (isNaN(date.getTime())) return '-';
-      
-      return date.toLocaleString('es-AR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return '-';
-    }
-  };
 
   if (isLoading || !user || !user.roles?.includes('admin')) {
     return (

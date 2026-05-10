@@ -6,7 +6,9 @@ import { Experiencia } from '@/types/experiencia';
 
 interface ExperienciasTabProps {
   estacionId: string;
-  user: any;
+  user: {
+    roles?: string[] | null;
+  };
 }
 
 export default function ExperienciasTab({ estacionId, user }: ExperienciasTabProps) {

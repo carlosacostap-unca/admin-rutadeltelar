@@ -1,26 +1,36 @@
-import { User, Role } from '@/types/user';
+import { Role } from '@/types/user';
 
-export const hasAnyRole = (user: User | null | undefined, roles: Role[]): boolean => {
-  if (!user || !user.roles) return false;
-  return user.roles.some((role) => roles.includes(role as Role));
+type UserWithRoles = {
+  roles?: unknown;
 };
 
-export const canManageUsers = (user: User | null | undefined): boolean => {
+const getRoles = (user: unknown): string[] => {
+  if (!user || typeof user !== 'object') return [];
+
+  const roles = (user as UserWithRoles).roles;
+  return Array.isArray(roles) ? roles.filter((role): role is string => typeof role === 'string') : [];
+};
+
+export const hasAnyRole = (user: unknown, roles: Role[]): boolean => {
+  return getRoles(user).some((role) => roles.includes(role as Role));
+};
+
+export const canManageUsers = (user: unknown): boolean => {
   return hasAnyRole(user, ['admin']);
 };
 
-export const canEditContent = (user: User | null | undefined): boolean => {
+export const canEditContent = (user: unknown): boolean => {
   return hasAnyRole(user, ['admin', 'editor']);
 };
 
-export const canReviewContent = (user: User | null | undefined): boolean => {
+export const canReviewContent = (user: unknown): boolean => {
   return hasAnyRole(user, ['admin', 'revisor']);
 };
 
 // Si el usuario es consultor pero NO tiene otros roles superiores
-export const isConsultantOnly = (user: User | null | undefined): boolean => {
-  if (!user || !user.roles) return false;
-  const isConsultant = user.roles.includes('consultor');
+export const isConsultantOnly = (user: unknown): boolean => {
+  const userRoles = getRoles(user);
+  const isConsultant = userRoles.includes('consultor');
   const hasHigherRole = hasAnyRole(user, ['admin', 'editor', 'revisor']);
   return isConsultant && !hasHigherRole;
 };

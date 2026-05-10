@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
 import Link from 'next/link';
-import { Imperdible, ImperdibleTipo, ImperdiblePrioridad } from '@/types/imperdible';
+import { Imperdible } from '@/types/imperdible';
 import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
@@ -71,17 +71,6 @@ function ImperdiblesContent() {
     fetchImperdibles();
   }, [user]);
 
-  const toggleImperdibleStatus = async (id: string, currentStatus: string) => {
-    try {
-      const newStatus = currentStatus === 'inactivo' ? 'borrador' : 'inactivo';
-      await pb.collection('imperdibles').update(id, { estado: newStatus });
-      setImperdibles(imperdibles.map(i => i.id === id ? { ...i, estado: newStatus } : i));
-    } catch (error) {
-      console.error('Error toggling imperdible status:', error);
-      alert('Error al cambiar el estado del imperdible');
-    }
-  };
-
   if (isLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -90,7 +79,7 @@ function ImperdiblesContent() {
     );
   }
 
-  const canEdit = canEditContent(user as any);
+  const canEdit = canEditContent(user);
 
   // Aplicar filtros
   const filteredImperdibles = imperdibles.filter((i) => {

@@ -1,5 +1,6 @@
 'use client';
 
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,15 +22,15 @@ const emptyItems = CATALOGOS_CONFIG.reduce((acc, config) => {
   return acc;
 }, {} as ItemsState);
 
-const getPocketBaseErrorMessage = (err: any, fallback: string) => {
-  const validationErrors = err?.response?.data;
+const getPocketBaseErrorMessage = (err: unknown, fallback: string) => {
+  const validationErrors = asPocketBaseError(err)?.response?.data;
   if (validationErrors && Object.keys(validationErrors).length > 0) {
     return `Error de validación: ${Object.entries(validationErrors)
-      .map(([field, details]: [string, any]) => `${field}: ${details?.message || 'Error'}`)
+      .map(([field, details]: [string, { message?: string }]) => `${field}: ${details?.message || 'Error'}`)
       .join(' | ')}`;
   }
 
-  return err?.response?.message || fallback;
+  return asPocketBaseError(err)?.response?.message || fallback;
 };
 
 export default function ParametrizacionesPage() {
@@ -43,7 +44,7 @@ export default function ParametrizacionesPage() {
   const categoriasProducto = itemsByCollection.categorias_producto || [];
 
   useEffect(() => {
-    if (!isLoading && !hasAnyRole(user as any, ['admin'])) {
+    if (!isLoading && !hasAnyRole(user, ['admin'])) {
       router.push('/');
     }
   }, [user, isLoading, router]);
@@ -75,7 +76,7 @@ export default function ParametrizacionesPage() {
       }
     };
 
-    if (user && hasAnyRole(user as any, ['admin'])) {
+    if (user && hasAnyRole(user, ['admin'])) {
       fetchAll();
     }
   }, [user]);
@@ -109,7 +110,7 @@ export default function ParametrizacionesPage() {
     setSavingKey(`create:${collectionName}`);
     setError(null);
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, string | boolean> = {
         nombre: draft.nombre.trim(),
         activo: true,
       };
@@ -126,7 +127,7 @@ export default function ParametrizacionesPage() {
         ...current,
         [collectionName]: { nombre: '', categoria_padre: '' },
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating catalog item:', err);
       setError(getPocketBaseErrorMessage(err, 'No se pudo crear el parámetro.'));
     } finally {
@@ -138,7 +139,7 @@ export default function ParametrizacionesPage() {
     setSavingKey(`update:${collectionName}:${item.id}`);
     setError(null);
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, string | boolean> = {
         nombre: item.nombre.trim(),
         activo: item.activo ?? true,
       };
@@ -153,7 +154,7 @@ export default function ParametrizacionesPage() {
           .map((existing) => (existing.id === item.id ? updated : existing))
           .sort((a, b) => a.nombre.localeCompare(b.nombre)),
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating catalog item:', err);
       setError(getPocketBaseErrorMessage(err, 'No se pudo actualizar el parámetro.'));
     } finally {
@@ -170,7 +171,7 @@ export default function ParametrizacionesPage() {
         ...current,
         [collectionName]: current[collectionName].filter((item) => item.id !== itemId),
       }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting catalog item:', err);
       setError(getPocketBaseErrorMessage(err, 'No se pudo eliminar el parámetro.'));
     } finally {

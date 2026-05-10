@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
 import Link from 'next/link';
-import { Actor, ActorTipo } from '@/types/actor';
+import { Actor } from '@/types/actor';
 import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel } from '@/lib/catalogos';
@@ -70,17 +70,6 @@ function ActoresContent() {
     fetchActores();
   }, [user]);
 
-  const toggleActorStatus = async (id: string, currentStatus: string) => {
-    try {
-      const newStatus = currentStatus === 'inactivo' ? 'borrador' : 'inactivo';
-      await pb.collection('actores').update(id, { estado: newStatus });
-      setActores(actores.map(a => a.id === id ? { ...a, estado: newStatus } : a));
-    } catch (error) {
-      console.error('Error toggling actor status:', error);
-      alert('Error al cambiar el estado del actor');
-    }
-  };
-
   if (isLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -89,7 +78,7 @@ function ActoresContent() {
     );
   }
 
-  const canEdit = canEditContent(user as any);
+  const canEdit = canEditContent(user);
 
   // Aplicar filtros
   const filteredActores = actores.filter((a) => {

@@ -12,8 +12,8 @@ interface AuditLog {
   accion: string;
   usuario: string;
   rol_usuario?: string;
-  datos_anteriores: any;
-  datos_nuevos: any;
+  datos_anteriores: Record<string, unknown> | null;
+  datos_nuevos: Record<string, unknown> | null;
   created: string;
   expand?: {
     usuario?: {
@@ -46,7 +46,7 @@ export default function AuditoriaDetailPage() {
           expand: 'usuario',
         });
         setLog(record);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching audit log:', err);
         setError('Error al cargar el registro de auditoría. Es posible que no exista.');
       } finally {
