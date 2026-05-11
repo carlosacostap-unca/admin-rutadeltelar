@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -7,7 +8,7 @@ import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent, hasAnyRole } from '@/lib/permissions';
-import { Experiencia, ExperienciaCategoria } from '@/types/experiencia';
+import { Experiencia } from '@/types/experiencia';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
@@ -63,7 +64,7 @@ export default function ExperienciaDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!experiencia || !hasAnyRole(user as any, ['admin'])) return;
+    if (!experiencia || !hasAnyRole(user, ['admin'])) return;
     const confirmed = window.confirm(`¿Seguro que deseas eliminar la experiencia "${experiencia.titulo}"? Esta acción no se puede deshacer.`);
     if (!confirmed) return;
 
@@ -84,8 +85,8 @@ export default function ExperienciaDetailPage() {
     );
   }
 
-  const canEdit = canEditContent(user as any);
-  const canDelete = hasAnyRole(user as any, ['admin']);
+  const canEdit = canEditContent(user);
+  const canDelete = hasAnyRole(user, ['admin']);
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -247,7 +248,7 @@ export default function ExperienciaDetailPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {experiencia.fotos.map((foto, index) => (
                       <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                        <img 
+                        <Image unoptimized width={800} height={600} 
                           src={pb.files.getURL(experiencia, foto)} 
                           alt={`Foto de ${experiencia.titulo}`}
                           className="object-contain w-full h-full p-1"

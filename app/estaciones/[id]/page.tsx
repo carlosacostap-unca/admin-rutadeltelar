@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -121,7 +122,7 @@ export default function EstacionDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!estacion || !hasAnyRole(user as any, ['admin'])) return;
+    if (!estacion || !hasAnyRole(user, ['admin'])) return;
     const confirmed = window.confirm(`¿Seguro que deseas eliminar la estación "${estacion.nombre}"? Esta acción no se puede deshacer.`);
     if (!confirmed) return;
 
@@ -142,8 +143,8 @@ export default function EstacionDetailPage() {
     );
   }
 
-  const canEdit = canEditContent(user as any);
-  const canDelete = hasAnyRole(user as any, ['admin']);
+  const canEdit = canEditContent(user);
+  const canDelete = hasAnyRole(user, ['admin']);
   const fotoPortada = estacion?.foto_portada || estacion?.fotos?.[0] || null;
   const galeriaLegacy = estacion?.fotos
     ? estacion.foto_portada
@@ -212,7 +213,7 @@ export default function EstacionDetailPage() {
                     currentState={estacion.estado}
                     observaciones={estacion.observaciones_revision}
                     user={user}
-                    onStatusChange={(updated) => setEstacion(updated)}
+                    onStatusChange={(updated) => setEstacion(updated as Estacion)}
                   />
                   {canEdit && (
                     <div className="flex gap-3">
@@ -274,7 +275,7 @@ export default function EstacionDetailPage() {
                 {fotoPortada ? (
                   <div className="max-w-sm">
                     <div className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                      <img
+                      <Image unoptimized width={800} height={600}
                         src={pb.files.getURL(estacion, fotoPortada)}
                         alt={`Portada de ${estacion.nombre}`}
                         className="object-contain w-full h-full p-1"
@@ -298,7 +299,7 @@ export default function EstacionDetailPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {galeriaFotos.map((foto, index) => (
                       <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                        <img
+                        <Image unoptimized width={800} height={600}
                           src={pb.files.getURL(estacion, foto)}
                           alt={`Foto de galería ${index + 1} de ${estacion.nombre}`}
                           className="object-contain w-full h-full p-1"

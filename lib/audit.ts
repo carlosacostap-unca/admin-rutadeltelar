@@ -1,7 +1,19 @@
 import pb from './pocketbase';
 
+type AuditUser = {
+  id?: string;
+  roles?: string[] | null;
+};
+
+type AuditableRecord = Record<string, unknown> & {
+  id: string;
+  estado?: string;
+};
+
+type AuditPayload = FormData | Record<string, unknown>;
+
 // Función para obtener el nombre del rol principal (o todos)
-const getRoleString = (user: any) => {
+const getRoleString = (user: AuditUser | null | undefined) => {
   if (!user) return 'desconocido';
   if (user.roles && Array.isArray(user.roles)) {
     return user.roles.join(', ');
@@ -10,7 +22,7 @@ const getRoleString = (user: any) => {
 };
 
 // Función para determinar el flujo de revisión
-const determineAccion = (oldRecord: any, newRecord: any, defaultAccion: string) => {
+const determineAccion = (oldRecord: AuditableRecord | null, newRecord: AuditableRecord | null, defaultAccion: string) => {
   if (oldRecord && oldRecord.estado && newRecord && newRecord.estado) {
     const oldEstado = oldRecord.estado;
     const newEstado = newRecord.estado;
@@ -31,8 +43,8 @@ const determineAccion = (oldRecord: any, newRecord: any, defaultAccion: string) 
   return defaultAccion;
 };
 
-export async function createRecordWithAudit(collection: string, data: FormData | any, user: any) {
-  const record = await pb.collection(collection).create(data);
+export async function createRecordWithAudit(collection: string, data: AuditPayload, user: AuditUser | null | undefined) {
+  const record = await pb.collection(collection).create<AuditableRecord>(data);
   
   try {
     await pb.collection('auditoria').create({
@@ -51,15 +63,15 @@ export async function createRecordWithAudit(collection: string, data: FormData |
   return record;
 }
 
-export async function updateRecordWithAudit(collection: string, id: string, data: FormData | any, user: any) {
-  let oldRecord = null;
+export async function updateRecordWithAudit(collection: string, id: string, data: AuditPayload, user: AuditUser | null | undefined) {
+  let oldRecord: AuditableRecord | null = null;
   try {
-    oldRecord = await pb.collection(collection).getOne(id);
+    oldRecord = await pb.collection(collection).getOne<AuditableRecord>(id);
   } catch (e) {
     console.warn('No se pudo obtener el registro anterior para auditoría', e);
   }
   
-  const record = await pb.collection(collection).update(id, data);
+  const record = await pb.collection(collection).update<AuditableRecord>(id, data);
   
   try {
     await pb.collection('auditoria').create({
@@ -78,10 +90,10 @@ export async function updateRecordWithAudit(collection: string, id: string, data
   return record;
 }
 
-export async function deleteRecordWithAudit(collection: string, id: string, user: any) {
-  let oldRecord = null;
+export async function deleteRecordWithAudit(collection: string, id: string, user: AuditUser | null | undefined) {
+  let oldRecord: AuditableRecord | null = null;
   try {
-    oldRecord = await pb.collection(collection).getOne(id);
+    oldRecord = await pb.collection(collection).getOne<AuditableRecord>(id);
   } catch (e) {
     console.warn('No se pudo obtener el registro anterior para auditoría', e);
   }

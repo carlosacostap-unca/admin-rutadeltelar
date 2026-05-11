@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -8,7 +9,7 @@ import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { canEditContent, hasAnyRole } from '@/lib/permissions';
-import { Imperdible, ImperdibleTipo } from '@/types/imperdible';
+import { Imperdible } from '@/types/imperdible';
 import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
 import { formatUtcToBrowserLocale, getBrowserTimeZoneLabel } from '@/lib/datetime';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
@@ -67,7 +68,7 @@ export default function ImperdibleDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!imperdible || !hasAnyRole(user as any, ['admin'])) return;
+    if (!imperdible || !hasAnyRole(user, ['admin'])) return;
     const confirmed = window.confirm(`¿Seguro que deseas eliminar el imperdible "${imperdible.titulo}"? Esta acción no se puede deshacer.`);
     if (!confirmed) return;
 
@@ -88,8 +89,8 @@ export default function ImperdibleDetailPage() {
     );
   }
 
-  const canEdit = canEditContent(user as any);
-  const canDelete = hasAnyRole(user as any, ['admin']);
+  const canEdit = canEditContent(user);
+  const canDelete = hasAnyRole(user, ['admin']);
   const esEvento = normalizeCatalogName(imperdible?.expand?.tipo?.nombre || imperdible?.tipo) === 'evento';
   const fechaHoraEventoLabel = formatUtcToBrowserLocale(imperdible?.fecha_hora_evento);
   const gmtLabel = getBrowserTimeZoneLabel(imperdible?.fecha_hora_evento);
@@ -349,7 +350,7 @@ export default function ImperdibleDetailPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {imperdible.fotos.map((foto, index) => (
                     <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                      <img 
+                      <Image unoptimized width={800} height={600} 
                         src={pb.files.getURL(imperdible, foto)} 
                         alt={`Foto de ${imperdible.titulo}`}
                         className="object-contain w-full h-full p-1"

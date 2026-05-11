@@ -29,7 +29,7 @@ export default function BorradoresPage() {
     
     // Solo permitir a admin y editor
     if (!isLoading && user) {
-      const userRoles = (user as any).roles || [];
+      const userRoles = (user).roles || [];
       const isAllowed = userRoles.includes('admin') || userRoles.includes('editor');
       if (!isAllowed) {
         router.push('/');
@@ -54,7 +54,7 @@ export default function BorradoresPage() {
 
             const mapped = records.map(record => {
               // Determinar el campo de título dependiendo de la colección
-              let title = record.nombre || record.titulo || 'Sin título';
+              const title = record.nombre || record.titulo || 'Sin título';
               let subtitle = '';
               
               if (collection === 'estaciones') subtitle = record.localidad || 'Sin localidad';
@@ -89,7 +89,7 @@ export default function BorradoresPage() {
       }
     }
 
-    const userRoles = (user as any)?.roles || [];
+    const userRoles = (user)?.roles || [];
     const isAllowed = userRoles.includes('admin') || userRoles.includes('editor');
     if (isAllowed) {
       fetchDraftItems();
@@ -104,7 +104,7 @@ export default function BorradoresPage() {
     );
   }
 
-  const userRoles = (user as any).roles || [];
+  const userRoles = (user).roles || [];
   const isAllowed = userRoles.includes('admin') || userRoles.includes('editor');
   if (!isAllowed) {
     return null; // El useEffect redirigirá
@@ -136,7 +136,7 @@ export default function BorradoresPage() {
 
         <div className="bg-[var(--color-surface-container)] p-6 rounded-md mb-6 shadow-sm border-none">
           <p className="text-[var(--color-on-surface-variant)] text-sm">
-            Aquí se muestran todos los elementos que están actualmente en estado <strong>"Borrador"</strong>. 
+            Aquí se muestran todos los elementos que están actualmente en estado <strong>&quot;Borrador&quot;</strong>. 
             Puedes continuar editándolos y, cuando estén listos, enviarlos a revisión.
           </p>
         </div>

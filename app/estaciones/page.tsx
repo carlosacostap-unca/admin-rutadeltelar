@@ -51,18 +51,6 @@ export default function EstacionesPage() {
     fetchEstaciones();
   }, [user]);
 
-  const toggleEstacionStatus = async (id: string, currentStatus: string) => {
-    try {
-      // US-14: Desactivar estación (cambia el estado a inactivo, o de inactivo a borrador)
-      const newStatus = currentStatus === 'inactivo' ? 'borrador' : 'inactivo';
-      await pb.collection('estaciones').update(id, { estado: newStatus });
-      setEstaciones(estaciones.map(e => e.id === id ? { ...e, estado: newStatus } : e));
-    } catch (error) {
-      console.error('Error toggling estacion status:', error);
-      alert('Error al cambiar el estado de la estación');
-    }
-  };
-
   if (isLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -71,7 +59,7 @@ export default function EstacionesPage() {
     );
   }
 
-  const canEdit = canEditContent(user as any);
+  const canEdit = canEditContent(user);
 
   // Normalizar texto quitando acentos
   const normalizeText = (str: string) => {

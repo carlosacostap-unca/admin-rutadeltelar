@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
 
-import RoleGuard from '@/components/RoleGuard';
 import Link from 'next/link';
 
 interface DashboardStats {

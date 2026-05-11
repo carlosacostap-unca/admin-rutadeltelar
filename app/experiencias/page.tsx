@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
 import Link from 'next/link';
-import { Experiencia, ExperienciaCategoria } from '@/types/experiencia';
+import { Experiencia } from '@/types/experiencia';
 import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel } from '@/lib/catalogos';
@@ -70,17 +70,6 @@ function ExperienciasContent() {
     fetchExperiencias();
   }, [user]);
 
-  const toggleExperienciaStatus = async (id: string, currentStatus: string) => {
-    try {
-      const newStatus = currentStatus === 'inactivo' ? 'borrador' : 'inactivo';
-      await pb.collection('experiencias').update(id, { estado: newStatus });
-      setExperiencias(experiencias.map(e => e.id === id ? { ...e, estado: newStatus } : e));
-    } catch (error) {
-      console.error('Error toggling experiencia status:', error);
-      alert('Error al cambiar el estado de la experiencia');
-    }
-  };
-
   if (isLoading || !user) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -89,7 +78,7 @@ function ExperienciasContent() {
     );
   }
 
-  const canEdit = canEditContent(user as any);
+  const canEdit = canEditContent(user);
 
   // Aplicar filtros
   const filteredExperiencias = experiencias.filter((e) => {

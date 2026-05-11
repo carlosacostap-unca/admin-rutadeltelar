@@ -1,11 +1,12 @@
 'use client';
 
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
-import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
-import Link from 'next/link';
+import { updateRecordWithAudit } from '@/lib/audit';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
@@ -39,7 +40,7 @@ export default function EditExperienciaPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && (!user || !canEditContent(user as any))) {
+    if (!isLoading && (!user || !canEditContent(user))) {
       router.push('/experiencias');
     }
   }, [user, isLoading, router]);
@@ -84,7 +85,7 @@ export default function EditExperienciaPage() {
       }
     };
     
-    if (user && canEditContent(user as any)) {
+    if (user && canEditContent(user)) {
       fetchData();
     }
   }, [id, user]);
@@ -145,16 +146,16 @@ export default function EditExperienciaPage() {
       await updateRecordWithAudit('experiencias', id, formData, user);
       
       router.push('/experiencias');
-    } catch (err: any) {
-      console.error('Error actualizando experiencia:', err?.message, err?.response?.data);
-      const validationErrors = err?.response?.data;
+    } catch (err: unknown) {
+      console.error('Error actualizando experiencia:', asPocketBaseError(err)?.message, asPocketBaseError(err)?.response?.data);
+      const validationErrors = asPocketBaseError(err)?.response?.data;
       if (validationErrors && Object.keys(validationErrors).length > 0) {
         const errorMessages = Object.entries(validationErrors)
-          .map(([field, details]: [string, any]) => `${field}: ${details.message}`)
+          .map(([field, details]: [string, { message?: string }]) => `${field}: ${details.message}`)
           .join(' | ');
         setError(`Error de validación: ${errorMessages}`);
       } else {
-        setError(err?.response?.message || 'Error al actualizar la experiencia. Verifica la configuración en PocketBase.');
+        setError(asPocketBaseError(err)?.response?.message || 'Error al actualizar la experiencia. Verifica la configuración en PocketBase.');
       }
     } finally {
       setIsSubmitting(false);
@@ -166,7 +167,7 @@ export default function EditExperienciaPage() {
     ? actores.filter(a => a.estacion_id === estacionId)
     : actores;
 
-  if (isLoading || !user || !canEditContent(user as any) || loadingData) {
+  if (isLoading || !user || !canEditContent(user) || loadingData) {
     return (
       <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
@@ -367,7 +368,7 @@ export default function EditExperienciaPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                   {experiencia.fotos.filter(f => !fotosParaEliminar.includes(f)).map((foto, index) => (
                     <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                      <img 
+                      <Image unoptimized width={800} height={600} 
                         src={pb.files.getURL(experiencia, foto)} 
                         alt={`Foto de ${experiencia.titulo}`}
                         className="object-contain w-full h-full p-1"
@@ -399,7 +400,7 @@ export default function EditExperienciaPage() {
                   <div className="flex flex-wrap gap-4">
                     {Array.from(fotos).map((foto, index) => (
                       <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                        <img 
+                        <Image unoptimized width={800} height={600} 
                           src={URL.createObjectURL(foto)} 
                           alt={`Nueva foto ${index + 1}`}
                           className="object-contain w-full h-full p-1"
@@ -473,7 +474,7 @@ export default function EditExperienciaPage() {
               >
                 <option value="borrador">Borrador</option>
                 <option value="en_revision">En revisión</option>
-                {canReviewContent(user as any) && (
+                {canReviewContent(user) && (
                   <>
                     <option value="aprobado">Aprobado</option>
                     <option value="inactivo">Inactivo</option>

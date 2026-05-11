@@ -29,7 +29,7 @@ export default function RevisionPage() {
     }
     
     // Solo permitir a admin y revisor
-    if (!isLoading && user && !canReviewContent(user as any)) {
+    if (!isLoading && user && !canReviewContent(user)) {
       router.push('/');
     }
   }, [user, isLoading, router]);
@@ -51,7 +51,7 @@ export default function RevisionPage() {
 
             const mapped = records.map(record => {
               // Determinar el campo de título dependiendo de la colección
-              let title = record.nombre || record.titulo || 'Sin título';
+              const title = record.nombre || record.titulo || 'Sin título';
               let subtitle = '';
               
               if (collection === 'estaciones') subtitle = record.localidad || 'Sin localidad';
@@ -96,7 +96,7 @@ export default function RevisionPage() {
     );
   }
 
-  if (!canReviewContent(user as any)) {
+  if (!canReviewContent(user)) {
     return null; // El useEffect redirigirá
   }
 
@@ -126,7 +126,7 @@ export default function RevisionPage() {
 
         <div className="bg-[var(--color-surface-container)] p-6 rounded-md mb-6 shadow-sm border-none">
           <p className="text-[var(--color-on-surface-variant)] text-sm">
-            Aquí se muestran todos los elementos que han sido marcados como <strong>"En revisión"</strong>. 
+            Aquí se muestran todos los elementos que han sido marcados como <strong>&quot;En revisión&quot;</strong>. 
             Haz clic en cualquiera de ellos para ver los detalles y aprobarlos o rechazarlos desde su panel de administración.
           </p>
         </div>

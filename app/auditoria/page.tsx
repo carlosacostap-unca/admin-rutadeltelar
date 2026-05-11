@@ -49,7 +49,7 @@ export default function AuditoriaPage() {
         });
         setLogs(records.items);
         setTotalPages(records.totalPages || 1);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching audit logs:', err);
         setError('Error al cargar los registros de auditoría. Asegúrate de que la colección "auditoria" exista en PocketBase.');
       } finally {

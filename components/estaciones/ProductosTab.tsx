@@ -4,9 +4,13 @@ import Link from 'next/link';
 import { canEditContent } from '@/lib/permissions';
 import { Producto } from '@/types/producto';
 
+type ProductoActor = NonNullable<NonNullable<Producto['expand']>['actores_relacionados']>[number];
+
 interface ProductosTabProps {
   estacionId: string;
-  user: any;
+  user: {
+    roles?: string[] | null;
+  };
 }
 
 export default function ProductosTab({ estacionId, user }: ProductosTabProps) {
@@ -15,7 +19,7 @@ export default function ProductosTab({ estacionId, user }: ProductosTabProps) {
   const [error, setError] = useState<string | null>(null);
 
   const canEdit = user ? canEditContent(user) : false;
-  const getActorDisplayLabel = (actor: any) => {
+  const getActorDisplayLabel = (actor: ProductoActor) => {
     const estacionNombreActor = actor?.expand?.estacion_id?.nombre || '';
     return `${actor.nombre} (${estacionNombreActor})`;
   };

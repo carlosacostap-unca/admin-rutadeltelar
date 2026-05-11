@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -7,10 +8,12 @@ import pb from '@/lib/pocketbase';
 import ContentStatusManager from '@/components/ContentStatusManager';
 import Link from 'next/link';
 import { canEditContent, hasAnyRole } from '@/lib/permissions';
-import { Producto, ProductoCategoria } from '@/types/producto';
+import { Producto } from '@/types/producto';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
+
+type ProductoActor = NonNullable<NonNullable<Producto['expand']>['actores_relacionados']>[number];
 
 export default function ProductoDetailPage() {
   const { user, isLoading } = useAuth();
@@ -22,7 +25,7 @@ export default function ProductoDetailPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getActorDisplayLabel = (actor: any) => {
+  const getActorDisplayLabel = (actor: ProductoActor) => {
     const estacionNombreActor = actor?.expand?.estacion_id?.nombre || '';
     return `${actor.nombre} (${estacionNombreActor})`;
   };
@@ -68,7 +71,7 @@ export default function ProductoDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!producto || !hasAnyRole(user as any, ['admin'])) return;
+    if (!producto || !hasAnyRole(user, ['admin'])) return;
     const confirmed = window.confirm(`¿Seguro que deseas eliminar el producto "${producto.nombre}"? Esta acción no se puede deshacer.`);
     if (!confirmed) return;
 
@@ -89,8 +92,8 @@ export default function ProductoDetailPage() {
     );
   }
 
-  const canEdit = canEditContent(user as any);
-  const canDelete = hasAnyRole(user as any, ['admin']);
+  const canEdit = canEditContent(user);
+  const canDelete = hasAnyRole(user, ['admin']);
   const estacionesRelacionadas = producto?.expand?.estaciones_relacionadas && producto.expand.estaciones_relacionadas.length > 0
     ? producto.expand.estaciones_relacionadas
     : producto?.expand?.estacion_id
@@ -258,7 +261,7 @@ export default function ProductoDetailPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {producto.fotos.map((foto, index) => (
                     <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                      <img 
+                      <Image unoptimized width={800} height={600} 
                         src={pb.files.getURL(producto, foto)} 
                         alt={`Foto de ${producto.nombre}`}
                         className="object-contain w-full h-full p-1"

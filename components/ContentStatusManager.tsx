@@ -14,8 +14,13 @@ interface ContentStatusManagerProps {
   recordId: string;
   currentState: string;
   observaciones?: string;
-  user: any;
-  onStatusChange: (updatedRecord: any) => void;
+  user: {
+    id: string;
+    name?: string;
+    email?: string;
+    roles?: string[] | null;
+  };
+  onStatusChange: (updatedRecord: unknown) => void;
 }
 
 function parseObservaciones(raw?: string): RejectionEntry[] {
@@ -55,7 +60,7 @@ export default function ContentStatusManager({
     
     setIsSubmitting(true);
     try {
-      const dataToUpdate: any = {
+      const dataToUpdate: Record<string, string> = {
         estado: newState,
         updated_by: user.id
       };

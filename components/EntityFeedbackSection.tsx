@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import pb from '@/lib/pocketbase';
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
 import { ComentarioEntidad, FeedbackEntityType, PuntuacionEntidad } from '@/types/feedback';
 
 interface EntityFeedbackSectionProps {
@@ -52,7 +53,7 @@ export default function EntityFeedbackSection({
           setPuntuaciones(puntuacionesRecords);
         }
       } catch (error) {
-        const status = (error as any)?.status;
+        const status = asPocketBaseError(error).status;
         if (status !== 404) {
           console.warn(`No se pudo cargar el feedback para ${entityType}/${entityId}:`, error);
         }

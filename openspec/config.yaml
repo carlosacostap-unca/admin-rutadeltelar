@@ -1,0 +1,16 @@
+schema: spec-driven
+
+context: |
+  Project: admin-rutadeltelar, an internal admin app for Ruta del Telar station and content management.
+  Stack: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, Leaflet/react-leaflet, and PocketBase.
+  Product and design context already exists under docs/specification and docs/design.
+  Follow root AGENTS.md: before changing Next.js code, read the relevant guide in node_modules/next/dist/docs/.
+  Prefer existing app, components, contexts, lib, and types patterns over new abstractions.
+
+rules:
+  proposal:
+    - Reference existing product or design docs when a change affects scope or behavior.
+  design:
+    - Include data model, role/permission, and PocketBase implications when persistence changes.
+  tasks:
+    - Include verification steps such as build, lint, or focused manual checks.

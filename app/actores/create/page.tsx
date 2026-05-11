@@ -1,10 +1,12 @@
 'use client';
 
+import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import pb from '@/lib/pocketbase';
-import { createRecordWithAudit, updateRecordWithAudit } from '@/lib/audit';
+import { createRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
@@ -72,7 +74,7 @@ function CreateActorForm() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && (!user || !canEditContent(user as any))) {
+    if (!isLoading && (!user || !canEditContent(user))) {
       router.push('/actores');
     }
   }, [user, isLoading, router]);
@@ -106,7 +108,7 @@ function CreateActorForm() {
       }
     };
     
-    if (user && canEditContent(user as any)) {
+    if (user && canEditContent(user)) {
       fetchEstaciones();
     }
   }, [user]);
@@ -245,9 +247,9 @@ function CreateActorForm() {
       await syncProductosRelacionados(record.id, productosRelacionados);
       
       router.push('/actores');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creando actor:', err);
-      setError(err?.response?.message || 'Error al crear el actor.');
+      setError(asPocketBaseError(err)?.response?.message || 'Error al crear el actor.');
     } finally {
       setIsSubmitting(false);
     }
@@ -256,7 +258,7 @@ function CreateActorForm() {
   const tipoSeleccionado = tiposActor.find((item) => item.id === tipo);
   const tipoSlug = normalizeCatalogName(tipoSeleccionado?.nombre || tipo);
 
-  if (isLoading || !user || !canEditContent(user as any) || loadingEstaciones) {
+  if (isLoading || !user || !canEditContent(user) || loadingEstaciones) {
     return (
       <div className="flex h-full items-center justify-center">
         <p>Cargando...</p>
@@ -663,7 +665,7 @@ function CreateActorForm() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
                     {Array.from(fotos).map((file, index) => (
                       <div key={index} className="relative aspect-square bg-[var(--color-surface)] rounded-md border border-[var(--color-outline-variant)] overflow-hidden">
-                        <img 
+                        <Image unoptimized width={800} height={600} 
                           src={URL.createObjectURL(file)} 
                           alt={`Preview ${index}`} 
                           className="object-contain w-full h-full p-1"
@@ -767,7 +769,7 @@ function CreateActorForm() {
               >
                 <option value="borrador">Borrador</option>
                 <option value="en_revision">En revisión</option>
-                {canReviewContent(user as any) && (
+                {canReviewContent(user) && (
                   <option value="aprobado">Aprobado</option>
                 )}
               </select>

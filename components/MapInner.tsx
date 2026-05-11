@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -13,12 +13,6 @@ export interface MapProps {
 }
 
 export default function Map({ lat, lng, zoom = 13, label = "Ubicación" }: MapProps) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const icon = useMemo(() => {
     if (typeof window === "undefined") return null;
 
@@ -42,7 +36,7 @@ export default function Map({ lat, lng, zoom = 13, label = "Ubicación" }: MapPr
     Math.abs(parsedLat) <= 90 &&
     Math.abs(parsedLng) <= 180;
 
-  if (!isMounted || !icon) {
+  if (!icon) {
     return (
       <div className="w-full h-[300px] bg-gray-100 flex items-center justify-center rounded-lg border border-[var(--color-outline)]">
         <p className="text-[var(--color-on-surface-variant)]">Cargando mapa...</p>
