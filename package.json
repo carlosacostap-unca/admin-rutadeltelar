@@ -12,6 +12,7 @@
     "openspec": "openspec",
     "schema:media": "node scripts/ensure-media-fields.mjs",
     "schema:actor-social": "node scripts/ensure-actor-social-fields.mjs",
+    "schema:image-focus": "node scripts/ensure-image-focus-fields.mjs",
     "playwright:install": "node node_modules/@playwright/test/cli.js install",
     "test:e2e": "node scripts/run-playwright.mjs",
     "test:e2e:headed": "node scripts/run-playwright.mjs --headed",

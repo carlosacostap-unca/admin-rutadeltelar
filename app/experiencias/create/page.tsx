@@ -13,7 +13,8 @@ import { Actor } from '@/types/actor';
 import { ExperienciaCategoria, ExperienciaEstado } from '@/types/experiencia';
 import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
-import { appendCreateMediaFiles } from '@/lib/entityMediaForm';
+import { DEFAULT_IMAGE_FOCUS, EntityImageFocus } from '@/lib/entityMedia';
+import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
 
 function CreateExperienciaForm() {
   const { user, isLoading } = useAuth();
@@ -34,6 +35,7 @@ function CreateExperienciaForm() {
   const [responsable, setResponsable] = useState('');
   const [estado, setEstado] = useState<ExperienciaEstado>('borrador');
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
   const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,8 +101,9 @@ function CreateExperienciaForm() {
       if (recomendaciones) formData.append('recomendaciones', recomendaciones);
       if (ubicacion) formData.append('ubicacion', ubicacion);
       if (responsable) formData.append('responsable', responsable);
-      
+
       appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
+      appendImageFocusFields(formData, fotoPortadaFocus);
       
       await createRecordWithAudit('experiencias', formData, user);
       
@@ -284,6 +287,8 @@ function CreateExperienciaForm() {
               entityLabel="experiencia"
               coverFile={fotoPortada}
               onCoverFileChange={setFotoPortada}
+              coverFocus={fotoPortadaFocus}
+              onCoverFocusChange={setFotoPortadaFocus}
               galleryFiles={galeriaFotos}
               onGalleryFilesChange={setGaleriaFotos}
             />

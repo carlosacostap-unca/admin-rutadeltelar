@@ -14,7 +14,8 @@ import { CatalogoItem } from '@/types/catalogo';
 import CatalogSelect from '@/components/CatalogSelect';
 import CatalogTagSelector from '@/components/CatalogTagSelector';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
-import { appendCreateMediaFiles } from '@/lib/entityMediaForm';
+import { DEFAULT_IMAGE_FOCUS, EntityImageFocus } from '@/lib/entityMedia';
+import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
 
 function CreateProductoForm() {
   const { user, isLoading } = useAuth();
@@ -35,6 +36,7 @@ function CreateProductoForm() {
   const [descripcion, setDescripcion] = useState('');
   const [actoresRelacionados, setActoresRelacionados] = useState<string[]>([]);
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
   const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
   const [estado, setEstado] = useState<ProductoEstado>('borrador');
   
@@ -146,6 +148,7 @@ function CreateProductoForm() {
       }
 
       appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
+      appendImageFocusFields(formData, fotoPortadaFocus);
       
       await createRecordWithAudit('productos', formData, user);
       
@@ -348,6 +351,8 @@ function CreateProductoForm() {
               entityLabel="producto"
               coverFile={fotoPortada}
               onCoverFileChange={setFotoPortada}
+              coverFocus={fotoPortadaFocus}
+              onCoverFocusChange={setFotoPortadaFocus}
               galleryFiles={galeriaFotos}
               onGalleryFilesChange={setGaleriaFotos}
             />

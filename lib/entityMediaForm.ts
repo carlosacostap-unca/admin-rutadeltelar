@@ -1,3 +1,6 @@
+import type { EntityGalleryFocus, EntityImageFocus } from './entityMedia';
+import { DEFAULT_IMAGE_FOCUS, normalizeImageFocus } from './entityMedia';
+
 export const MAX_GALLERY_IMAGES = 5;
 
 export function appendCreateMediaFiles(
@@ -21,6 +24,17 @@ export function appendFileRemovals(formData: FormData, fieldName: string, filena
   filenames.forEach((filename) => {
     formData.append(`${fieldName}-`, filename);
   });
+}
+
+export function appendImageFocusFields(
+  formData: FormData,
+  coverFocus: EntityImageFocus = DEFAULT_IMAGE_FOCUS,
+  galleryFocuses: EntityGalleryFocus = {},
+) {
+  const normalizedCoverFocus = normalizeImageFocus(coverFocus);
+  formData.append('foto_portada_focus_x', String(normalizedCoverFocus.x));
+  formData.append('foto_portada_focus_y', String(normalizedCoverFocus.y));
+  formData.append('galeria_fotos_focus', JSON.stringify(galleryFocuses));
 }
 
 export async function appendRemoteFile(formData: FormData, fieldName: string, url: string, filename: string) {

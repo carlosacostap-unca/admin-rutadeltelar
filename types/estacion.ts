@@ -14,7 +14,10 @@ export interface Estacion {
   latitud?: number;
   longitud?: number;
   foto_portada?: string;
+  foto_portada_focus_x?: number;
+  foto_portada_focus_y?: number;
   galeria_fotos?: string[];
+  galeria_fotos_focus?: Record<string, { x: number; y: number }>;
   fotos?: string[];
   estado: EstacionEstado;
   observaciones_revision?: string;

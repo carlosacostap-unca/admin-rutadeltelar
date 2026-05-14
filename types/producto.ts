@@ -14,7 +14,10 @@ export interface Producto {
   estaciones_relacionadas?: string[];
   actores_relacionados?: string[]; // Relación múltiple con la colección actores
   foto_portada?: string;
+  foto_portada_focus_x?: number;
+  foto_portada_focus_y?: number;
   galeria_fotos?: string[];
+  galeria_fotos_focus?: Record<string, { x: number; y: number }>;
   fotos?: string[]; // URLs o nombres de archivo de PocketBase
   estado: ProductoEstado;
   observaciones_revision?: string;

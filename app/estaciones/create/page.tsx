@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
+import { DEFAULT_IMAGE_FOCUS, EntityImageFocus, getImageFocusStyle, normalizeImageFocus } from '@/lib/entityMedia';
+import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
 
 export default function CreateEstacionPage() {
   const { user, isLoading } = useAuth();
@@ -25,6 +27,7 @@ export default function CreateEstacionPage() {
   const [longitud, setLongitud] = useState('');
   const [estado, setEstado] = useState('borrador'); // estado inicial
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
   const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,15 +65,8 @@ export default function CreateEstacionPage() {
         formData.append('updated_by', user.id);
       }
 
-      if (fotoPortada) {
-        formData.append('foto_portada', fotoPortada);
-      }
-
-      if (galeriaFotos) {
-        for (let i = 0; i < galeriaFotos.length; i++) {
-          formData.append('galeria_fotos', galeriaFotos[i]);
-        }
-      }
+      appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
+      appendImageFocusFields(formData, fotoPortadaFocus);
       
       await createRecordWithAudit('estaciones', formData, user);
       
@@ -260,7 +256,8 @@ export default function CreateEstacionPage() {
                     <Image unoptimized width={800} height={600}
                       src={URL.createObjectURL(fotoPortada)}
                       alt="Vista previa de la foto de portada"
-                      className="object-contain w-full h-full p-1"
+                      className="object-cover w-full h-full"
+                      style={getImageFocusStyle(fotoPortadaFocus)}
                     />
                     <button
                       type="button"
@@ -270,6 +267,34 @@ export default function CreateEstacionPage() {
                     >
                       ✕
                     </button>
+                  </div>
+                )}
+                {fotoPortada && (
+                  <div className="space-y-2 text-xs text-[var(--color-on-surface)]">
+                    <div className="flex items-center gap-3">
+                      <span className="w-16 font-medium">Horizontal</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={fotoPortadaFocus.x}
+                        onChange={(event) => setFotoPortadaFocus(normalizeImageFocus({ ...fotoPortadaFocus, x: Number(event.target.value) }))}
+                        className="w-32"
+                      />
+                      <span className="w-8 text-right">{fotoPortadaFocus.x}%</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-16 font-medium">Vertical</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={fotoPortadaFocus.y}
+                        onChange={(event) => setFotoPortadaFocus(normalizeImageFocus({ ...fotoPortadaFocus, y: Number(event.target.value) }))}
+                        className="w-32"
+                      />
+                      <span className="w-8 text-right">{fotoPortadaFocus.y}%</span>
+                    </div>
                   </div>
                 )}
 

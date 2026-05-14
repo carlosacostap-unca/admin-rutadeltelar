@@ -12,7 +12,20 @@ import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
-import { getEntityCoverImage, getEntityGalleryImages } from '@/lib/entityMedia';
+import {
+  DEFAULT_IMAGE_FOCUS,
+  EntityGalleryFocus,
+  EntityImageFocus,
+  getEntityCoverFocus,
+  getEntityCoverImage,
+  getEntityGalleryFocuses,
+  getEntityGalleryImages,
+  getGalleryImageFocus,
+  getImageFocusStyle,
+  normalizeImageFocus,
+  pruneGalleryFocuses,
+} from '@/lib/entityMedia';
+import { appendImageFocusFields } from '@/lib/entityMediaForm';
 
 export default function EditEstacionPage() {
   const { user, isLoading } = useAuth();
@@ -30,9 +43,11 @@ export default function EditEstacionPage() {
   const [longitud, setLongitud] = useState('');
   const [estado, setEstado] = useState('borrador');
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
   const [fotoPortadaParaEliminar, setFotoPortadaParaEliminar] = useState(false);
   const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
   const [galeriaFotosParaEliminar, setGaleriaFotosParaEliminar] = useState<string[]>([]);
+  const [galeriaFotosFocus, setGaleriaFotosFocus] = useState<EntityGalleryFocus>({});
   const [estacion, setEstacion] = useState<Estacion | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,6 +80,8 @@ export default function EditEstacionPage() {
         setLatitud(record.latitud?.toString() || '');
         setLongitud(record.longitud?.toString() || '');
         setEstado(record.estado || 'borrador');
+        setFotoPortadaFocus(getEntityCoverFocus(record));
+        setGaleriaFotosFocus(getEntityGalleryFocuses(record));
       } catch (err) {
         console.error('Error fetching estacion:', err);
         setError('No se pudo cargar la estación. Es posible que no exista.');
@@ -130,6 +147,11 @@ export default function EditEstacionPage() {
           formData.append('galeria_fotos+', galeriaFotos[i]);
         }
       }
+      appendImageFocusFields(
+        formData,
+        fotoPortadaFocus,
+        pruneGalleryFocuses(galeriaFotosFocus, getEntityGalleryImages(estacion).filter((foto) => !galeriaFotosParaEliminar.includes(foto)))
+      );
       
       await updateRecordWithAudit('estaciones', id, formData, user);
       router.push('/estaciones');
@@ -343,7 +365,8 @@ export default function EditEstacionPage() {
                     <Image unoptimized width={800} height={600}
                       src={pb.files.getURL(estacion!, fotoPortadaActual)}
                       alt={`Portada de ${estacion?.nombre}`}
-                      className="object-contain w-full h-full p-1"
+                      className="object-cover w-full h-full"
+                      style={getImageFocusStyle(fotoPortadaFocus)}
                     />
                     <button
                       type="button"
@@ -362,6 +385,9 @@ export default function EditEstacionPage() {
                     No hay portada guardada para esta estación.
                   </p>
                 )}
+                {fotoPortadaActual && (
+                  <ImageFocusControls focus={fotoPortadaFocus} onChange={setFotoPortadaFocus} />
+                )}
               </div>
 
               <div>
@@ -374,7 +400,8 @@ export default function EditEstacionPage() {
                       <Image unoptimized width={800} height={600}
                         src={URL.createObjectURL(fotoPortada)}
                         alt="Nueva portada"
-                        className="object-contain w-full h-full p-1"
+                        className="object-cover w-full h-full"
+                        style={getImageFocusStyle(fotoPortadaFocus)}
                       />
                       <button
                         type="button"
@@ -385,6 +412,9 @@ export default function EditEstacionPage() {
                         ✕
                       </button>
                     </div>
+                  )}
+                  {fotoPortada && (
+                    <ImageFocusControls focus={fotoPortadaFocus} onChange={setFotoPortadaFocus} />
                   )}
 
                   <div>
@@ -421,13 +451,15 @@ export default function EditEstacionPage() {
                   Fotos actuales de la galería
                 </label>
                 {galeriaActual.length > 0 ? (
+                  <>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                     {galeriaActual.map((foto, index) => (
                       <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
                         <Image unoptimized width={800} height={600}
                           src={pb.files.getURL(estacion!, foto)}
                           alt={`Foto de galería ${index + 1} de ${estacion?.nombre}`}
-                          className="object-contain w-full h-full p-1"
+                          className="object-cover w-full h-full"
+                          style={getImageFocusStyle(getGalleryImageFocus(galeriaFotosFocus, foto))}
                         />
                         <button
                           type="button"
@@ -440,6 +472,22 @@ export default function EditEstacionPage() {
                       </div>
                     ))}
                   </div>
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {galeriaActual.map((foto, index) => (
+                      <details key={`${foto}-focus`} className="rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] p-3">
+                        <summary className="cursor-pointer text-xs font-medium text-[var(--color-primary)]">
+                          Ajustar foco foto {index + 1}
+                        </summary>
+                        <div className="mt-2">
+                          <ImageFocusControls
+                            focus={getGalleryImageFocus(galeriaFotosFocus, foto)}
+                            onChange={(focus) => setGaleriaFotosFocus((current) => ({ ...current, [foto]: focus }))}
+                          />
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                  </>
                 ) : (
                   <p className="text-[var(--color-on-surface-variant)] text-sm italic">
                     No hay fotos guardadas en la galería.
@@ -555,6 +603,33 @@ export default function EditEstacionPage() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+type ImageFocusControlsProps = {
+  focus: EntityImageFocus;
+  onChange: (focus: EntityImageFocus) => void;
+};
+
+function ImageFocusControls({ focus, onChange }: ImageFocusControlsProps) {
+  const normalized = normalizeImageFocus(focus);
+  const update = (axis: keyof EntityImageFocus, value: string) => {
+    onChange(normalizeImageFocus({ ...normalized, [axis]: Number(value) }));
+  };
+
+  return (
+    <div className="mt-2 space-y-2 text-xs text-[var(--color-on-surface)]">
+      <div className="flex items-center gap-3">
+        <span className="w-16 font-medium">Horizontal</span>
+        <input type="range" min="0" max="100" value={normalized.x} onChange={(event) => update('x', event.target.value)} className="w-32" />
+        <span className="w-8 text-right">{normalized.x}%</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="w-16 font-medium">Vertical</span>
+        <input type="range" min="0" max="100" value={normalized.y} onChange={(event) => update('y', event.target.value)} className="w-32" />
+        <span className="w-8 text-right">{normalized.y}%</span>
+      </div>
     </div>
   );
 }

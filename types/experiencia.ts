@@ -14,7 +14,10 @@ export interface Experiencia {
   ubicacion?: string;
   estacion_id: string; // Relación con la colección estaciones
   foto_portada?: string;
+  foto_portada_focus_x?: number;
+  foto_portada_focus_y?: number;
   galeria_fotos?: string[];
+  galeria_fotos_focus?: Record<string, { x: number; y: number }>;
   fotos?: string[]; // URLs o nombres de archivo de PocketBase
   estado: ExperienciaEstado;
   observaciones_revision?: string;

@@ -19,7 +19,8 @@ import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 import { getBrowserTimeZoneLabel, localDateTimeInputToUtc } from '@/lib/datetime';
-import { appendCreateMediaFiles } from '@/lib/entityMediaForm';
+import { DEFAULT_IMAGE_FOCUS, EntityImageFocus } from '@/lib/entityMedia';
+import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false }) as React.FC<{ lat: number; lng: number; zoom?: number; label?: string }>;
 
@@ -56,6 +57,7 @@ function CreateImperdibleForm() {
   const estado: ImperdibleEstado = 'borrador';
   const [videosEnlaces, setVideosEnlaces] = useState('');
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
   const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -164,6 +166,7 @@ function CreateImperdibleForm() {
       if (videosEnlaces) formData.append('videos_enlaces', videosEnlaces);
       
       appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
+      appendImageFocusFields(formData, fotoPortadaFocus);
       
       await createRecordWithAudit('imperdibles', formData, user);
       
@@ -570,6 +573,8 @@ function CreateImperdibleForm() {
               entityLabel="imperdible"
               coverFile={fotoPortada}
               onCoverFileChange={setFotoPortada}
+              coverFocus={fotoPortadaFocus}
+              onCoverFocusChange={setFotoPortadaFocus}
               galleryFiles={galeriaFotos}
               onGalleryFilesChange={setGaleriaFotos}
             />

@@ -16,8 +16,18 @@ import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
 import { CatalogoItem } from '@/types/catalogo';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
-import { getEntityCoverImage, getEntityGalleryImages } from '@/lib/entityMedia';
-import { appendFileRemovals, appendGalleryFileUpdates, appendRemoteFile } from '@/lib/entityMediaForm';
+import {
+  DEFAULT_IMAGE_FOCUS,
+  EntityGalleryFocus,
+  EntityImageFocus,
+  getEntityCoverFocus,
+  getEntityCoverImage,
+  getEntityGalleryFocuses,
+  getEntityGalleryImages,
+  getGalleryImageFocus,
+  pruneGalleryFocuses,
+} from '@/lib/entityMedia';
+import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendRemoteFile } from '@/lib/entityMediaForm';
 
 export default function EditActorPage() {
   const { user, isLoading } = useAuth();
@@ -78,6 +88,8 @@ export default function EditActorPage() {
   const [fotos, setFotos] = useState<FileList | null>(null);
   const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
+  const [galeriaFotosFocus, setGaleriaFotosFocus] = useState<EntityGalleryFocus>({});
   const [portadaParaEliminar, setPortadaParaEliminar] = useState(false);
   const [portadaExistenteSeleccionada, setPortadaExistenteSeleccionada] = useState<string | null>(null);
   
@@ -161,6 +173,8 @@ export default function EditActorPage() {
         setAcreditacion(actorRecord.acreditacion || '');
         setHorarios(actorRecord.horarios || '');
         setDisponibilidad(actorRecord.disponibilidad || '');
+        setFotoPortadaFocus(getEntityCoverFocus(actorRecord));
+        setGaleriaFotosFocus(getEntityGalleryFocuses(actorRecord));
         
       } catch (err) {
         console.error('Error fetching data for edit:', err);
@@ -318,6 +332,14 @@ export default function EditActorPage() {
       appendFileRemovals(formData, 'galeria_fotos', Array.from(galleryRemovals));
       appendFileRemovals(formData, 'fotos', Array.from(galleryRemovals));
       appendGalleryFileUpdates(formData, fotos);
+      appendImageFocusFields(
+        formData,
+        fotoPortadaFocus,
+        pruneGalleryFocuses(
+          galeriaFotosFocus,
+          getEntityGalleryImages(actor).filter((filename) => !galleryRemovals.has(filename))
+        )
+      );
       
       await updateRecordWithAudit('actores', id, formData, user);
       await syncProductosRelacionados(id, productosRelacionados);
@@ -822,12 +844,22 @@ export default function EditActorPage() {
               entityLabel="actor"
               coverFile={fotoPortada}
               onCoverFileChange={(file) => { setFotoPortada(file); setPortadaParaEliminar(false); }}
+              coverFocus={fotoPortadaFocus}
+              onCoverFocusChange={setFotoPortadaFocus}
               galleryFiles={fotos}
               onGalleryFilesChange={setFotos}
+              galleryFocuses={galeriaFotosFocus}
+              onGalleryFocusChange={(filename, focus) => {
+                setGaleriaFotosFocus((current) => ({ ...current, [filename]: focus }));
+              }}
               existingCover={existingCover}
               existingGallery={existingGallery}
               selectedExistingCover={portadaExistenteSeleccionada}
-              onSelectedExistingCoverChange={(filename) => { setPortadaExistenteSeleccionada(filename); setPortadaParaEliminar(false); }}
+              onSelectedExistingCoverChange={(filename) => {
+                setPortadaExistenteSeleccionada(filename);
+                setPortadaParaEliminar(false);
+                if (filename) setFotoPortadaFocus(getGalleryImageFocus(galeriaFotosFocus, filename));
+              }}
               removedExistingCover={portadaParaEliminar}
               onRemovedExistingCoverChange={setPortadaParaEliminar}
               removedExistingGallery={fotosParaEliminar}

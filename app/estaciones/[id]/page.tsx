@@ -14,7 +14,14 @@ import Map from '@/components/Map';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
-import { getEntityCoverImage, getEntityGalleryImages } from '@/lib/entityMedia';
+import {
+  getEntityCoverFocus,
+  getEntityCoverImage,
+  getEntityGalleryFocuses,
+  getEntityGalleryImages,
+  getGalleryImageFocus,
+  getImageFocusStyle,
+} from '@/lib/entityMedia';
 
 export default function EstacionDetailPage() {
   const { user, isLoading } = useAuth();
@@ -147,7 +154,9 @@ export default function EstacionDetailPage() {
   const canEdit = canEditContent(user);
   const canDelete = hasAnyRole(user, ['admin']);
   const fotoPortada = getEntityCoverImage(estacion);
+  const fotoPortadaFocus = getEntityCoverFocus(estacion);
   const galeriaFotos = getEntityGalleryImages(estacion);
+  const galeriaFotosFocus = getEntityGalleryFocuses(estacion);
 
   return (
     <div className="h-full bg-[var(--color-surface)]">
@@ -272,7 +281,8 @@ export default function EstacionDetailPage() {
                       <Image unoptimized width={800} height={600}
                         src={pb.files.getURL(estacion, fotoPortada)}
                         alt={`Portada de ${estacion.nombre}`}
-                        className="object-contain w-full h-full p-1"
+                        className="object-cover w-full h-full"
+                        style={getImageFocusStyle(fotoPortadaFocus)}
                       />
                     </div>
                   </div>
@@ -296,7 +306,8 @@ export default function EstacionDetailPage() {
                         <Image unoptimized width={800} height={600}
                           src={pb.files.getURL(estacion, foto)}
                           alt={`Foto de galería ${index + 1} de ${estacion.nombre}`}
-                          className="object-contain w-full h-full p-1"
+                          className="object-cover w-full h-full"
+                          style={getImageFocusStyle(getGalleryImageFocus(galeriaFotosFocus, foto))}
                         />
                       </div>
                     ))}

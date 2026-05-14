@@ -12,8 +12,18 @@ import { Actor } from '@/types/actor';
 import { Experiencia, ExperienciaCategoria, ExperienciaEstado } from '@/types/experiencia';
 import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
-import { getEntityCoverImage, getEntityGalleryImages } from '@/lib/entityMedia';
-import { appendFileRemovals, appendGalleryFileUpdates, appendRemoteFile } from '@/lib/entityMediaForm';
+import {
+  DEFAULT_IMAGE_FOCUS,
+  EntityGalleryFocus,
+  EntityImageFocus,
+  getEntityCoverFocus,
+  getEntityCoverImage,
+  getEntityGalleryFocuses,
+  getEntityGalleryImages,
+  getGalleryImageFocus,
+  pruneGalleryFocuses,
+} from '@/lib/entityMedia';
+import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendRemoteFile } from '@/lib/entityMediaForm';
 
 export default function EditExperienciaPage() {
   const { user, isLoading } = useAuth();
@@ -38,6 +48,8 @@ export default function EditExperienciaPage() {
   const [fotos, setFotos] = useState<FileList | null>(null);
   const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
+  const [galeriaFotosFocus, setGaleriaFotosFocus] = useState<EntityGalleryFocus>({});
   const [portadaParaEliminar, setPortadaParaEliminar] = useState(false);
   const [portadaExistenteSeleccionada, setPortadaExistenteSeleccionada] = useState<string | null>(null);
   
@@ -81,6 +93,8 @@ export default function EditExperienciaPage() {
         setUbicacion(experienciaRecord.ubicacion || '');
         setResponsable(experienciaRecord.responsable || '');
         setEstado(experienciaRecord.estado);
+        setFotoPortadaFocus(getEntityCoverFocus(experienciaRecord));
+        setGaleriaFotosFocus(getEntityGalleryFocuses(experienciaRecord));
         
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -155,6 +169,14 @@ export default function EditExperienciaPage() {
       appendFileRemovals(formData, 'galeria_fotos', Array.from(galleryRemovals));
       appendFileRemovals(formData, 'fotos', Array.from(galleryRemovals));
       appendGalleryFileUpdates(formData, fotos);
+      appendImageFocusFields(
+        formData,
+        fotoPortadaFocus,
+        pruneGalleryFocuses(
+          galeriaFotosFocus,
+          getEntityGalleryImages(experiencia).filter((filename) => !galleryRemovals.has(filename))
+        )
+      );
       
       await updateRecordWithAudit('experiencias', id, formData, user);
       
@@ -389,12 +411,22 @@ export default function EditExperienciaPage() {
               entityLabel="experiencia"
               coverFile={fotoPortada}
               onCoverFileChange={(file) => { setFotoPortada(file); setPortadaParaEliminar(false); }}
+              coverFocus={fotoPortadaFocus}
+              onCoverFocusChange={setFotoPortadaFocus}
               galleryFiles={fotos}
               onGalleryFilesChange={setFotos}
+              galleryFocuses={galeriaFotosFocus}
+              onGalleryFocusChange={(filename, focus) => {
+                setGaleriaFotosFocus((current) => ({ ...current, [filename]: focus }));
+              }}
               existingCover={existingCover}
               existingGallery={existingGallery}
               selectedExistingCover={portadaExistenteSeleccionada}
-              onSelectedExistingCoverChange={(filename) => { setPortadaExistenteSeleccionada(filename); setPortadaParaEliminar(false); }}
+              onSelectedExistingCoverChange={(filename) => {
+                setPortadaExistenteSeleccionada(filename);
+                setPortadaParaEliminar(false);
+                if (filename) setFotoPortadaFocus(getGalleryImageFocus(galeriaFotosFocus, filename));
+              }}
               removedExistingCover={portadaParaEliminar}
               onRemovedExistingCoverChange={setPortadaParaEliminar}
               removedExistingGallery={fotosParaEliminar}

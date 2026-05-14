@@ -2,7 +2,15 @@
 
 import Image from 'next/image';
 import pb from '@/lib/pocketbase';
-import { EntityMediaRecord, getEntityCoverImage, getEntityGalleryImages } from '@/lib/entityMedia';
+import {
+  EntityMediaRecord,
+  getEntityCoverFocus,
+  getEntityCoverImage,
+  getEntityGalleryFocuses,
+  getEntityGalleryImages,
+  getGalleryImageFocus,
+  getImageFocusStyle,
+} from '@/lib/entityMedia';
 
 type EntityMediaDisplayProps<T extends EntityMediaRecord> = {
   record: T;
@@ -16,7 +24,9 @@ export default function EntityMediaDisplay<T extends EntityMediaRecord>({
   emptyLabel,
 }: EntityMediaDisplayProps<T>) {
   const cover = getEntityCoverImage(record);
+  const coverFocus = getEntityCoverFocus(record);
   const gallery = getEntityGalleryImages(record);
+  const galleryFocuses = getEntityGalleryFocuses(record);
 
   return (
     <div className="mt-8 pt-6 border-t border-[var(--color-outline-variant)] space-y-8">
@@ -27,7 +37,7 @@ export default function EntityMediaDisplay<T extends EntityMediaRecord>({
         {cover ? (
           <div className="max-w-sm">
             <div className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-              <Image unoptimized width={800} height={600} src={pb.files.getURL(record, cover)} alt={`Portada de ${title}`} className="object-contain w-full h-full p-1" />
+              <Image unoptimized width={800} height={600} src={pb.files.getURL(record, cover)} alt={`Portada de ${title}`} className="object-cover w-full h-full" style={getImageFocusStyle(coverFocus)} />
             </div>
           </div>
         ) : (
@@ -43,7 +53,7 @@ export default function EntityMediaDisplay<T extends EntityMediaRecord>({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {gallery.map((filename, index) => (
               <div key={filename} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                <Image unoptimized width={800} height={600} src={pb.files.getURL(record, filename)} alt={`Foto de galeria ${index + 1} de ${title}`} className="object-contain w-full h-full p-1" />
+                <Image unoptimized width={800} height={600} src={pb.files.getURL(record, filename)} alt={`Foto de galeria ${index + 1} de ${title}`} className="object-cover w-full h-full" style={getImageFocusStyle(getGalleryImageFocus(galleryFocuses, filename))} />
               </div>
             ))}
           </div>

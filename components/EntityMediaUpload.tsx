@@ -2,6 +2,14 @@
 
 import Image from 'next/image';
 import { MAX_GALLERY_IMAGES } from '@/lib/entityMediaForm';
+import {
+  DEFAULT_IMAGE_FOCUS,
+  EntityGalleryFocus,
+  EntityImageFocus,
+  getGalleryImageFocus,
+  getImageFocusStyle,
+  normalizeImageFocus,
+} from '@/lib/entityMedia';
 
 export type ExistingMediaImage = {
   filename: string;
@@ -13,8 +21,12 @@ type EntityMediaUploadProps = {
   entityLabel: string;
   coverFile: File | null;
   onCoverFileChange: (file: File | null) => void;
+  coverFocus?: EntityImageFocus;
+  onCoverFocusChange?: (focus: EntityImageFocus) => void;
   galleryFiles: FileList | null;
   onGalleryFilesChange: (files: FileList | null) => void;
+  galleryFocuses?: EntityGalleryFocus;
+  onGalleryFocusChange?: (filename: string, focus: EntityImageFocus) => void;
   existingCover?: ExistingMediaImage | null;
   existingGallery?: ExistingMediaImage[];
   selectedExistingCover?: string | null;
@@ -29,8 +41,12 @@ export default function EntityMediaUpload({
   entityLabel,
   coverFile,
   onCoverFileChange,
+  coverFocus = DEFAULT_IMAGE_FOCUS,
+  onCoverFocusChange,
   galleryFiles,
   onGalleryFilesChange,
+  galleryFocuses = {},
+  onGalleryFocusChange,
   existingCover,
   existingGallery = [],
   selectedExistingCover,
@@ -45,6 +61,7 @@ export default function EntityMediaUpload({
   const selectedCover = selectedExistingCover || existingCover?.filename || null;
   const inputId = `gallery-upload-${entityLabel.replace(/\s+/g, '-').toLowerCase()}`;
   const coverInputId = `cover-upload-${entityLabel.replace(/\s+/g, '-').toLowerCase()}`;
+  const normalizedCoverFocus = normalizeImageFocus(coverFocus);
 
   const removeGalleryFile = (index: number) => {
     if (!galleryFiles) return;
@@ -78,8 +95,11 @@ export default function EntityMediaUpload({
           {existingCover && !removedExistingCover && !coverFile && (
             <div className="flex flex-col gap-2">
               <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                <Image unoptimized width={800} height={600} src={existingCover.url} alt={existingCover.label} className="object-contain w-full h-full p-1" />
+                <Image unoptimized width={800} height={600} src={existingCover.url} alt={existingCover.label} className="object-cover w-full h-full" style={getImageFocusStyle(normalizedCoverFocus)} />
               </div>
+              {onCoverFocusChange && (
+                <ImageFocusControls focus={normalizedCoverFocus} onChange={onCoverFocusChange} />
+              )}
               {onRemovedExistingCoverChange && (
                 <button type="button" onClick={() => onRemovedExistingCoverChange(true)} className="btn-secondary px-3 py-1.5 text-xs w-fit">
                   Quitar portada
@@ -90,11 +110,14 @@ export default function EntityMediaUpload({
 
           {coverFile && (
             <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-              <Image unoptimized width={800} height={600} src={URL.createObjectURL(coverFile)} alt={`Nueva portada de ${entityLabel}`} className="object-contain w-full h-full p-1" />
+              <Image unoptimized width={800} height={600} src={URL.createObjectURL(coverFile)} alt={`Nueva portada de ${entityLabel}`} className="object-cover w-full h-full" style={getImageFocusStyle(normalizedCoverFocus)} />
               <button type="button" onClick={() => onCoverFileChange(null)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
                 x
               </button>
             </div>
+          )}
+          {coverFile && onCoverFocusChange && (
+            <ImageFocusControls focus={normalizedCoverFocus} onChange={onCoverFocusChange} />
           )}
 
           <div>
@@ -129,8 +152,29 @@ export default function EntityMediaUpload({
               {visibleExistingGallery.map((image) => (
                 <div key={image.filename} className="space-y-2">
                   <div className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                    <Image unoptimized width={800} height={600} src={image.url} alt={image.label} className="object-contain w-full h-full p-1" />
+                    <Image
+                      unoptimized
+                      width={800}
+                      height={600}
+                      src={image.url}
+                      alt={image.label}
+                      className="object-cover w-full h-full"
+                      style={getImageFocusStyle(getGalleryImageFocus(galleryFocuses, image.filename))}
+                    />
                   </div>
+                  {onGalleryFocusChange && (
+                    <details className="rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] p-2">
+                      <summary className="cursor-pointer text-xs font-medium text-[var(--color-primary)]">
+                        Ajustar foco
+                      </summary>
+                      <div className="mt-2">
+                        <ImageFocusControls
+                          focus={getGalleryImageFocus(galleryFocuses, image.filename)}
+                          onChange={(focus) => onGalleryFocusChange(image.filename, focus)}
+                        />
+                      </div>
+                    </details>
+                  )}
                   {onSelectedExistingCoverChange && (
                     <label className="flex items-center gap-2 text-xs text-[var(--color-on-surface)]">
                       <input
@@ -183,6 +227,47 @@ export default function EntityMediaUpload({
         <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
           Puedes seleccionar hasta {MAX_GALLERY_IMAGES} imagenes para la galeria, ademas de la portada.
         </p>
+      </div>
+    </div>
+  );
+}
+
+type ImageFocusControlsProps = {
+  focus: EntityImageFocus;
+  onChange: (focus: EntityImageFocus) => void;
+};
+
+function ImageFocusControls({ focus, onChange }: ImageFocusControlsProps) {
+  const normalized = normalizeImageFocus(focus);
+  const update = (axis: keyof EntityImageFocus, value: string) => {
+    onChange(normalizeImageFocus({ ...normalized, [axis]: Number(value) }));
+  };
+
+  return (
+    <div className="space-y-2 text-xs text-[var(--color-on-surface)]">
+      <div className="flex items-center gap-3">
+        <span className="w-16 font-medium">Horizontal</span>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={normalized.x}
+          onChange={(event) => update('x', event.target.value)}
+          className="w-32"
+        />
+        <span className="w-8 text-right">{normalized.x}%</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="w-16 font-medium">Vertical</span>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={normalized.y}
+          onChange={(event) => update('y', event.target.value)}
+          className="w-32"
+        />
+        <span className="w-8 text-right">{normalized.y}%</span>
       </div>
     </div>
   );

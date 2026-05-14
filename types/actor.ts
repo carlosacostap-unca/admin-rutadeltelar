@@ -64,7 +64,10 @@ export interface Actor {
   
   // Multimedia
   foto_portada?: string;
+  foto_portada_focus_x?: number;
+  foto_portada_focus_y?: number;
   galeria_fotos?: string[];
+  galeria_fotos_focus?: Record<string, { x: number; y: number }>;
   fotos?: string[]; // Para cuando se implementen archivos en PocketBase
   
   created: string;
