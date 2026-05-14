@@ -1,7 +1,6 @@
 'use client';
 
 import { asPocketBaseError } from '@/lib/pocketbaseErrors';
-import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
@@ -17,8 +16,10 @@ import { ImperdibleTipo, ImperdiblePrioridad, ImperdibleEstado } from '@/types/i
 import { CatalogoItem } from '@/types/catalogo';
 import dynamic from 'next/dynamic';
 import CatalogSelect from '@/components/CatalogSelect';
+import EntityMediaUpload from '@/components/EntityMediaUpload';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 import { getBrowserTimeZoneLabel, localDateTimeInputToUtc } from '@/lib/datetime';
+import { appendCreateMediaFiles } from '@/lib/entityMediaForm';
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false }) as React.FC<{ lat: number; lng: number; zoom?: number; label?: string }>;
 
@@ -54,7 +55,8 @@ function CreateImperdibleForm() {
   const [estacionId, setEstacionId] = useState(searchParams.get('estacion_id') || '');
   const estado: ImperdibleEstado = 'borrador';
   const [videosEnlaces, setVideosEnlaces] = useState('');
-  const [fotos, setFotos] = useState<FileList | null>(null);
+  const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,11 +163,7 @@ function CreateImperdibleForm() {
       if (estacionalidad) formData.append('estacionalidad', estacionalidad);
       if (videosEnlaces) formData.append('videos_enlaces', videosEnlaces);
       
-      if (fotos) {
-        for (let i = 0; i < fotos.length; i++) {
-          formData.append('fotos', fotos[i]);
-        }
-      }
+      appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
       
       await createRecordWithAudit('imperdibles', formData, user);
       
@@ -568,77 +566,13 @@ function CreateImperdibleForm() {
               </div>
             
 
-              <div>
-                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Fotos (Opcional)
-                </label>
-                <div className="flex flex-col gap-4">
-                  {fotos && fotos.length > 0 && (
-                    <div className="flex flex-wrap gap-4">
-                      {Array.from(fotos).map((foto, index) => (
-                        <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                          <Image unoptimized width={800} height={600} 
-                            src={URL.createObjectURL(foto)} 
-                            alt={`Nueva foto ${index + 1}`}
-                            className="object-contain w-full h-full p-1"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const dt = new DataTransfer();
-                              Array.from(fotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
-                              setFotos(dt.files.length > 0 ? dt.files : null);
-                            }}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Eliminar nueva foto"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div>
-                    <input
-                      id="file-upload-create"
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => {
-                        const existingFotosCount = fotos?.length || 0;
-                        const newFotosCount = e.target.files?.length || 0;
-                        
-                        if (existingFotosCount + newFotosCount > 5) {
-                          alert(`Puedes tener un máximo de 5 imágenes. Te quedan ${5 - existingFotosCount} espacios.`);
-                        } else {
-                          const dt = new DataTransfer();
-                          if (fotos) {
-                            Array.from(fotos).forEach(f => dt.items.add(f));
-                          }
-                          if (e.target.files) {
-                            Array.from(e.target.files).forEach(f => dt.items.add(f));
-                          }
-                          setFotos(dt.files);
-                        }
-                        e.target.value = '';
-                      }}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById('file-upload-create')?.click()}
-                      className="btn-secondary px-4 py-2 text-sm shadow-sm"
-                    >
-                      + Añadir foto
-                    </button>
-                  </div>
-                </div>
-                <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
-                  Puedes seleccionar hasta 5 imágenes.
-                </p>
-              </div>
-            
+            <EntityMediaUpload
+              entityLabel="imperdible"
+              coverFile={fotoPortada}
+              onCoverFileChange={setFotoPortada}
+              galleryFiles={galeriaFotos}
+              onGalleryFilesChange={setGaleriaFotos}
+            />
             <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
               <Link
                 href="/imperdibles"

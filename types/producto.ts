@@ -13,6 +13,8 @@ export interface Producto {
   estacion_id?: string; // Relación legacy con una estación principal
   estaciones_relacionadas?: string[];
   actores_relacionados?: string[]; // Relación múltiple con la colección actores
+  foto_portada?: string;
+  galeria_fotos?: string[];
   fotos?: string[]; // URLs o nombres de archivo de PocketBase
   estado: ProductoEstado;
   observaciones_revision?: string;

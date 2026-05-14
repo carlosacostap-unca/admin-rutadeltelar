@@ -548,5 +548,21 @@ La aplicación usa con frecuencia `expand` de PocketBase para:
 
 ---
 
+---
+
+## Convencion De Multimedia
+
+Las entidades con imagenes usan campos separados para evitar que la portada quede mezclada con la galeria:
+
+- `foto_portada`: archivo opcional, maximo 1 imagen.
+- `galeria_fotos`: archivos opcionales, maximo 5 imagenes para `actores`, `productos`, `experiencias` e `imperdibles`.
+- `fotos`: campo legacy de compatibilidad cuando existe.
+
+Para registros existentes que solo tengan `fotos`, la aplicacion trata `fotos[0]` como portada fallback y las imagenes restantes como galeria fallback. La galeria visible deduplica nombres de archivo y excluye la portada.
+
+El script `npm run schema:media` agrega de forma no destructiva `foto_portada` y `galeria_fotos` en `actores`, `productos`, `experiencias` e `imperdibles` si faltan. No borra ni migra el campo `fotos`.
+
+Por ahora no hay backfill destructivo. Si se decide copiar datos legacy, la estrategia recomendada es hacer un backfill controlado que copie la primera imagen de `fotos` a `foto_portada` y las restantes a `galeria_fotos`, manteniendo `fotos` hasta validar la UI.
+
 ## Última Actualización
 Documento generado en función del código actual del proyecto `admin-rutadeltelar`.

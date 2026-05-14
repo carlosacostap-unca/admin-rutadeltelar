@@ -13,6 +13,8 @@ export interface Experiencia {
   responsable?: string; // Relación con la colección actores (un solo actor)
   ubicacion?: string;
   estacion_id: string; // Relación con la colección estaciones
+  foto_portada?: string;
+  galeria_fotos?: string[];
   fotos?: string[]; // URLs o nombres de archivo de PocketBase
   estado: ExperienciaEstado;
   observaciones_revision?: string;

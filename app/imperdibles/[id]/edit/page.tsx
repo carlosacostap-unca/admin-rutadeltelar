@@ -1,7 +1,6 @@
 'use client';
 
 import { asPocketBaseError } from '@/lib/pocketbaseErrors';
-import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -19,8 +18,11 @@ import { Experiencia } from '@/types/experiencia';
 import { Imperdible, ImperdibleTipo, ImperdiblePrioridad, ImperdibleEstado } from '@/types/imperdible';
 import { CatalogoItem } from '@/types/catalogo';
 import CatalogSelect from '@/components/CatalogSelect';
+import EntityMediaUpload from '@/components/EntityMediaUpload';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 import { getBrowserTimeZoneLabel, localDateTimeInputToUtc, utcToLocalDateTimeInput } from '@/lib/datetime';
+import { getEntityCoverImage, getEntityGalleryImages } from '@/lib/entityMedia';
+import { appendFileRemovals, appendGalleryFileUpdates, appendRemoteFile } from '@/lib/entityMediaForm';
 
 export default function EditImperdiblePage() {
   const { user, isLoading } = useAuth();
@@ -58,6 +60,9 @@ export default function EditImperdiblePage() {
   const [videosEnlaces, setVideosEnlaces] = useState('');
   const [fotos, setFotos] = useState<FileList | null>(null);
   const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
+  const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [portadaParaEliminar, setPortadaParaEliminar] = useState(false);
+  const [portadaExistenteSeleccionada, setPortadaExistenteSeleccionada] = useState<string | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -241,17 +246,25 @@ export default function EditImperdiblePage() {
       else formData.append('videos_enlaces', '');
       
       // Eliminar fotos seleccionadas
-      if (fotosParaEliminar.length > 0) {
-        fotosParaEliminar.forEach(foto => {
-          formData.append('fotos-', foto); // La sintaxis 'campo-' elimina el archivo en PocketBase
-        });
+      const currentCover = getEntityCoverImage(imperdible);
+      const currentExplicitCover = imperdible?.foto_portada || null;
+      const galleryRemovals = new Set(fotosParaEliminar);
+
+      if (portadaParaEliminar) {
+        formData.append('foto_portada', '');
+        if (!currentExplicitCover && currentCover) galleryRemovals.add(currentCover);
       }
-      
-      if (fotos && fotos.length > 0) {
-        for (let i = 0; i < fotos.length; i++) {
-          formData.append('fotos', fotos[i]);
-        }
+
+      if (fotoPortada) {
+        formData.append('foto_portada', fotoPortada);
+      } else if (portadaExistenteSeleccionada && portadaExistenteSeleccionada !== currentExplicitCover && imperdible) {
+        await appendRemoteFile(formData, 'foto_portada', pb.files.getURL(imperdible, portadaExistenteSeleccionada), portadaExistenteSeleccionada);
+        galleryRemovals.add(portadaExistenteSeleccionada);
       }
+
+      appendFileRemovals(formData, 'galeria_fotos', Array.from(galleryRemovals));
+      appendFileRemovals(formData, 'fotos', Array.from(galleryRemovals));
+      appendGalleryFileUpdates(formData, fotos);
       
       await updateRecordWithAudit('imperdibles', id, formData, user);
       
@@ -283,6 +296,18 @@ export default function EditImperdiblePage() {
   const experienciasFiltradas = estacionId
     ? experiencias.filter(e => e.estacion_id === estacionId)
     : experiencias;
+  const coverImage = getEntityCoverImage(imperdible);
+  const galleryImages = getEntityGalleryImages(imperdible);
+  const existingCover = imperdible && coverImage ? {
+    filename: coverImage,
+    url: pb.files.getURL(imperdible, coverImage),
+    label: `Portada de ${imperdible.titulo}`,
+  } : null;
+  const existingGallery = imperdible ? galleryImages.map((filename, index) => ({
+    filename,
+    url: pb.files.getURL(imperdible, filename),
+    label: `Foto de galeria ${index + 1} de ${imperdible.titulo}`,
+  })) : [];
 
   if (isLoading || !user || !canEditContent(user) || loadingData) {
     return (
@@ -707,109 +732,25 @@ export default function EditImperdiblePage() {
               </div>
             
 
-              <div>
-                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Fotos Actuales
-                </label>
-                {imperdible?.fotos && imperdible.fotos.length > 0 && imperdible.fotos.filter(f => !fotosParaEliminar.includes(f)).length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                    {imperdible.fotos.filter(f => !fotosParaEliminar.includes(f)).map((foto, index) => (
-                      <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                        <Image unoptimized width={800} height={600} 
-                          src={pb.files.getURL(imperdible, foto)} 
-                          alt={`Foto de ${imperdible.titulo}`}
-                          className="object-contain w-full h-full p-1"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setFotosParaEliminar([...fotosParaEliminar, foto])}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Eliminar foto"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[var(--color-on-surface-variant)] text-sm italic">
-                    No hay fotos guardadas para este imperdible.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                  Añadir Nuevas Fotos (Opcional)
-                </label>
-                <div className="flex flex-col gap-4">
-                  {fotos && fotos.length > 0 && (
-                    <div className="flex flex-wrap gap-4">
-                      {Array.from(fotos).map((foto, index) => (
-                        <div key={index} className="aspect-square w-32 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-                          <Image unoptimized width={800} height={600} 
-                            src={URL.createObjectURL(foto)} 
-                            alt={`Nueva foto ${index + 1}`}
-                            className="object-contain w-full h-full p-1"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const dt = new DataTransfer();
-                              Array.from(fotos).filter((_, i) => i !== index).forEach(f => dt.items.add(f));
-                              setFotos(dt.files.length > 0 ? dt.files : null);
-                            }}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Eliminar nueva foto"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div>
-                    <input
-                      id="file-upload"
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => {
-                        const currentFotosCount = (imperdible?.fotos?.length || 0) - fotosParaEliminar.length;
-                        const existingNewFotosCount = fotos?.length || 0;
-                        const newFotosCount = e.target.files?.length || 0;
-                        
-                        if (currentFotosCount + existingNewFotosCount + newFotosCount > 5) {
-                          alert(`Puedes tener un máximo de 5 imágenes por imperdible. Te quedan ${5 - (currentFotosCount + existingNewFotosCount)} espacios.`);
-                        } else {
-                          const dt = new DataTransfer();
-                          if (fotos) {
-                            Array.from(fotos).forEach(f => dt.items.add(f));
-                          }
-                          if (e.target.files) {
-                            Array.from(e.target.files).forEach(f => dt.items.add(f));
-                          }
-                          setFotos(dt.files);
-                        }
-                        // Reset input so the same file can be selected again if needed
-                        e.target.value = '';
-                      }}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById('file-upload')?.click()}
-                      className="btn-secondary px-4 py-2 text-sm shadow-sm"
-                    >
-                      + Añadir foto
-                    </button>
-                  </div>
-                </div>
-                <p className="text-xs text-[var(--color-on-surface-variant)] mt-2">
-                  Selecciona imágenes si deseas subir nuevas fotos para este imperdible. Puedes tener hasta 5 imágenes en total.
-                </p>
-              </div>
+            <EntityMediaUpload
+              entityLabel="imperdible"
+              coverFile={fotoPortada}
+              onCoverFileChange={(file) => { setFotoPortada(file); setPortadaParaEliminar(false); }}
+              galleryFiles={fotos}
+              onGalleryFilesChange={setFotos}
+              existingCover={existingCover}
+              existingGallery={existingGallery}
+              selectedExistingCover={portadaExistenteSeleccionada}
+              onSelectedExistingCoverChange={(filename) => { setPortadaExistenteSeleccionada(filename); setPortadaParaEliminar(false); }}
+              removedExistingCover={portadaParaEliminar}
+              onRemovedExistingCoverChange={setPortadaParaEliminar}
+              removedExistingGallery={fotosParaEliminar}
+              onToggleRemoveExistingGallery={(filename) => {
+                setFotosParaEliminar((current) =>
+                  current.includes(filename) ? current.filter((item) => item !== filename) : [...current, filename]
+                );
+              }}
+            />
             
 
             <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">

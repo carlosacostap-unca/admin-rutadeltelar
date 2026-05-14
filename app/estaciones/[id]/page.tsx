@@ -14,6 +14,7 @@ import Map from '@/components/Map';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
+import { getEntityCoverImage, getEntityGalleryImages } from '@/lib/entityMedia';
 
 export default function EstacionDetailPage() {
   const { user, isLoading } = useAuth();
@@ -145,15 +146,8 @@ export default function EstacionDetailPage() {
 
   const canEdit = canEditContent(user);
   const canDelete = hasAnyRole(user, ['admin']);
-  const fotoPortada = estacion?.foto_portada || estacion?.fotos?.[0] || null;
-  const galeriaLegacy = estacion?.fotos
-    ? estacion.foto_portada
-      ? estacion.fotos
-      : estacion.fotos.slice(1)
-    : [];
-  const galeriaFotos = Array.from(
-    new Set([...(estacion?.galeria_fotos || []), ...galeriaLegacy])
-  );
+  const fotoPortada = getEntityCoverImage(estacion);
+  const galeriaFotos = getEntityGalleryImages(estacion);
 
   return (
     <div className="h-full bg-[var(--color-surface)]">

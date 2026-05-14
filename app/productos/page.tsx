@@ -9,6 +9,7 @@ import { Producto } from '@/types/producto';
 import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel } from '@/lib/catalogos';
+import EntityCoverThumbnail from '@/components/EntityCoverThumbnail';
 
 type ProductoActor = NonNullable<NonNullable<Producto['expand']>['actores_relacionados']>[number];
 
@@ -184,6 +185,7 @@ function ProductosContent() {
                     href={`/productos/${p.id}`}
                     className={`bg-[var(--color-surface-container)] p-5 rounded-xl hover:bg-[var(--color-surface-container-low)] transition-all shadow-sm flex flex-col gap-2 cursor-pointer ${p.estado === 'inactivo' ? 'opacity-60' : ''}`}
                   >
+                    <EntityCoverThumbnail record={p} title={p.nombre} />
                     <div className="flex justify-between items-start">
                       <h3 className="text-lg font-bold text-[var(--color-primary)]">{p.nombre}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.05em] shrink-0

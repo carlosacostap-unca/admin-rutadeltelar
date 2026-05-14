@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "openspec": "openspec",
+    "schema:media": "node scripts/ensure-media-fields.mjs",
     "playwright:install": "node node_modules/@playwright/test/cli.js install",
     "test:e2e": "node scripts/run-playwright.mjs",
     "test:e2e:headed": "node scripts/run-playwright.mjs --headed",

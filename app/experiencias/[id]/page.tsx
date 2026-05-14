@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -12,6 +11,7 @@ import { Experiencia } from '@/types/experiencia';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
+import EntityMediaDisplay from '@/components/EntityMediaDisplay';
 
 export default function ExperienciaDetailPage() {
   const { user, isLoading } = useAuth();
@@ -240,28 +240,7 @@ export default function ExperienciaDetailPage() {
 
               <hr className="border-[var(--color-outline-variant)]" />
 
-              <div>
-                <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
-                  Fotos
-                </h3>
-                {experiencia.fotos && experiencia.fotos.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {experiencia.fotos.map((foto, index) => (
-                      <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                        <Image unoptimized width={800} height={600} 
-                          src={pb.files.getURL(experiencia, foto)} 
-                          alt={`Foto de ${experiencia.titulo}`}
-                          className="object-contain w-full h-full p-1"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[var(--color-on-surface-variant)] italic">
-                    No hay fotos disponibles para esta experiencia.
-                  </p>
-                )}
-              </div>
+              <EntityMediaDisplay record={experiencia} title={experiencia.titulo} emptyLabel="No hay portada disponible para esta experiencia." />
 
               <hr className="border-[var(--color-outline-variant)]" />
 

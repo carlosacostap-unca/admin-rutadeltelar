@@ -9,6 +9,7 @@ import { Actor } from '@/types/actor';
 import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel } from '@/lib/catalogos';
+import EntityCoverThumbnail from '@/components/EntityCoverThumbnail';
 
 export default function ActoresPage() {
   return (
@@ -163,6 +164,7 @@ function ActoresContent() {
                     href={`/actores/${a.id}`}
                     className={`bg-[var(--color-surface-container)] p-5 rounded-xl hover:bg-[var(--color-surface-container-low)] transition-all shadow-sm flex flex-col gap-2 cursor-pointer ${a.estado === 'inactivo' ? 'opacity-60' : ''}`}
                   >
+                    <EntityCoverThumbnail record={a} title={a.nombre} />
                     <div className="flex justify-between items-start">
                       <h3 className="text-lg font-bold text-[var(--color-primary)]">{a.nombre}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-[0.05em] shrink-0

@@ -24,6 +24,8 @@ export interface Imperdible {
   estacionalidad?: string;
   prioridad: ImperdiblePrioridad | string;
   estacion_id: string; // Relación con la colección estaciones
+  foto_portada?: string;
+  galeria_fotos?: string[];
   fotos?: string[]; // URLs o nombres de archivo de PocketBase
   videos_enlaces?: string;
   estado: ImperdibleEstado;

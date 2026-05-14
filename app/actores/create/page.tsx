@@ -1,7 +1,6 @@
 'use client';
 
 import { asPocketBaseError } from '@/lib/pocketbaseErrors';
-import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
@@ -14,8 +13,10 @@ import { ActorTipo, ActorEstado } from '@/types/actor';
 import { Producto } from '@/types/producto';
 import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
+import EntityMediaUpload from '@/components/EntityMediaUpload';
 import { CatalogoItem } from '@/types/catalogo';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
+import { appendCreateMediaFiles } from '@/lib/entityMediaForm';
 
 function CreateActorForm() {
   const { user, isLoading } = useAuth();
@@ -68,7 +69,8 @@ function CreateActorForm() {
   const [horarios, setHorarios] = useState('');
   const [disponibilidad, setDisponibilidad] = useState('');
   
-  const [fotos, setFotos] = useState<FileList | null>(null);
+  const [fotoPortada, setFotoPortada] = useState<File | null>(null);
+  const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -237,11 +239,7 @@ function CreateActorForm() {
         formData.append('disponibilidad', disponibilidad);
       }
 
-      if (fotos) {
-        for (let i = 0; i < fotos.length; i++) {
-          formData.append('fotos', fotos[i]);
-        }
-      }
+      appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
       
       const record = await createRecordWithAudit('actores', formData, user);
       await syncProductosRelacionados(record.id, productosRelacionados);
@@ -651,101 +649,13 @@ function CreateActorForm() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
-                Fotos
-              </label>
-              <p className="text-sm text-[var(--color-outline)] mb-3">
-                Selecciona hasta 5 fotos para el actor.
-              </p>
-              
-              <div className="bg-[var(--color-surface-container)] p-4 rounded-md border border-[var(--color-outline-variant)]">
-                {/* Image Previews */}
-                {fotos && fotos.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
-                    {Array.from(fotos).map((file, index) => (
-                      <div key={index} className="relative aspect-square bg-[var(--color-surface)] rounded-md border border-[var(--color-outline-variant)] overflow-hidden">
-                        <Image unoptimized width={800} height={600} 
-                          src={URL.createObjectURL(file)} 
-                          alt={`Preview ${index}`} 
-                          className="object-contain w-full h-full p-1"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const dt = new DataTransfer();
-                            Array.from(fotos).forEach((f, i) => {
-                              if (i !== index) dt.items.add(f);
-                            });
-                            setFotos(dt.files);
-                          }}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 focus:outline-none"
-                          title="Eliminar imagen"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Upload Button */}
-                {(!fotos || fotos.length < 5) && (
-                  <div className="mt-2">
-                    <input
-                      type="file"
-                      id="fotos-upload"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => {
-                        const newFiles = e.target.files;
-                        if (!newFiles) return;
-                        
-                        const dt = new DataTransfer();
-                        
-                        // Añadir fotos existentes
-                        if (fotos) {
-                          Array.from(fotos).forEach(f => dt.items.add(f));
-                        }
-                        
-                        // Añadir nuevas fotos hasta llegar al límite de 5
-                        let added = 0;
-                        const currentCount = fotos ? fotos.length : 0;
-                        const remainingSlots = 5 - currentCount;
-                        
-                        Array.from(newFiles).forEach(file => {
-                          if (added < remainingSlots) {
-                            dt.items.add(file);
-                            added++;
-                          }
-                        });
-                        
-                        setFotos(dt.files);
-                        
-                        // Reset input so the same files can be selected again if needed
-                        e.target.value = '';
-                      }}
-                      className="hidden"
-                    />
-                    <label 
-                      htmlFor="fotos-upload"
-                      className="inline-flex items-center justify-center px-4 py-2 bg-[var(--color-surface-variant)] text-[var(--color-on-surface)] rounded-md cursor-pointer hover:bg-[var(--color-outline-variant)] transition-colors text-sm font-medium"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Añadir foto
-                    </label>
-                  </div>
-                )}
-                {fotos && fotos.length >= 5 && (
-                  <p className="text-xs text-amber-600 mt-2">
-                    Has alcanzado el límite máximo de 5 fotos.
-                  </p>
-                )}
-              </div>
-            </div>
-
+            <EntityMediaUpload
+              entityLabel="actor"
+              coverFile={fotoPortada}
+              onCoverFileChange={setFotoPortada}
+              galleryFiles={galeriaFotos}
+              onGalleryFilesChange={setGaleriaFotos}
+            />
             <div>
               <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
                 Observaciones Internas

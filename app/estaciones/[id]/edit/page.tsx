@@ -12,6 +12,7 @@ import { canEditContent, canReviewContent } from '@/lib/permissions';
 import { Estacion } from '@/types/estacion';
 import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
+import { getEntityCoverImage, getEntityGalleryImages } from '@/lib/entityMedia';
 
 export default function EditEstacionPage() {
   const { user, isLoading } = useAuth();
@@ -156,17 +157,8 @@ export default function EditEstacionPage() {
     );
   }
 
-  const fotoPortadaActual = !fotoPortadaParaEliminar
-    ? estacion?.foto_portada || estacion?.fotos?.[0] || null
-    : null;
-  const galeriaLegacy = estacion?.fotos
-    ? estacion.foto_portada
-      ? estacion.fotos
-      : estacion.fotos.slice(1)
-    : [];
-  const galeriaActual = Array.from(
-    new Set([...(estacion?.galeria_fotos || []), ...galeriaLegacy])
-  ).filter((foto) => !galeriaFotosParaEliminar.includes(foto));
+  const fotoPortadaActual = !fotoPortadaParaEliminar ? getEntityCoverImage(estacion) : null;
+  const galeriaActual = getEntityGalleryImages(estacion).filter((foto) => !galeriaFotosParaEliminar.includes(foto));
 
   return (
     <div className="h-full bg-[var(--color-surface)] flex flex-col">

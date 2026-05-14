@@ -9,6 +9,7 @@ import { Imperdible } from '@/types/imperdible';
 import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
+import EntityCoverThumbnail from '@/components/EntityCoverThumbnail';
 
 export default function ImperdiblesPage() {
   return (
@@ -169,6 +170,7 @@ function ImperdiblesContent() {
                     href={`/imperdibles/${i.id}`}
                     className={`bg-[var(--color-surface-container)] p-5 rounded-xl hover:bg-[var(--color-surface-container-low)] transition-all shadow-sm flex flex-col gap-2 cursor-pointer ${i.estado === 'inactivo' ? 'opacity-60' : ''}`}
                   >
+                    <EntityCoverThumbnail record={i} title={i.titulo} />
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-bold text-[var(--color-primary)]">{i.titulo}</h3>

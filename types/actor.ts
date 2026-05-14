@@ -60,6 +60,8 @@ export interface Actor {
   observaciones?: string; // Observaciones internas
   
   // Multimedia
+  foto_portada?: string;
+  galeria_fotos?: string[];
   fotos?: string[]; // Para cuando se implementen archivos en PocketBase
   
   created: string;

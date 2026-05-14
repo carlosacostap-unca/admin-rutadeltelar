@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -14,6 +13,7 @@ import Map from '@/components/Map';
 import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
+import EntityMediaDisplay from '@/components/EntityMediaDisplay';
 
 export default function ActorDetailPage() {
   const { user, isLoading } = useAuth();
@@ -406,28 +406,7 @@ export default function ActorDetailPage() {
               )}
             </div>
 
-            <div className="mt-8 pt-6 border-t border-[var(--color-surface-variant)]">
-              <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
-                Fotos
-              </h3>
-              {actor.fotos && actor.fotos.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {actor.fotos.map((foto, index) => (
-                    <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                      <Image unoptimized width={800} height={600} 
-                        src={pb.files.getURL(actor, foto)} 
-                        alt={`Foto de ${actor.nombre}`}
-                        className="object-contain w-full h-full p-1"
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[var(--color-on-surface-variant)] italic">
-                  No hay fotos disponibles para este actor.
-                </p>
-              )}
-            </div>
+            <EntityMediaDisplay record={actor} title={actor.nombre} emptyLabel="No hay portada disponible para este actor." />
 
             <EntityFeedbackSection entityType="actores" entityId={actor.id} />
 
