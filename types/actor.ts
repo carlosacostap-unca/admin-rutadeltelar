@@ -12,6 +12,9 @@ export interface Actor {
   descripcion?: string; // Biografía corta o descripción
   contacto_telefono?: string;
   contacto_email?: string;
+  facebook_url?: string;
+  instagram_url?: string;
+  pagina_web_url?: string;
   ubicacion?: string; // Dirección o georreferenciación
   latitud?: number;
   longitud?: number;

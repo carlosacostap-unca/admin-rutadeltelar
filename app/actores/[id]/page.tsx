@@ -156,6 +156,11 @@ export default function ActorDetailPage() {
     }
     return producto.expand?.estacion_id?.nombre || '';
   };
+  const actorSocialLinks = actor ? [
+    { label: 'Facebook', url: actor.facebook_url },
+    { label: 'Instagram', url: actor.instagram_url },
+    { label: 'Pagina web', url: actor.pagina_web_url },
+  ].filter((link): link is { label: string; url: string } => Boolean(link.url)) : [];
   return (
     <div className="h-full bg-[var(--color-surface)]">
       <main className="mx-auto px-6 py-8">
@@ -253,6 +258,26 @@ export default function ActorDetailPage() {
                   <div>
                     <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Email</span>
                     <span className="text-[var(--color-on-surface)]">{actor.contacto_email || 'No especificado'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Redes y web</span>
+                    {actorSocialLinks.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {actorSocialLinks.map((link) => (
+                          <a
+                            key={link.label}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center rounded-md border border-[var(--color-outline-variant)] px-3 py-1 text-sm font-medium text-[var(--color-primary)] hover:bg-[var(--color-surface-container)]"
+                          >
+                            {link.label}
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[var(--color-on-surface)]">No especificado</span>
+                    )}
                   </div>
                   <div>
                     <span className="block text-xs font-bold text-[var(--color-on-surface)] uppercase tracking-[0.05em] mb-1">Ubicación / Dirección</span>

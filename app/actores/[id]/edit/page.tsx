@@ -40,6 +40,9 @@ export default function EditActorPage() {
   const [descripcion, setDescripcion] = useState('');
   const [contactoTelefono, setContactoTelefono] = useState('');
   const [contactoEmail, setContactoEmail] = useState('');
+  const [facebookUrl, setFacebookUrl] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [paginaWebUrl, setPaginaWebUrl] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [latitud, setLatitud] = useState('');
   const [longitud, setLongitud] = useState('');
@@ -125,6 +128,9 @@ export default function EditActorPage() {
         setDescripcion(actorRecord.descripcion || '');
         setContactoTelefono(actorRecord.contacto_telefono || '');
         setContactoEmail(actorRecord.contacto_email || '');
+        setFacebookUrl(actorRecord.facebook_url || '');
+        setInstagramUrl(actorRecord.instagram_url || '');
+        setPaginaWebUrl(actorRecord.pagina_web_url || '');
         setUbicacion(actorRecord.ubicacion || '');
         setLatitud(actorRecord.latitud ? actorRecord.latitud.toString() : '');
         setLongitud(actorRecord.longitud ? actorRecord.longitud.toString() : '');
@@ -246,6 +252,9 @@ export default function EditActorPage() {
       formData.append('descripcion', descripcion);
       formData.append('contacto_telefono', contactoTelefono);
       formData.append('contacto_email', contactoEmail);
+      formData.append('facebook_url', facebookUrl);
+      formData.append('instagram_url', instagramUrl);
+      formData.append('pagina_web_url', paginaWebUrl);
       formData.append('ubicacion', ubicacion);
       if (latitud) formData.append('latitud', latitud);
       if (longitud) formData.append('longitud', longitud);
@@ -655,6 +664,50 @@ export default function EditActorPage() {
                     className="input-field w-full"
                     placeholder="Ej. correo@ejemplo.com"
                   />
+                </div>
+              </div>
+
+              <div className="p-6 bg-[var(--color-surface-container-low)] rounded-md border border-[var(--color-outline-variant)]">
+                <h3 className="text-lg font-bold text-[var(--color-on-surface)] mb-4 border-b border-[var(--color-surface-variant)] pb-2 uppercase tracking-[0.05em]">
+                  Redes y web
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                      Facebook
+                    </label>
+                    <input
+                      type="url"
+                      value={facebookUrl}
+                      onChange={(e) => setFacebookUrl(e.target.value)}
+                      className="input-field w-full"
+                      placeholder="https://facebook.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                      Instagram
+                    </label>
+                    <input
+                      type="url"
+                      value={instagramUrl}
+                      onChange={(e) => setInstagramUrl(e.target.value)}
+                      className="input-field w-full"
+                      placeholder="https://instagram.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                      Pagina web
+                    </label>
+                    <input
+                      type="url"
+                      value={paginaWebUrl}
+                      onChange={(e) => setPaginaWebUrl(e.target.value)}
+                      className="input-field w-full"
+                      placeholder="https://..."
+                    />
+                  </div>
                 </div>
               </div>
 

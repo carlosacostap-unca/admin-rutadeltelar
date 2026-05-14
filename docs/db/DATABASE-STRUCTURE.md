@@ -154,6 +154,9 @@ Entidades vinculadas a una estación: artesanos, productores, hospedajes, gastro
 - `descripcion`: texto opcional
 - `contacto_telefono`: texto opcional
 - `contacto_email`: texto opcional
+- `facebook_url`: URL opcional
+- `instagram_url`: URL opcional
+- `pagina_web_url`: URL opcional
 - `ubicacion`: texto opcional
 - `latitud`: number opcional
 - `longitud`: number opcional
@@ -561,6 +564,8 @@ Las entidades con imagenes usan campos separados para evitar que la portada qued
 Para registros existentes que solo tengan `fotos`, la aplicacion trata `fotos[0]` como portada fallback y las imagenes restantes como galeria fallback. La galeria visible deduplica nombres de archivo y excluye la portada.
 
 El script `npm run schema:media` agrega de forma no destructiva `foto_portada` y `galeria_fotos` en `actores`, `productos`, `experiencias` e `imperdibles` si faltan. No borra ni migra el campo `fotos`.
+
+El script `npm run schema:actor-social` agrega de forma no destructiva `facebook_url`, `instagram_url` y `pagina_web_url` en `actores` si faltan.
 
 Por ahora no hay backfill destructivo. Si se decide copiar datos legacy, la estrategia recomendada es hacer un backfill controlado que copie la primera imagen de `fotos` a `foto_portada` y las restantes a `galeria_fotos`, manteniendo `fotos` hasta validar la UI.
 
