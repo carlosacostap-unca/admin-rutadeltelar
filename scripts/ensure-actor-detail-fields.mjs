@@ -25,48 +25,64 @@ if (!pbUrl || !adminEmail || !adminPassword) {
   throw new Error('Missing PocketBase env vars. Set NEXT_PUBLIC_POCKETBASE_URL, POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD.');
 }
 
-const collections = ['estaciones', 'actores', 'productos', 'experiencias', 'imperdibles'];
+const actorTextFields = [
+  'observaciones',
+  'tecnicas',
+  'materiales',
+  'rubro_productivo',
+  'escala_produccion',
+  'modalidad_venta',
+  'productos_ofrecidos',
+  'tipo_hospedaje',
+  'capacidad',
+  'servicios',
+  'tipo_propuesta',
+  'especialidades',
+  'platos_destacados',
+  'modalidad_servicio',
+  'servicios_adicionales',
+  'especialidad',
+  'idiomas',
+  'recorridos_ofrecidos',
+  'duracion_recorridos',
+  'zona_cobertura',
+  'punto_encuentro',
+  'acreditacion',
+  'horarios',
+  'disponibilidad',
+];
+
 const token = await authenticate();
-const results = [];
+const collection = await pb('/api/collections/actores');
+const fields = collection.fields || collection.schema || [];
+const fieldNames = new Set(fields.map((field) => field.name));
+const nextFields = [...fields];
+const added = [];
 
-for (const collectionName of collections) {
-  const collection = await pb(`/api/collections/${encodeURIComponent(collectionName)}`);
-  const fields = collection.fields || collection.schema || [];
-  const fieldNames = new Set(fields.map((field) => field.name));
-  const nextFields = [...fields];
-  const added = [];
-
-  if (!fieldNames.has('foto_portada_focus_x')) {
-    nextFields.push(numberField('foto_portada_focus_x'));
-    added.push('foto_portada_focus_x');
-  }
-
-  if (!fieldNames.has('foto_portada_focus_y')) {
-    nextFields.push(numberField('foto_portada_focus_y'));
-    added.push('foto_portada_focus_y');
-  }
-
-  if (!fieldNames.has('foto_portada_zoom')) {
-    nextFields.push(numberField('foto_portada_zoom', 100, 300));
-    added.push('foto_portada_zoom');
-  }
-
-  if (!fieldNames.has('galeria_fotos_focus')) {
-    nextFields.push(jsonField('galeria_fotos_focus'));
-    added.push('galeria_fotos_focus');
-  }
-
-  if (added.length > 0) {
-    await pb(`/api/collections/${encodeURIComponent(collectionName)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ fields: nextFields }),
-    });
-  }
-
-  results.push({ collection: collectionName, added, unchanged: added.length === 0 });
+for (const fieldName of actorTextFields) {
+  if (fieldNames.has(fieldName)) continue;
+  nextFields.push(textField(fieldName));
+  added.push(fieldName);
 }
 
-console.log(JSON.stringify({ ok: true, results }, null, 2));
+if (!fieldNames.has('visitas_demostraciones')) {
+  nextFields.push(boolField('visitas_demostraciones'));
+  added.push('visitas_demostraciones');
+}
+
+if (added.length > 0) {
+  await pb('/api/collections/actores', {
+    method: 'PATCH',
+    body: JSON.stringify({ fields: nextFields }),
+  });
+}
+
+console.log(JSON.stringify({
+  ok: true,
+  collection: 'actores',
+  added,
+  unchanged: added.length === 0,
+}, null, 2));
 
 async function authenticate() {
   const body = JSON.stringify({ identity: adminEmail, password: adminPassword });
@@ -99,28 +115,29 @@ async function pb(path, options = {}) {
   return response.json();
 }
 
-function numberField(name, min = 0, max = 100) {
+function textField(name) {
   return {
     name,
-    type: 'number',
+    type: 'text',
     required: false,
     presentable: false,
     hidden: false,
     system: false,
-    min,
-    max,
-    onlyInt: false,
+    min: 0,
+    max: 0,
+    pattern: '',
+    autogeneratePattern: '',
+    primaryKey: false,
   };
 }
 
-function jsonField(name) {
+function boolField(name) {
   return {
     name,
-    type: 'json',
+    type: 'bool',
     required: false,
     presentable: false,
     hidden: false,
     system: false,
-    maxSize: 0,
   };
 }

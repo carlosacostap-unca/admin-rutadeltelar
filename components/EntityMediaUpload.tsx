@@ -4,10 +4,14 @@ import Image from 'next/image';
 import { MAX_GALLERY_IMAGES } from '@/lib/entityMediaForm';
 import {
   DEFAULT_IMAGE_FOCUS,
+  DEFAULT_IMAGE_ZOOM,
   EntityGalleryFocus,
+  EntityImageCrop,
   EntityImageFocus,
+  getGalleryImageCrop,
   getGalleryImageFocus,
-  getImageFocusStyle,
+  getImageCropStyle,
+  normalizeImageZoom,
   normalizeImageFocus,
 } from '@/lib/entityMedia';
 
@@ -23,10 +27,12 @@ type EntityMediaUploadProps = {
   onCoverFileChange: (file: File | null) => void;
   coverFocus?: EntityImageFocus;
   onCoverFocusChange?: (focus: EntityImageFocus) => void;
+  coverZoom?: number;
+  onCoverZoomChange?: (zoom: number) => void;
   galleryFiles: FileList | null;
   onGalleryFilesChange: (files: FileList | null) => void;
   galleryFocuses?: EntityGalleryFocus;
-  onGalleryFocusChange?: (filename: string, focus: EntityImageFocus) => void;
+  onGalleryFocusChange?: (filename: string, crop: EntityImageCrop) => void;
   existingCover?: ExistingMediaImage | null;
   existingGallery?: ExistingMediaImage[];
   selectedExistingCover?: string | null;
@@ -43,6 +49,8 @@ export default function EntityMediaUpload({
   onCoverFileChange,
   coverFocus = DEFAULT_IMAGE_FOCUS,
   onCoverFocusChange,
+  coverZoom = DEFAULT_IMAGE_ZOOM,
+  onCoverZoomChange,
   galleryFiles,
   onGalleryFilesChange,
   galleryFocuses = {},
@@ -62,6 +70,7 @@ export default function EntityMediaUpload({
   const inputId = `gallery-upload-${entityLabel.replace(/\s+/g, '-').toLowerCase()}`;
   const coverInputId = `cover-upload-${entityLabel.replace(/\s+/g, '-').toLowerCase()}`;
   const normalizedCoverFocus = normalizeImageFocus(coverFocus);
+  const normalizedCoverZoom = normalizeImageZoom(coverZoom);
 
   const removeGalleryFile = (index: number) => {
     if (!galleryFiles) return;
@@ -95,10 +104,10 @@ export default function EntityMediaUpload({
           {existingCover && !removedExistingCover && !coverFile && (
             <div className="flex flex-col gap-2">
               <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                <Image unoptimized width={800} height={600} src={existingCover.url} alt={existingCover.label} className="object-cover w-full h-full" style={getImageFocusStyle(normalizedCoverFocus)} />
+                <Image unoptimized width={800} height={600} src={existingCover.url} alt={existingCover.label} className="object-cover w-full h-full" style={getImageCropStyle(normalizedCoverFocus, normalizedCoverZoom)} />
               </div>
               {onCoverFocusChange && (
-                <ImageFocusControls focus={normalizedCoverFocus} onChange={onCoverFocusChange} />
+                <ImageFocusControls focus={normalizedCoverFocus} onChange={onCoverFocusChange} zoom={normalizedCoverZoom} onZoomChange={onCoverZoomChange} />
               )}
               {onRemovedExistingCoverChange && (
                 <button type="button" onClick={() => onRemovedExistingCoverChange(true)} className="btn-secondary px-3 py-1.5 text-xs w-fit">
@@ -110,14 +119,14 @@ export default function EntityMediaUpload({
 
           {coverFile && (
             <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
-              <Image unoptimized width={800} height={600} src={URL.createObjectURL(coverFile)} alt={`Nueva portada de ${entityLabel}`} className="object-cover w-full h-full" style={getImageFocusStyle(normalizedCoverFocus)} />
+              <Image unoptimized width={800} height={600} src={URL.createObjectURL(coverFile)} alt={`Nueva portada de ${entityLabel}`} className="object-cover w-full h-full" style={getImageCropStyle(normalizedCoverFocus, normalizedCoverZoom)} />
               <button type="button" onClick={() => onCoverFileChange(null)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
                 x
               </button>
             </div>
           )}
           {coverFile && onCoverFocusChange && (
-            <ImageFocusControls focus={normalizedCoverFocus} onChange={onCoverFocusChange} />
+            <ImageFocusControls focus={normalizedCoverFocus} onChange={onCoverFocusChange} zoom={normalizedCoverZoom} onZoomChange={onCoverZoomChange} />
           )}
 
           <div>
@@ -159,7 +168,7 @@ export default function EntityMediaUpload({
                       src={image.url}
                       alt={image.label}
                       className="object-cover w-full h-full"
-                      style={getImageFocusStyle(getGalleryImageFocus(galleryFocuses, image.filename))}
+                      style={getImageCropStyle(getGalleryImageFocus(galleryFocuses, image.filename), getGalleryImageCrop(galleryFocuses, image.filename).zoom)}
                     />
                   </div>
                   {onGalleryFocusChange && (
@@ -170,7 +179,9 @@ export default function EntityMediaUpload({
                       <div className="mt-2">
                         <ImageFocusControls
                           focus={getGalleryImageFocus(galleryFocuses, image.filename)}
-                          onChange={(focus) => onGalleryFocusChange(image.filename, focus)}
+                          onChange={(focus) => onGalleryFocusChange(image.filename, { ...getGalleryImageCrop(galleryFocuses, image.filename), ...focus })}
+                          zoom={getGalleryImageCrop(galleryFocuses, image.filename).zoom}
+                          onZoomChange={(zoom) => onGalleryFocusChange(image.filename, { ...getGalleryImageCrop(galleryFocuses, image.filename), zoom })}
                         />
                       </div>
                     </details>
@@ -235,10 +246,13 @@ export default function EntityMediaUpload({
 type ImageFocusControlsProps = {
   focus: EntityImageFocus;
   onChange: (focus: EntityImageFocus) => void;
+  zoom?: number;
+  onZoomChange?: (zoom: number) => void;
 };
 
-function ImageFocusControls({ focus, onChange }: ImageFocusControlsProps) {
+function ImageFocusControls({ focus, onChange, zoom, onZoomChange }: ImageFocusControlsProps) {
   const normalized = normalizeImageFocus(focus);
+  const normalizedZoom = normalizeImageZoom(zoom);
   const update = (axis: keyof EntityImageFocus, value: string) => {
     onChange(normalizeImageFocus({ ...normalized, [axis]: Number(value) }));
   };
@@ -269,6 +283,20 @@ function ImageFocusControls({ focus, onChange }: ImageFocusControlsProps) {
         />
         <span className="w-8 text-right">{normalized.y}%</span>
       </div>
+      {onZoomChange && (
+        <div className="flex items-center gap-3">
+          <span className="w-16 font-medium">Zoom</span>
+          <input
+            type="range"
+            min="100"
+            max="300"
+            value={normalizedZoom}
+            onChange={(event) => onZoomChange(normalizeImageZoom(event.target.value))}
+            className="w-32"
+          />
+          <span className="w-8 text-right">{normalizedZoom}%</span>
+        </div>
+      )}
     </div>
   );
 }

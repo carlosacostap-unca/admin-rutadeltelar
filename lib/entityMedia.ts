@@ -2,8 +2,9 @@ export type EntityMediaRecord = {
   foto_portada?: string | string[] | null;
   foto_portada_focus_x?: number | null;
   foto_portada_focus_y?: number | null;
+  foto_portada_zoom?: number | null;
   galeria_fotos?: string[] | null;
-  galeria_fotos_focus?: EntityGalleryFocus | null;
+  galeria_fotos_focus?: EntityStoredGalleryFocus | null;
   fotos?: string[] | null;
 };
 
@@ -12,9 +13,17 @@ export type EntityImageFocus = {
   y: number;
 };
 
-export type EntityGalleryFocus = Record<string, EntityImageFocus>;
+export type EntityImageCrop = EntityImageFocus & {
+  zoom: number;
+};
+
+export type EntityStoredGalleryFocus = Record<string, Partial<EntityImageCrop>>;
+
+export type EntityGalleryFocus = Record<string, EntityImageCrop>;
 
 export const DEFAULT_IMAGE_FOCUS: EntityImageFocus = { x: 50, y: 50 };
+export const DEFAULT_IMAGE_ZOOM = 100;
+export const DEFAULT_IMAGE_CROP: EntityImageCrop = { ...DEFAULT_IMAGE_FOCUS, zoom: DEFAULT_IMAGE_ZOOM };
 
 export function getEntityCoverImage(record?: EntityMediaRecord | null): string | null {
   if (!record) return null;
@@ -31,11 +40,15 @@ export function getEntityCoverFocus(record?: EntityMediaRecord | null): EntityIm
   });
 }
 
+export function getEntityCoverZoom(record?: EntityMediaRecord | null): number {
+  return normalizeImageZoom(record?.foto_portada_zoom);
+}
+
 export function getEntityGalleryFocuses(record?: EntityMediaRecord | null): EntityGalleryFocus {
   if (!record?.galeria_fotos_focus || typeof record.galeria_fotos_focus !== 'object') return {};
   return Object.fromEntries(
     Object.entries(record.galeria_fotos_focus)
-      .map(([filename, focus]) => [filename, normalizeImageFocus(focus)])
+      .map(([filename, crop]) => [filename, normalizeImageCrop(crop)])
       .filter(([filename]) => Boolean(filename))
   );
 }
@@ -44,9 +57,26 @@ export function getGalleryImageFocus(focuses: EntityGalleryFocus | null | undefi
   return normalizeImageFocus(focuses?.[filename]);
 }
 
+export function getGalleryImageCrop(focuses: EntityGalleryFocus | null | undefined, filename: string): EntityImageCrop {
+  return normalizeImageCrop(focuses?.[filename]);
+}
+
 export function getImageFocusStyle(focus?: EntityImageFocus | null) {
   const normalized = normalizeImageFocus(focus);
   return { objectPosition: `${normalized.x}% ${normalized.y}%` };
+}
+
+export function getImageCropStyle(focus?: EntityImageFocus | null, zoom?: number | null) {
+  const normalizedFocus = normalizeImageFocus(focus);
+  const normalizedZoom = normalizeImageZoom(zoom);
+  const focusPoint = `${normalizedFocus.x}% ${normalizedFocus.y}%`;
+
+  return {
+    objectFit: 'contain' as const,
+    objectPosition: focusPoint,
+    transform: `scale(${normalizedZoom / 100})`,
+    transformOrigin: focusPoint,
+  };
 }
 
 export function pruneGalleryFocuses(focuses: EntityGalleryFocus, filenames: string[]): EntityGalleryFocus {
@@ -61,6 +91,20 @@ export function normalizeImageFocus(focus?: { x?: unknown; y?: unknown } | null)
     x: clampFocus(focus?.x),
     y: clampFocus(focus?.y),
   };
+}
+
+export function normalizeImageCrop(crop?: { x?: unknown; y?: unknown; zoom?: unknown } | null): EntityImageCrop {
+  const normalizedFocus = normalizeImageFocus(crop);
+  return {
+    ...normalizedFocus,
+    zoom: normalizeImageZoom(crop?.zoom),
+  };
+}
+
+export function normalizeImageZoom(value: unknown): number {
+  const numberValue = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numberValue)) return DEFAULT_IMAGE_ZOOM;
+  return Math.min(300, Math.max(100, Math.round(numberValue)));
 }
 
 export function getEntityGalleryImages(record?: EntityMediaRecord | null): string[] {

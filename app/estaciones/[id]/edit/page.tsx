@@ -14,15 +14,19 @@ import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
 import {
   DEFAULT_IMAGE_FOCUS,
+  DEFAULT_IMAGE_ZOOM,
   EntityGalleryFocus,
   EntityImageFocus,
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getGalleryImageCrop,
   getGalleryImageFocus,
-  getImageFocusStyle,
+  getImageCropStyle,
   normalizeImageFocus,
+  normalizeImageZoom,
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
 import { appendImageFocusFields } from '@/lib/entityMediaForm';
@@ -44,6 +48,7 @@ export default function EditEstacionPage() {
   const [estado, setEstado] = useState('borrador');
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
   const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
+  const [fotoPortadaZoom, setFotoPortadaZoom] = useState(DEFAULT_IMAGE_ZOOM);
   const [fotoPortadaParaEliminar, setFotoPortadaParaEliminar] = useState(false);
   const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
   const [galeriaFotosParaEliminar, setGaleriaFotosParaEliminar] = useState<string[]>([]);
@@ -81,6 +86,7 @@ export default function EditEstacionPage() {
         setLongitud(record.longitud?.toString() || '');
         setEstado(record.estado || 'borrador');
         setFotoPortadaFocus(getEntityCoverFocus(record));
+        setFotoPortadaZoom(getEntityCoverZoom(record));
         setGaleriaFotosFocus(getEntityGalleryFocuses(record));
       } catch (err) {
         console.error('Error fetching estacion:', err);
@@ -150,7 +156,8 @@ export default function EditEstacionPage() {
       appendImageFocusFields(
         formData,
         fotoPortadaFocus,
-        pruneGalleryFocuses(galeriaFotosFocus, getEntityGalleryImages(estacion).filter((foto) => !galeriaFotosParaEliminar.includes(foto)))
+        pruneGalleryFocuses(galeriaFotosFocus, getEntityGalleryImages(estacion).filter((foto) => !galeriaFotosParaEliminar.includes(foto))),
+        fotoPortadaZoom
       );
       
       await updateRecordWithAudit('estaciones', id, formData, user);
@@ -366,7 +373,7 @@ export default function EditEstacionPage() {
                       src={pb.files.getURL(estacion!, fotoPortadaActual)}
                       alt={`Portada de ${estacion?.nombre}`}
                       className="object-cover w-full h-full"
-                      style={getImageFocusStyle(fotoPortadaFocus)}
+                      style={getImageCropStyle(fotoPortadaFocus, fotoPortadaZoom)}
                     />
                     <button
                       type="button"
@@ -386,7 +393,7 @@ export default function EditEstacionPage() {
                   </p>
                 )}
                 {fotoPortadaActual && (
-                  <ImageFocusControls focus={fotoPortadaFocus} onChange={setFotoPortadaFocus} />
+                  <ImageFocusControls focus={fotoPortadaFocus} onChange={setFotoPortadaFocus} zoom={fotoPortadaZoom} onZoomChange={setFotoPortadaZoom} />
                 )}
               </div>
 
@@ -401,7 +408,7 @@ export default function EditEstacionPage() {
                         src={URL.createObjectURL(fotoPortada)}
                         alt="Nueva portada"
                         className="object-cover w-full h-full"
-                        style={getImageFocusStyle(fotoPortadaFocus)}
+                        style={getImageCropStyle(fotoPortadaFocus, fotoPortadaZoom)}
                       />
                       <button
                         type="button"
@@ -414,7 +421,7 @@ export default function EditEstacionPage() {
                     </div>
                   )}
                   {fotoPortada && (
-                    <ImageFocusControls focus={fotoPortadaFocus} onChange={setFotoPortadaFocus} />
+                    <ImageFocusControls focus={fotoPortadaFocus} onChange={setFotoPortadaFocus} zoom={fotoPortadaZoom} onZoomChange={setFotoPortadaZoom} />
                   )}
 
                   <div>
@@ -459,7 +466,7 @@ export default function EditEstacionPage() {
                           src={pb.files.getURL(estacion!, foto)}
                           alt={`Foto de galería ${index + 1} de ${estacion?.nombre}`}
                           className="object-cover w-full h-full"
-                          style={getImageFocusStyle(getGalleryImageFocus(galeriaFotosFocus, foto))}
+                          style={getImageCropStyle(getGalleryImageFocus(galeriaFotosFocus, foto), getGalleryImageCrop(galeriaFotosFocus, foto).zoom)}
                         />
                         <button
                           type="button"
@@ -481,7 +488,9 @@ export default function EditEstacionPage() {
                         <div className="mt-2">
                           <ImageFocusControls
                             focus={getGalleryImageFocus(galeriaFotosFocus, foto)}
-                            onChange={(focus) => setGaleriaFotosFocus((current) => ({ ...current, [foto]: focus }))}
+                            onChange={(focus) => setGaleriaFotosFocus((current) => ({ ...current, [foto]: { ...getGalleryImageCrop(current, foto), ...focus } }))}
+                            zoom={getGalleryImageCrop(galeriaFotosFocus, foto).zoom}
+                            onZoomChange={(zoom) => setGaleriaFotosFocus((current) => ({ ...current, [foto]: { ...getGalleryImageCrop(current, foto), zoom } }))}
                           />
                         </div>
                       </details>
@@ -610,10 +619,13 @@ export default function EditEstacionPage() {
 type ImageFocusControlsProps = {
   focus: EntityImageFocus;
   onChange: (focus: EntityImageFocus) => void;
+  zoom?: number;
+  onZoomChange?: (zoom: number) => void;
 };
 
-function ImageFocusControls({ focus, onChange }: ImageFocusControlsProps) {
+function ImageFocusControls({ focus, onChange, zoom, onZoomChange }: ImageFocusControlsProps) {
   const normalized = normalizeImageFocus(focus);
+  const normalizedZoom = normalizeImageZoom(zoom);
   const update = (axis: keyof EntityImageFocus, value: string) => {
     onChange(normalizeImageFocus({ ...normalized, [axis]: Number(value) }));
   };
@@ -630,6 +642,13 @@ function ImageFocusControls({ focus, onChange }: ImageFocusControlsProps) {
         <input type="range" min="0" max="100" value={normalized.y} onChange={(event) => update('y', event.target.value)} className="w-32" />
         <span className="w-8 text-right">{normalized.y}%</span>
       </div>
+      {onZoomChange && (
+        <div className="flex items-center gap-3">
+          <span className="w-16 font-medium">Zoom</span>
+          <input type="range" min="100" max="300" value={normalizedZoom} onChange={(event) => onZoomChange(normalizeImageZoom(event.target.value))} className="w-32" />
+          <span className="w-8 text-right">{normalizedZoom}%</span>
+        </div>
+      )}
     </div>
   );
 }

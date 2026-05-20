@@ -17,10 +17,12 @@ import { deleteRecordWithAudit } from '@/lib/audit';
 import {
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getGalleryImageCrop,
   getGalleryImageFocus,
-  getImageFocusStyle,
+  getImageCropStyle,
 } from '@/lib/entityMedia';
 
 export default function EstacionDetailPage() {
@@ -155,6 +157,7 @@ export default function EstacionDetailPage() {
   const canDelete = hasAnyRole(user, ['admin']);
   const fotoPortada = getEntityCoverImage(estacion);
   const fotoPortadaFocus = getEntityCoverFocus(estacion);
+  const fotoPortadaZoom = getEntityCoverZoom(estacion);
   const galeriaFotos = getEntityGalleryImages(estacion);
   const galeriaFotosFocus = getEntityGalleryFocuses(estacion);
 
@@ -282,7 +285,7 @@ export default function EstacionDetailPage() {
                         src={pb.files.getURL(estacion, fotoPortada)}
                         alt={`Portada de ${estacion.nombre}`}
                         className="object-cover w-full h-full"
-                        style={getImageFocusStyle(fotoPortadaFocus)}
+                        style={getImageCropStyle(fotoPortadaFocus, fotoPortadaZoom)}
                       />
                     </div>
                   </div>
@@ -307,7 +310,7 @@ export default function EstacionDetailPage() {
                           src={pb.files.getURL(estacion, foto)}
                           alt={`Foto de galería ${index + 1} de ${estacion.nombre}`}
                           className="object-cover w-full h-full"
-                          style={getImageFocusStyle(getGalleryImageFocus(galeriaFotosFocus, foto))}
+                          style={getImageCropStyle(getGalleryImageFocus(galeriaFotosFocus, foto), getGalleryImageCrop(galeriaFotosFocus, foto).zoom)}
                         />
                       </div>
                     ))}

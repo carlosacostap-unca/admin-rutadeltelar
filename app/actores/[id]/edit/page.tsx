@@ -18,12 +18,15 @@ import { CatalogoItem } from '@/types/catalogo';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 import {
   DEFAULT_IMAGE_FOCUS,
+  DEFAULT_IMAGE_ZOOM,
   EntityGalleryFocus,
   EntityImageFocus,
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getGalleryImageCrop,
   getGalleryImageFocus,
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
@@ -89,6 +92,7 @@ export default function EditActorPage() {
   const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
   const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
+  const [fotoPortadaZoom, setFotoPortadaZoom] = useState(DEFAULT_IMAGE_ZOOM);
   const [galeriaFotosFocus, setGaleriaFotosFocus] = useState<EntityGalleryFocus>({});
   const [portadaParaEliminar, setPortadaParaEliminar] = useState(false);
   const [portadaExistenteSeleccionada, setPortadaExistenteSeleccionada] = useState<string | null>(null);
@@ -174,6 +178,7 @@ export default function EditActorPage() {
         setHorarios(actorRecord.horarios || '');
         setDisponibilidad(actorRecord.disponibilidad || '');
         setFotoPortadaFocus(getEntityCoverFocus(actorRecord));
+        setFotoPortadaZoom(getEntityCoverZoom(actorRecord));
         setGaleriaFotosFocus(getEntityGalleryFocuses(actorRecord));
         
       } catch (err) {
@@ -338,7 +343,8 @@ export default function EditActorPage() {
         pruneGalleryFocuses(
           galeriaFotosFocus,
           getEntityGalleryImages(actor).filter((filename) => !galleryRemovals.has(filename))
-        )
+        ),
+        fotoPortadaZoom
       );
       
       await updateRecordWithAudit('actores', id, formData, user);
@@ -846,6 +852,8 @@ export default function EditActorPage() {
               onCoverFileChange={(file) => { setFotoPortada(file); setPortadaParaEliminar(false); }}
               coverFocus={fotoPortadaFocus}
               onCoverFocusChange={setFotoPortadaFocus}
+              coverZoom={fotoPortadaZoom}
+              onCoverZoomChange={setFotoPortadaZoom}
               galleryFiles={fotos}
               onGalleryFilesChange={setFotos}
               galleryFocuses={galeriaFotosFocus}
@@ -858,7 +866,10 @@ export default function EditActorPage() {
               onSelectedExistingCoverChange={(filename) => {
                 setPortadaExistenteSeleccionada(filename);
                 setPortadaParaEliminar(false);
-                if (filename) setFotoPortadaFocus(getGalleryImageFocus(galeriaFotosFocus, filename));
+                if (filename) {
+                  setFotoPortadaFocus(getGalleryImageFocus(galeriaFotosFocus, filename));
+                  setFotoPortadaZoom(getGalleryImageCrop(galeriaFotosFocus, filename).zoom);
+                }
               }}
               removedExistingCover={portadaParaEliminar}
               onRemovedExistingCoverChange={setPortadaParaEliminar}

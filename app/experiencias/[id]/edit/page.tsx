@@ -14,12 +14,15 @@ import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
 import {
   DEFAULT_IMAGE_FOCUS,
+  DEFAULT_IMAGE_ZOOM,
   EntityGalleryFocus,
   EntityImageFocus,
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getGalleryImageCrop,
   getGalleryImageFocus,
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
@@ -49,6 +52,7 @@ export default function EditExperienciaPage() {
   const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
   const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
+  const [fotoPortadaZoom, setFotoPortadaZoom] = useState(DEFAULT_IMAGE_ZOOM);
   const [galeriaFotosFocus, setGaleriaFotosFocus] = useState<EntityGalleryFocus>({});
   const [portadaParaEliminar, setPortadaParaEliminar] = useState(false);
   const [portadaExistenteSeleccionada, setPortadaExistenteSeleccionada] = useState<string | null>(null);
@@ -94,6 +98,7 @@ export default function EditExperienciaPage() {
         setResponsable(experienciaRecord.responsable || '');
         setEstado(experienciaRecord.estado);
         setFotoPortadaFocus(getEntityCoverFocus(experienciaRecord));
+        setFotoPortadaZoom(getEntityCoverZoom(experienciaRecord));
         setGaleriaFotosFocus(getEntityGalleryFocuses(experienciaRecord));
         
       } catch (err) {
@@ -175,7 +180,8 @@ export default function EditExperienciaPage() {
         pruneGalleryFocuses(
           galeriaFotosFocus,
           getEntityGalleryImages(experiencia).filter((filename) => !galleryRemovals.has(filename))
-        )
+        ),
+        fotoPortadaZoom
       );
       
       await updateRecordWithAudit('experiencias', id, formData, user);
@@ -413,6 +419,8 @@ export default function EditExperienciaPage() {
               onCoverFileChange={(file) => { setFotoPortada(file); setPortadaParaEliminar(false); }}
               coverFocus={fotoPortadaFocus}
               onCoverFocusChange={setFotoPortadaFocus}
+              coverZoom={fotoPortadaZoom}
+              onCoverZoomChange={setFotoPortadaZoom}
               galleryFiles={fotos}
               onGalleryFilesChange={setFotos}
               galleryFocuses={galeriaFotosFocus}
@@ -425,7 +433,10 @@ export default function EditExperienciaPage() {
               onSelectedExistingCoverChange={(filename) => {
                 setPortadaExistenteSeleccionada(filename);
                 setPortadaParaEliminar(false);
-                if (filename) setFotoPortadaFocus(getGalleryImageFocus(galeriaFotosFocus, filename));
+                if (filename) {
+                  setFotoPortadaFocus(getGalleryImageFocus(galeriaFotosFocus, filename));
+                  setFotoPortadaZoom(getGalleryImageCrop(galeriaFotosFocus, filename).zoom);
+                }
               }}
               removedExistingCover={portadaParaEliminar}
               onRemovedExistingCoverChange={setPortadaParaEliminar}

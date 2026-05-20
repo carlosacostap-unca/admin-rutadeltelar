@@ -1,5 +1,5 @@
 import type { EntityGalleryFocus, EntityImageFocus } from './entityMedia';
-import { DEFAULT_IMAGE_FOCUS, normalizeImageFocus } from './entityMedia';
+import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, normalizeImageFocus, normalizeImageZoom } from './entityMedia';
 
 export const MAX_GALLERY_IMAGES = 5;
 
@@ -30,10 +30,12 @@ export function appendImageFocusFields(
   formData: FormData,
   coverFocus: EntityImageFocus = DEFAULT_IMAGE_FOCUS,
   galleryFocuses: EntityGalleryFocus = {},
+  coverZoom: number = DEFAULT_IMAGE_ZOOM,
 ) {
   const normalizedCoverFocus = normalizeImageFocus(coverFocus);
   formData.append('foto_portada_focus_x', String(normalizedCoverFocus.x));
   formData.append('foto_portada_focus_y', String(normalizedCoverFocus.y));
+  formData.append('foto_portada_zoom', String(normalizeImageZoom(coverZoom)));
   formData.append('galeria_fotos_focus', JSON.stringify(galleryFocuses));
 }
 

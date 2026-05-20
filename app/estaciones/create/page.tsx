@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
-import { DEFAULT_IMAGE_FOCUS, EntityImageFocus, getImageFocusStyle, normalizeImageFocus } from '@/lib/entityMedia';
+import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, EntityImageFocus, getImageCropStyle, normalizeImageFocus, normalizeImageZoom } from '@/lib/entityMedia';
 import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
 
 export default function CreateEstacionPage() {
@@ -28,6 +28,7 @@ export default function CreateEstacionPage() {
   const [estado, setEstado] = useState('borrador'); // estado inicial
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
   const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
+  const [fotoPortadaZoom, setFotoPortadaZoom] = useState(DEFAULT_IMAGE_ZOOM);
   const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,7 +67,7 @@ export default function CreateEstacionPage() {
       }
 
       appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
-      appendImageFocusFields(formData, fotoPortadaFocus);
+      appendImageFocusFields(formData, fotoPortadaFocus, {}, fotoPortadaZoom);
       
       await createRecordWithAudit('estaciones', formData, user);
       
@@ -257,7 +258,7 @@ export default function CreateEstacionPage() {
                       src={URL.createObjectURL(fotoPortada)}
                       alt="Vista previa de la foto de portada"
                       className="object-cover w-full h-full"
-                      style={getImageFocusStyle(fotoPortadaFocus)}
+                      style={getImageCropStyle(fotoPortadaFocus, fotoPortadaZoom)}
                     />
                     <button
                       type="button"
@@ -294,6 +295,18 @@ export default function CreateEstacionPage() {
                         className="w-32"
                       />
                       <span className="w-8 text-right">{fotoPortadaFocus.y}%</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-16 font-medium">Zoom</span>
+                      <input
+                        type="range"
+                        min="100"
+                        max="300"
+                        value={fotoPortadaZoom}
+                        onChange={(event) => setFotoPortadaZoom(normalizeImageZoom(event.target.value))}
+                        className="w-32"
+                      />
+                      <span className="w-8 text-right">{fotoPortadaZoom}%</span>
                     </div>
                   </div>
                 )}

@@ -16,7 +16,7 @@ import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
 import { CatalogoItem } from '@/types/catalogo';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
-import { DEFAULT_IMAGE_FOCUS, EntityImageFocus } from '@/lib/entityMedia';
+import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, EntityImageFocus } from '@/lib/entityMedia';
 import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
 
 function CreateActorForm() {
@@ -75,6 +75,7 @@ function CreateActorForm() {
   
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
   const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
+  const [fotoPortadaZoom, setFotoPortadaZoom] = useState(DEFAULT_IMAGE_ZOOM);
   const [galeriaFotos, setGaleriaFotos] = useState<FileList | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -248,7 +249,7 @@ function CreateActorForm() {
       }
 
       appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
-      appendImageFocusFields(formData, fotoPortadaFocus);
+      appendImageFocusFields(formData, fotoPortadaFocus, {}, fotoPortadaZoom);
       
       const record = await createRecordWithAudit('actores', formData, user);
       await syncProductosRelacionados(record.id, productosRelacionados);
@@ -708,6 +709,8 @@ function CreateActorForm() {
               onCoverFileChange={setFotoPortada}
               coverFocus={fotoPortadaFocus}
               onCoverFocusChange={setFotoPortadaFocus}
+              coverZoom={fotoPortadaZoom}
+              onCoverZoomChange={setFotoPortadaZoom}
               galleryFiles={galeriaFotos}
               onGalleryFilesChange={setGaleriaFotos}
             />

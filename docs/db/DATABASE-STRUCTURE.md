@@ -124,8 +124,9 @@ Unidad territorial principal de la Ruta del Telar.
 - `foto_portada`: file opcional
 - `foto_portada_focus_x`: number opcional, foco horizontal de portada de 0 a 100
 - `foto_portada_focus_y`: number opcional, foco vertical de portada de 0 a 100
+- `foto_portada_zoom`: number opcional, zoom de portada de 100 a 300
+- `galeria_fotos_focus`: json opcional, mapa por archivo con foco `x`, `y` y zoom opcional de 100 a 300
 - `galeria_fotos`: files opcional
-- `galeria_fotos_focus`: json opcional, foco por nombre de archivo de galeria
 - `fotos`: files opcional
 - `estado`: string
 - `observaciones_revision`: texto opcional
@@ -563,8 +564,9 @@ Las entidades con imagenes usan campos separados para evitar que la portada qued
 - `foto_portada`: archivo opcional, maximo 1 imagen.
 - `foto_portada_focus_x`: numero opcional entre 0 y 100 para indicar el foco horizontal de la portada.
 - `foto_portada_focus_y`: numero opcional entre 0 y 100 para indicar el foco vertical de la portada.
+- `foto_portada_zoom`: numero opcional entre 100 y 300 para indicar el zoom de recorte de la portada.
+- `galeria_fotos_focus`: JSON opcional por nombre de archivo. Cada entrada puede guardar `x`, `y` y `zoom`; el zoom 100 muestra la imagen completa.
 - `galeria_fotos`: archivos opcionales, maximo 5 imagenes para `actores`, `productos`, `experiencias` e `imperdibles`.
-- `galeria_fotos_focus`: json opcional que guarda focos por nombre de archivo de galeria, por ejemplo `{ "foto.jpg": { "x": 50, "y": 30 } }`.
 - `fotos`: campo legacy de compatibilidad cuando existe.
 
 Para registros existentes que solo tengan `fotos`, la aplicacion trata `fotos[0]` como portada fallback y las imagenes restantes como galeria fallback. La galeria visible deduplica nombres de archivo y excluye la portada.
@@ -573,7 +575,7 @@ El script `npm run schema:media` agrega de forma no destructiva `foto_portada` y
 
 El script `npm run schema:actor-social` agrega de forma no destructiva `facebook_url`, `instagram_url` y `pagina_web_url` en `actores` si faltan.
 
-El script `npm run schema:image-focus` agrega de forma no destructiva `foto_portada_focus_x`, `foto_portada_focus_y` y `galeria_fotos_focus` en `estaciones`, `actores`, `productos`, `experiencias` e `imperdibles` si faltan.
+El script `npm run schema:image-focus` agrega de forma no destructiva `foto_portada_focus_x`, `foto_portada_focus_y`, `foto_portada_zoom` y `galeria_fotos_focus` en `estaciones`, `actores`, `productos`, `experiencias` e `imperdibles` si faltan.
 
 Por ahora no hay backfill destructivo. Si se decide copiar datos legacy, la estrategia recomendada es hacer un backfill controlado que copie la primera imagen de `fotos` a `foto_portada` y las restantes a `galeria_fotos`, manteniendo `fotos` hasta validar la UI.
 

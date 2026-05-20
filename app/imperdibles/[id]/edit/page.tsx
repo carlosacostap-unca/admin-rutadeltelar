@@ -23,12 +23,15 @@ import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 import { getBrowserTimeZoneLabel, localDateTimeInputToUtc, utcToLocalDateTimeInput } from '@/lib/datetime';
 import {
   DEFAULT_IMAGE_FOCUS,
+  DEFAULT_IMAGE_ZOOM,
   EntityGalleryFocus,
   EntityImageFocus,
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getGalleryImageCrop,
   getGalleryImageFocus,
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
@@ -72,6 +75,7 @@ export default function EditImperdiblePage() {
   const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
   const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
+  const [fotoPortadaZoom, setFotoPortadaZoom] = useState(DEFAULT_IMAGE_ZOOM);
   const [galeriaFotosFocus, setGaleriaFotosFocus] = useState<EntityGalleryFocus>({});
   const [portadaParaEliminar, setPortadaParaEliminar] = useState(false);
   const [portadaExistenteSeleccionada, setPortadaExistenteSeleccionada] = useState<string | null>(null);
@@ -144,6 +148,7 @@ export default function EditImperdiblePage() {
         setEstado(imperdibleRecord.estado);
         setVideosEnlaces(imperdibleRecord.videos_enlaces || '');
         setFotoPortadaFocus(getEntityCoverFocus(imperdibleRecord));
+        setFotoPortadaZoom(getEntityCoverZoom(imperdibleRecord));
         setGaleriaFotosFocus(getEntityGalleryFocuses(imperdibleRecord));
         
       } catch (err) {
@@ -285,7 +290,8 @@ export default function EditImperdiblePage() {
         pruneGalleryFocuses(
           galeriaFotosFocus,
           getEntityGalleryImages(imperdible).filter((filename) => !galleryRemovals.has(filename))
-        )
+        ),
+        fotoPortadaZoom
       );
       
       await updateRecordWithAudit('imperdibles', id, formData, user);
@@ -760,6 +766,8 @@ export default function EditImperdiblePage() {
               onCoverFileChange={(file) => { setFotoPortada(file); setPortadaParaEliminar(false); }}
               coverFocus={fotoPortadaFocus}
               onCoverFocusChange={setFotoPortadaFocus}
+              coverZoom={fotoPortadaZoom}
+              onCoverZoomChange={setFotoPortadaZoom}
               galleryFiles={fotos}
               onGalleryFilesChange={setFotos}
               galleryFocuses={galeriaFotosFocus}
@@ -772,7 +780,10 @@ export default function EditImperdiblePage() {
               onSelectedExistingCoverChange={(filename) => {
                 setPortadaExistenteSeleccionada(filename);
                 setPortadaParaEliminar(false);
-                if (filename) setFotoPortadaFocus(getGalleryImageFocus(galeriaFotosFocus, filename));
+                if (filename) {
+                  setFotoPortadaFocus(getGalleryImageFocus(galeriaFotosFocus, filename));
+                  setFotoPortadaZoom(getGalleryImageCrop(galeriaFotosFocus, filename).zoom);
+                }
               }}
               removedExistingCover={portadaParaEliminar}
               onRemovedExistingCoverChange={setPortadaParaEliminar}
