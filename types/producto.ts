@@ -10,6 +10,7 @@ export interface Producto {
   subcategoria?: string;
   tecnicas?: string[];
   descripcion?: string;
+  dato_destacado?: string;
   estacion_id?: string; // Relación legacy con una estación principal
   estaciones_relacionadas?: string[];
   actores_relacionados?: string[]; // Relación múltiple con la colección actores

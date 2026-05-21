@@ -8,6 +8,7 @@ export interface Experiencia {
   titulo: string;
   categoria: ExperienciaCategoria | string;
   descripcion?: string;
+  dato_destacado?: string;
   duracion?: string;
   recomendaciones?: string;
   responsable?: string; // Relación con la colección actores (un solo actor)

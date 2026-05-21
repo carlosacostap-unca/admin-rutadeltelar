@@ -12,6 +12,7 @@ import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
 import EntityMediaDisplay from '@/components/EntityMediaDisplay';
+import FeaturedData from '@/components/FeaturedData';
 
 export default function ExperienciaDetailPage() {
   const { user, isLoading } = useAuth();
@@ -180,6 +181,8 @@ export default function ExperienciaDetailPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-8">
+                  <FeaturedData value={experiencia.dato_destacado} />
+
                   <div>
                     <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                       Descripción General

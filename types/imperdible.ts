@@ -9,6 +9,7 @@ export interface Imperdible {
   titulo: string;
   subtitulo?: string;
   descripcion?: string;
+  dato_destacado?: string;
   tipo: ImperdibleTipo | string;
   fecha_hora_evento?: string;
   ubicacion?: string;

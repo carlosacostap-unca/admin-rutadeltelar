@@ -13,6 +13,7 @@ import ContentStatusManager from '@/components/ContentStatusManager';
 import Map from '@/components/Map';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
+import FeaturedData from '@/components/FeaturedData';
 import { deleteRecordWithAudit } from '@/lib/audit';
 import {
   getEntityCoverFocus,
@@ -254,6 +255,8 @@ export default function EstacionDetailPage() {
               
               {/* Información General */}
               <section className="space-y-8">
+                <FeaturedData value={estacion.dato_destacado} />
+
                 <div>
                   <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-3 uppercase tracking-[0.05em]">
                     Descripción General

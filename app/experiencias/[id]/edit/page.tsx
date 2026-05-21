@@ -43,6 +43,7 @@ export default function EditExperienciaPage() {
   const [categoria, setCategoria] = useState<ExperienciaCategoria | ''>('');
   const [estacionId, setEstacionId] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [datoDestacado, setDatoDestacado] = useState('');
   const [duracion, setDuracion] = useState('');
   const [recomendaciones, setRecomendaciones] = useState('');
   const [ubicacion, setUbicacion] = useState('');
@@ -92,6 +93,7 @@ export default function EditExperienciaPage() {
         setCategoria(experienciaRecord.categoria as ExperienciaCategoria);
         setEstacionId(experienciaRecord.estacion_id);
         setDescripcion(experienciaRecord.descripcion || '');
+        setDatoDestacado(experienciaRecord.dato_destacado || '');
         setDuracion(experienciaRecord.duracion || '');
         setRecomendaciones(experienciaRecord.recomendaciones || '');
         setUbicacion(experienciaRecord.ubicacion || '');
@@ -142,6 +144,7 @@ export default function EditExperienciaPage() {
 
       if (descripcion) formData.append('descripcion', descripcion);
       else formData.append('descripcion', '');
+      formData.append('dato_destacado', datoDestacado);
       
       if (duracion) formData.append('duracion', duracion);
       else formData.append('duracion', '');
@@ -346,6 +349,18 @@ export default function EditExperienciaPage() {
                 onChange={(e) => setDescripcion(e.target.value)}
                 className="input-field w-full min-h-[100px] resize-y"
                 placeholder="Descripción de la experiencia..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Dato destacado
+              </label>
+              <textarea
+                value={datoDestacado}
+                onChange={(e) => setDatoDestacado(e.target.value)}
+                className="input-field w-full min-h-[80px] resize-y"
+                placeholder="Ej. Algo breve que conviene resaltar de la experiencia..."
               />
             </div>
 

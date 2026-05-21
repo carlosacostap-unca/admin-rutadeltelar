@@ -34,6 +34,7 @@ function CreateProductoForm() {
   const initialEstacionId = searchParams.get('estacion_id') || '';
   const [estacionesRelacionadas, setEstacionesRelacionadas] = useState<string[]>(initialEstacionId ? [initialEstacionId] : []);
   const [descripcion, setDescripcion] = useState('');
+  const [datoDestacado, setDatoDestacado] = useState('');
   const [actoresRelacionados, setActoresRelacionados] = useState<string[]>([]);
   const [fotoPortada, setFotoPortada] = useState<File | null>(null);
   const [fotoPortadaFocus, setFotoPortadaFocus] = useState<EntityImageFocus>(DEFAULT_IMAGE_FOCUS);
@@ -134,6 +135,7 @@ function CreateProductoForm() {
       if (descripcion) {
         formData.append('descripcion', descripcion);
       }
+      formData.append('dato_destacado', datoDestacado);
 
       if (tecnicas.length > 0) {
         tecnicas.forEach((tecnicaId) => {
@@ -298,6 +300,18 @@ function CreateProductoForm() {
                 onChange={(e) => setDescripcion(e.target.value)}
                 className="input-field w-full min-h-[100px] resize-y"
                 placeholder="Breve descripción del producto..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Dato destacado
+              </label>
+              <textarea
+                value={datoDestacado}
+                onChange={(e) => setDatoDestacado(e.target.value)}
+                className="input-field w-full min-h-[80px] resize-y"
+                placeholder="Ej. Algo breve que conviene resaltar del producto..."
               />
             </div>
 

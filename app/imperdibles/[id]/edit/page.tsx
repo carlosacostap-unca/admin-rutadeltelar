@@ -54,6 +54,7 @@ export default function EditImperdiblePage() {
   const [titulo, setTitulo] = useState('');
   const [subtitulo, setSubtitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [datoDestacado, setDatoDestacado] = useState('');
   const [tipo, setTipo] = useState<ImperdibleTipo | ''>('');
   const [fechaHoraEvento, setFechaHoraEvento] = useState('');
   const [ubicacion, setUbicacion] = useState('');
@@ -130,6 +131,7 @@ export default function EditImperdiblePage() {
         setTitulo(imperdibleRecord.titulo);
         setSubtitulo(imperdibleRecord.subtitulo || '');
         setDescripcion(imperdibleRecord.descripcion || '');
+        setDatoDestacado(imperdibleRecord.dato_destacado || '');
         setTipo(imperdibleRecord.tipo as ImperdibleTipo);
         setFechaHoraEvento(utcToLocalDateTimeInput(imperdibleRecord.fecha_hora_evento));
         setUbicacion(imperdibleRecord.ubicacion || '');
@@ -210,6 +212,7 @@ export default function EditImperdiblePage() {
       
       if (descripcion) formData.append('descripcion', descripcion);
       else formData.append('descripcion', '');
+      formData.append('dato_destacado', datoDestacado);
 
       if (esEvento && fechaHoraEvento) formData.append('fecha_hora_evento', localDateTimeInputToUtc(fechaHoraEvento));
       else formData.append('fecha_hora_evento', '');
@@ -488,6 +491,18 @@ export default function EditImperdiblePage() {
                   onChange={(e) => setDescripcion(e.target.value)}
                   className="input-field w-full min-h-[100px] resize-y"
                   placeholder="Descripción detallada del imperdible..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Dato destacado
+                </label>
+                <textarea
+                  value={datoDestacado}
+                  onChange={(e) => setDatoDestacado(e.target.value)}
+                  className="input-field w-full min-h-[80px] resize-y"
+                  placeholder="Ej. Algo breve que conviene resaltar de este imperdible..."
                 />
               </div>
 

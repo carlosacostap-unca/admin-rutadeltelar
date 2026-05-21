@@ -47,6 +47,7 @@ export default function EditProductoPage() {
   const [tecnicas, setTecnicas] = useState<string[]>([]);
   const [estacionesRelacionadas, setEstacionesRelacionadas] = useState<string[]>([]);
   const [descripcion, setDescripcion] = useState('');
+  const [datoDestacado, setDatoDestacado] = useState('');
   const [actoresRelacionados, setActoresRelacionados] = useState<string[]>([]);
   const [fotos, setFotos] = useState<FileList | null>(null);
   const [fotosParaEliminar, setFotosParaEliminar] = useState<string[]>([]);
@@ -105,6 +106,7 @@ export default function EditProductoPage() {
               : []
         );
         setDescripcion(productoRecord.descripcion || '');
+        setDatoDestacado(productoRecord.dato_destacado || '');
         setTecnicas(productoRecord.tecnicas || []);
         setActoresRelacionados(productoRecord.actores_relacionados || []);
         setEstado(productoRecord.estado);
@@ -168,7 +170,10 @@ export default function EditProductoPage() {
 
       if (descripcion) {
         formData.append('descripcion', descripcion);
+      } else {
+        formData.append('descripcion', '');
       }
+      formData.append('dato_destacado', datoDestacado);
 
       if (tecnicas.length > 0) {
         tecnicas.forEach((tecnicaId) => {
@@ -421,6 +426,18 @@ export default function EditProductoPage() {
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
                 className="input-field w-full min-h-[100px] resize-y"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Dato destacado
+              </label>
+              <textarea
+                value={datoDestacado}
+                onChange={(e) => setDatoDestacado(e.target.value)}
+                className="input-field w-full min-h-[80px] resize-y"
+                placeholder="Ej. Algo breve que conviene resaltar del producto..."
               />
             </div>
 

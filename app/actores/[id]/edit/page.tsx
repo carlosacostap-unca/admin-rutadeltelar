@@ -51,6 +51,7 @@ export default function EditActorPage() {
   const [ubicadoEnEstacionInaugurada, setUbicadoEnEstacionInaugurada] = useState(false);
   const [productosRelacionados, setProductosRelacionados] = useState<string[]>([]);
   const [descripcion, setDescripcion] = useState('');
+  const [datoDestacado, setDatoDestacado] = useState('');
   const [contactoTelefono, setContactoTelefono] = useState('');
   const [contactoEmail, setContactoEmail] = useState('');
   const [facebookUrl, setFacebookUrl] = useState('');
@@ -142,6 +143,7 @@ export default function EditActorPage() {
         setEstacionId(actorRecord.estacion_id || '');
         setUbicadoEnEstacionInaugurada(actorRecord.ubicado_en_estacion_inaugurada || false);
         setDescripcion(actorRecord.descripcion || '');
+        setDatoDestacado(actorRecord.dato_destacado || '');
         setContactoTelefono(actorRecord.contacto_telefono || '');
         setContactoEmail(actorRecord.contacto_email || '');
         setFacebookUrl(actorRecord.facebook_url || '');
@@ -269,6 +271,7 @@ export default function EditActorPage() {
       formData.append('estacion_id', estacionId);
       formData.append('ubicado_en_estacion_inaugurada', String(puedeIndicarEstacionInaugurada && ubicadoEnEstacionInaugurada));
       formData.append('descripcion', descripcion);
+      formData.append('dato_destacado', datoDestacado);
       formData.append('contacto_telefono', contactoTelefono);
       formData.append('contacto_email', contactoEmail);
       formData.append('facebook_url', facebookUrl);
@@ -493,6 +496,18 @@ export default function EditActorPage() {
                   onChange={(e) => setDescripcion(e.target.value)}
                   className="input-field w-full min-h-[100px] resize-y"
                   placeholder="Breve descripción del actor..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Dato destacado
+                </label>
+                <textarea
+                  value={datoDestacado}
+                  onChange={(e) => setDatoDestacado(e.target.value)}
+                  className="input-field w-full min-h-[80px] resize-y"
+                  placeholder="Ej. Algo breve que conviene resaltar de este actor..."
                 />
               </div>
 

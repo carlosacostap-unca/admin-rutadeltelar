@@ -14,6 +14,7 @@ import { formatUtcToBrowserLocale, getBrowserTimeZoneLabel } from '@/lib/datetim
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
 import EntityMediaDisplay from '@/components/EntityMediaDisplay';
+import FeaturedData from '@/components/FeaturedData';
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false }) as React.FC<{ lat: number; lng: number; zoom?: number; label?: string }>;
 
@@ -201,6 +202,8 @@ export default function ImperdibleDetailPage() {
             {/* Contenido General - Dashboard */}
             <div className="bg-[var(--color-surface-container)] p-8 rounded-b-[8px] min-h-[300px] flex flex-col gap-12">
               <div className="space-y-6">
+                <FeaturedData value={imperdible.dato_destacado} />
+
                 <div>
                   <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">
                     Descripción Completa

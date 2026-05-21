@@ -14,6 +14,7 @@ import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
 import EntityMediaDisplay from '@/components/EntityMediaDisplay';
+import FeaturedData from '@/components/FeaturedData';
 
 export default function ActorDetailPage() {
   const { user, isLoading } = useAuth();
@@ -317,6 +318,8 @@ export default function ActorDetailPage() {
                 <p className="text-[var(--color-on-surface)] whitespace-pre-wrap">
                   {actor.descripcion || 'No hay descripción disponible.'}
                 </p>
+
+                <FeaturedData value={actor.dato_destacado} className="mt-6" />
 
                 {actor.observaciones && canEdit && (
                   <div className="mt-6">

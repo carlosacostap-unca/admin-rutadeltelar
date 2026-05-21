@@ -12,6 +12,7 @@ import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityFeedbackSection from '@/components/EntityFeedbackSection';
 import { deleteRecordWithAudit } from '@/lib/audit';
 import EntityMediaDisplay from '@/components/EntityMediaDisplay';
+import FeaturedData from '@/components/FeaturedData';
 
 type ProductoActor = NonNullable<NonNullable<Producto['expand']>['actores_relacionados']>[number];
 
@@ -204,6 +205,8 @@ export default function ProductoDetailPage() {
                 <p className="text-[var(--color-on-surface)] whitespace-pre-wrap">
                   {producto.descripcion || 'No hay descripción disponible.'}
                 </p>
+
+                <FeaturedData value={producto.dato_destacado} className="mt-6" />
 
                 <div className="mt-6">
                   <h3 className="text-sm font-bold text-[var(--color-on-surface)] mb-4 uppercase tracking-[0.05em]">

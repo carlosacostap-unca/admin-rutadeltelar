@@ -11,6 +11,7 @@ export interface Estacion {
   localidad: string;
   departamento?: EstacionDepartamento | string;
   descripcion_general?: string;
+  dato_destacado?: string;
   latitud?: number;
   longitud?: number;
   foto_portada?: string;

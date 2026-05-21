@@ -10,6 +10,7 @@ export interface Actor {
   estacion_id: string; // Relación con la colección estaciones
   ubicado_en_estacion_inaugurada?: boolean;
   descripcion?: string; // Biografía corta o descripción
+  dato_destacado?: string;
   contacto_telefono?: string;
   contacto_email?: string;
   facebook_url?: string;

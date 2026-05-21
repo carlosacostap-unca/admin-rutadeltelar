@@ -43,6 +43,7 @@ export default function EditEstacionPage() {
   const [departamento, setDepartamento] = useState('');
   const [poseeEstacionInaugurada, setPoseeEstacionInaugurada] = useState(false);
   const [descripcionGeneral, setDescripcionGeneral] = useState('');
+  const [datoDestacado, setDatoDestacado] = useState('');
   const [latitud, setLatitud] = useState('');
   const [longitud, setLongitud] = useState('');
   const [estado, setEstado] = useState('borrador');
@@ -82,6 +83,7 @@ export default function EditEstacionPage() {
         setDepartamento(record.departamento || '');
         setPoseeEstacionInaugurada(record.posee_estacion_inaugurada || false);
         setDescripcionGeneral(record.descripcion_general || '');
+        setDatoDestacado(record.dato_destacado || '');
         setLatitud(record.latitud?.toString() || '');
         setLongitud(record.longitud?.toString() || '');
         setEstado(record.estado || 'borrador');
@@ -117,6 +119,7 @@ export default function EditEstacionPage() {
       formData.append('departamento', departamento);
       formData.append('posee_estacion_inaugurada', String(poseeEstacionInaugurada));
       formData.append('descripcion_general', descripcionGeneral);
+      formData.append('dato_destacado', datoDestacado);
       if (latitud) formData.append('latitud', latitud);
       if (longitud) formData.append('longitud', longitud);
       formData.append('estado', estado);
@@ -311,6 +314,18 @@ export default function EditEstacionPage() {
                   onChange={(e) => setDescripcionGeneral(e.target.value)}
                   className="input-field w-full min-h-[100px] resize-y"
                   placeholder="Breve descripción de la estación..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Dato destacado
+                </label>
+                <textarea
+                  value={datoDestacado}
+                  onChange={(e) => setDatoDestacado(e.target.value)}
+                  className="input-field w-full min-h-[80px] resize-y"
+                  placeholder="Ej. Algo breve que conviene resaltar de la estacion..."
                 />
               </div>
 

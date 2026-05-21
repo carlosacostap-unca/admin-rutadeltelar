@@ -39,6 +39,7 @@ function CreateImperdibleForm() {
   const [titulo, setTitulo] = useState('');
   const [subtitulo, setSubtitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [datoDestacado, setDatoDestacado] = useState('');
   const [tipo, setTipo] = useState<ImperdibleTipo | ''>('');
   const [fechaHoraEvento, setFechaHoraEvento] = useState('');
   const [ubicacion, setUbicacion] = useState('');
@@ -152,6 +153,7 @@ function CreateImperdibleForm() {
 
       if (subtitulo) formData.append('subtitulo', subtitulo);
       if (descripcion) formData.append('descripcion', descripcion);
+      formData.append('dato_destacado', datoDestacado);
       if (esEvento && fechaHoraEvento) formData.append('fecha_hora_evento', localDateTimeInputToUtc(fechaHoraEvento));
       if (ubicacion) formData.append('ubicacion', ubicacion);
       if (latitud) formData.append('latitud', latitud);
@@ -317,6 +319,18 @@ function CreateImperdibleForm() {
                   onChange={(e) => setDescripcion(e.target.value)}
                   className="input-field w-full min-h-[100px] resize-y"
                   placeholder="Descripción detallada del imperdible..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Dato destacado
+                </label>
+                <textarea
+                  value={datoDestacado}
+                  onChange={(e) => setDatoDestacado(e.target.value)}
+                  className="input-field w-full min-h-[80px] resize-y"
+                  placeholder="Ej. Algo breve que conviene resaltar de este imperdible..."
                 />
               </div>
 

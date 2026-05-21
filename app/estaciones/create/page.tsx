@@ -23,6 +23,7 @@ export default function CreateEstacionPage() {
   const [departamento, setDepartamento] = useState('');
   const [poseeEstacionInaugurada, setPoseeEstacionInaugurada] = useState(false);
   const [descripcionGeneral, setDescripcionGeneral] = useState('');
+  const [datoDestacado, setDatoDestacado] = useState('');
   const [latitud, setLatitud] = useState('');
   const [longitud, setLongitud] = useState('');
   const [estado, setEstado] = useState('borrador'); // estado inicial
@@ -58,6 +59,7 @@ export default function CreateEstacionPage() {
       formData.append('departamento', departamento);
       formData.append('posee_estacion_inaugurada', String(poseeEstacionInaugurada));
       formData.append('descripcion_general', descripcionGeneral);
+      formData.append('dato_destacado', datoDestacado);
       if (latitud) formData.append('latitud', latitud);
       if (longitud) formData.append('longitud', longitud);
       formData.append('estado', action === 'borrador' ? 'borrador' : estado);
@@ -181,6 +183,18 @@ export default function CreateEstacionPage() {
                 onChange={(e) => setDescripcionGeneral(e.target.value)}
                 className="input-field w-full min-h-[100px] resize-y"
                 placeholder="Breve descripción de la estación..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                Dato destacado
+              </label>
+              <textarea
+                value={datoDestacado}
+                onChange={(e) => setDatoDestacado(e.target.value)}
+                className="input-field w-full min-h-[80px] resize-y"
+                placeholder="Ej. Algo breve que conviene resaltar de la estacion..."
               />
             </div>
 
