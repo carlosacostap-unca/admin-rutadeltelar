@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { SATELLITE_TILE_LAYER } from "./mapTiles";
+import { MAP_REFERENCE_TILE_LAYER, SATELLITE_TILE_LAYER } from "./mapTiles";
 
 export interface MapProps {
   lat: number | string;
@@ -63,6 +63,10 @@ export default function Map({ lat, lng, zoom = 13, label = "Ubicación" }: MapPr
         <TileLayer
           attribution={SATELLITE_TILE_LAYER.attribution}
           url={SATELLITE_TILE_LAYER.url}
+        />
+        <TileLayer
+          attribution={MAP_REFERENCE_TILE_LAYER.attribution}
+          url={MAP_REFERENCE_TILE_LAYER.url}
         />
         <Marker position={[parsedLat, parsedLng]} icon={icon}>
           <Popup>{label}</Popup>

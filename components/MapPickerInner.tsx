@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { SATELLITE_TILE_LAYER } from "./mapTiles";
+import { MAP_REFERENCE_TILE_LAYER, SATELLITE_TILE_LAYER } from "./mapTiles";
 
 export interface MapPickerProps {
   lat: number | null;
@@ -74,6 +74,10 @@ export default function MapPicker({ lat, lng, zoom = 13, label = "Ubicación sel
         <TileLayer
           attribution={SATELLITE_TILE_LAYER.attribution}
           url={SATELLITE_TILE_LAYER.url}
+        />
+        <TileLayer
+          attribution={MAP_REFERENCE_TILE_LAYER.attribution}
+          url={MAP_REFERENCE_TILE_LAYER.url}
         />
         <LocationMarker lat={hasValidCoordinates ? lat : null} lng={hasValidCoordinates ? lng : null} onLocationSelect={onLocationSelect} label={label} icon={icon} />
       </MapContainer>
