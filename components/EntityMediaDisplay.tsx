@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import pb from '@/lib/pocketbase';
 import {
   EntityMediaRecord,
   getEntityCoverFocus,
@@ -13,6 +12,7 @@ import {
   getGalleryImageFocus,
   getImageCropStyle,
 } from '@/lib/entityMedia';
+import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 type EntityMediaDisplayProps<T extends EntityMediaRecord> = {
   record: T;
@@ -40,7 +40,7 @@ export default function EntityMediaDisplay<T extends EntityMediaRecord>({
         {cover ? (
           <div className="max-w-sm">
             <div className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-              <Image unoptimized width={800} height={600} src={pb.files.getURL(record, cover)} alt={`Portada de ${title}`} className="object-cover w-full h-full" style={getImageCropStyle(coverFocus, coverZoom)} />
+              <Image unoptimized width={800} height={600} src={getPocketBaseImageUrl(record, cover, 'medium')} alt={`Portada de ${title}`} className="object-cover w-full h-full" style={getImageCropStyle(coverFocus, coverZoom)} />
             </div>
           </div>
         ) : (
@@ -56,7 +56,7 @@ export default function EntityMediaDisplay<T extends EntityMediaRecord>({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {gallery.map((filename, index) => (
               <div key={filename} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                <Image unoptimized width={800} height={600} src={pb.files.getURL(record, filename)} alt={`Foto de galeria ${index + 1} de ${title}`} className="object-cover w-full h-full" style={getImageCropStyle(getGalleryImageFocus(galleryFocuses, filename), getGalleryImageCrop(galleryFocuses, filename).zoom)} />
+                <Image unoptimized width={800} height={600} src={getPocketBaseImageUrl(record, filename, 'medium')} alt={`Foto de galeria ${index + 1} de ${title}`} className="object-cover w-full h-full" style={getImageCropStyle(getGalleryImageFocus(galleryFocuses, filename), getGalleryImageCrop(galleryFocuses, filename).zoom)} />
               </div>
             ))}
           </div>

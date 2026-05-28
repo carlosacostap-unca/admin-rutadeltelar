@@ -28,6 +28,31 @@ type AuthError = {
   message?: unknown;
 };
 
+type LastLoginResponse = {
+  last_login?: unknown;
+};
+
+async function updateLastLogin() {
+  const token = pb.authStore.token;
+  if (!token) return null;
+
+  try {
+    const response = await fetch('/api/auth/last-login', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as LastLoginResponse;
+    return typeof data.last_login === 'string' ? data.last_login : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -205,13 +230,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Actualizar last_login tras inicio de sesión exitoso
       if (authData.record) {
-        try {
-          const now = new Date().toISOString();
-          await pb.collection('users').update(authData.record.id, { last_login: now });
-          authData.record.last_login = now;
-        } catch (updateErr) {
-          console.error('No se pudo actualizar last_login:', updateErr);
-        }
+        const lastLogin = await updateLastLogin();
+        if (lastLogin) authData.record.last_login = lastLogin;
       }
       
       if (typeof window !== 'undefined') {

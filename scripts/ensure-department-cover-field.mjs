@@ -20,12 +20,7 @@ if (existsSync(envFile)) {
 const pbUrl = (process.env.POCKETBASE_URL || process.env.NEXT_PUBLIC_POCKETBASE_URL || '').replace(/\/$/, '');
 const adminEmail = process.env.POCKETBASE_ADMIN_EMAIL;
 const adminPassword = process.env.POCKETBASE_ADMIN_PASSWORD;
-
-if (!pbUrl || !adminEmail || !adminPassword) {
-  throw new Error('Missing PocketBase env vars. Set NEXT_PUBLIC_POCKETBASE_URL, POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD.');
-}
-
-const collections = ['estaciones', 'actores', 'productos', 'experiencias', 'imperdibles'];
+const collectionName = 'departamentos';
 const imageThumbs = ['320x0', '768x0', '1280x0', '1600x0'];
 const imageMimeTypes = [
   'image/png',
@@ -37,52 +32,32 @@ const imageMimeTypes = [
   'image/svg+xml',
 ];
 
-const token = await authenticate();
-const results = [];
-
-for (const collectionName of collections) {
-  const collection = await pb(`/api/collections/${encodeURIComponent(collectionName)}`);
-  const fields = collection.fields || collection.schema || [];
-  const fieldNames = new Set(fields.map((field) => field.name));
-  const nextFields = [...fields];
-  const added = [];
-
-  if (!fieldNames.has('foto_portada')) {
-    nextFields.push(fileField('foto_portada', 1));
-    added.push('foto_portada');
-  } else if (ensureFileFieldThumbs(nextFields.find((field) => field.name === 'foto_portada'))) {
-    added.push('foto_portada:thumbs');
-  }
-
-  if (!fieldNames.has('galeria_fotos')) {
-    nextFields.push(fileField('galeria_fotos', 5));
-    added.push('galeria_fotos');
-  } else {
-    const galleryField = nextFields.find((field) => field.name === 'galeria_fotos');
-    if (galleryField && galleryField.maxSelect !== 5) {
-      galleryField.maxSelect = 5;
-      added.push('galeria_fotos:maxSelect=5');
-    }
-    if (ensureFileFieldThumbs(galleryField)) {
-      added.push('galeria_fotos:thumbs');
-    }
-  }
-
-  if (fieldNames.has('fotos') && ensureFileFieldThumbs(nextFields.find((field) => field.name === 'fotos'))) {
-    added.push('fotos:thumbs');
-  }
-
-  if (added.length > 0) {
-    await pb(`/api/collections/${encodeURIComponent(collectionName)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ fields: nextFields }),
-    });
-  }
-
-  results.push({ collection: collectionName, added, unchanged: added.length === 0 });
+if (!pbUrl || !adminEmail || !adminPassword) {
+  throw new Error('Missing PocketBase env vars. Set NEXT_PUBLIC_POCKETBASE_URL, POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD.');
 }
 
-console.log(JSON.stringify({ ok: true, results }, null, 2));
+const token = await authenticate();
+const collection = await pb(`/api/collections/${encodeURIComponent(collectionName)}`);
+const fields = collection.fields || collection.schema || [];
+const fieldNames = new Set(fields.map((field) => field.name));
+const nextFields = [...fields];
+const added = [];
+
+if (!fieldNames.has('foto_portada')) {
+  nextFields.push(fileField('foto_portada', 1));
+  added.push('foto_portada');
+} else if (ensureFileFieldThumbs(nextFields.find((field) => field.name === 'foto_portada'))) {
+  added.push('foto_portada:thumbs');
+}
+
+if (added.length > 0) {
+  await pb(`/api/collections/${encodeURIComponent(collectionName)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ fields: nextFields }),
+  });
+}
+
+console.log(JSON.stringify({ ok: true, collection: collectionName, added, unchanged: added.length === 0 }, null, 2));
 
 async function authenticate() {
   const body = JSON.stringify({ identity: adminEmail, password: adminPassword });

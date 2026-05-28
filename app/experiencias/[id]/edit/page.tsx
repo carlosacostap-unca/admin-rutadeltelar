@@ -27,6 +27,7 @@ import {
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
 import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendRemoteFile } from '@/lib/entityMediaForm';
+import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 export default function EditExperienciaPage() {
   const { user, isLoading } = useAuth();
@@ -214,12 +215,12 @@ export default function EditExperienciaPage() {
   const galleryImages = getEntityGalleryImages(experiencia);
   const existingCover = experiencia && coverImage ? {
     filename: coverImage,
-    url: pb.files.getURL(experiencia, coverImage),
+    url: getPocketBaseImageUrl(experiencia, coverImage, 'small'),
     label: `Portada de ${experiencia.titulo}`,
   } : null;
   const existingGallery = experiencia ? galleryImages.map((filename, index) => ({
     filename,
-    url: pb.files.getURL(experiencia, filename),
+    url: getPocketBaseImageUrl(experiencia, filename, 'small'),
     label: `Foto de galeria ${index + 1} de ${experiencia.titulo}`,
   })) : [];
 

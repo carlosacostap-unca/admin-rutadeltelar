@@ -30,6 +30,7 @@ import {
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
 import { appendImageFocusFields } from '@/lib/entityMediaForm';
+import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 export default function EditEstacionPage() {
   const { user, isLoading } = useAuth();
@@ -385,7 +386,7 @@ export default function EditEstacionPage() {
                 {fotoPortadaActual ? (
                   <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
                     <Image unoptimized width={800} height={600}
-                      src={pb.files.getURL(estacion!, fotoPortadaActual)}
+                      src={getPocketBaseImageUrl(estacion!, fotoPortadaActual, 'small')}
                       alt={`Portada de ${estacion?.nombre}`}
                       className="object-cover w-full h-full"
                       style={getImageCropStyle(fotoPortadaFocus, fotoPortadaZoom)}
@@ -478,7 +479,7 @@ export default function EditEstacionPage() {
                     {galeriaActual.map((foto, index) => (
                       <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
                         <Image unoptimized width={800} height={600}
-                          src={pb.files.getURL(estacion!, foto)}
+                          src={getPocketBaseImageUrl(estacion!, foto, 'small')}
                           alt={`Foto de galería ${index + 1} de ${estacion?.nombre}`}
                           className="object-cover w-full h-full"
                           style={getImageCropStyle(getGalleryImageFocus(galeriaFotosFocus, foto), getGalleryImageCrop(galeriaFotosFocus, foto).zoom)}

@@ -25,6 +25,7 @@ import {
   getGalleryImageFocus,
   getImageCropStyle,
 } from '@/lib/entityMedia';
+import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 export default function EstacionDetailPage() {
   const { user, isLoading } = useAuth();
@@ -285,7 +286,7 @@ export default function EstacionDetailPage() {
                   <div className="max-w-sm">
                     <div className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
                       <Image unoptimized width={800} height={600}
-                        src={pb.files.getURL(estacion, fotoPortada)}
+                        src={getPocketBaseImageUrl(estacion, fotoPortada, 'medium')}
                         alt={`Portada de ${estacion.nombre}`}
                         className="object-cover w-full h-full"
                         style={getImageCropStyle(fotoPortadaFocus, fotoPortadaZoom)}
@@ -310,7 +311,7 @@ export default function EstacionDetailPage() {
                     {galeriaFotos.map((foto, index) => (
                       <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
                         <Image unoptimized width={800} height={600}
-                          src={pb.files.getURL(estacion, foto)}
+                          src={getPocketBaseImageUrl(estacion, foto, 'medium')}
                           alt={`Foto de galería ${index + 1} de ${estacion.nombre}`}
                           className="object-cover w-full h-full"
                           style={getImageCropStyle(getGalleryImageFocus(galeriaFotosFocus, foto), getGalleryImageCrop(galeriaFotosFocus, foto).zoom)}

@@ -370,6 +370,7 @@ Define los tipos de actor.
 ### Campos
 - `nombre`
 - `activo`
+- `foto_portada`: file opcional, maximo 1 imagen para uso visual del departamento.
 
 ---
 
@@ -569,9 +570,15 @@ Las entidades con imagenes usan campos separados para evitar que la portada qued
 - `galeria_fotos`: archivos opcionales, maximo 5 imagenes para `actores`, `productos`, `experiencias` e `imperdibles`.
 - `fotos`: campo legacy de compatibilidad cuando existe.
 
+Los campos de imagen conservan el archivo original y habilitan miniaturas de PocketBase en `320x0`, `768x0`, `1280x0` y `1600x0`. La aplicacion debe pedir estas variantes con `thumb` para listados, vistas de edicion y detalles, sin reemplazar ni borrar el original subido por el usuario.
+
 Para registros existentes que solo tengan `fotos`, la aplicacion trata `fotos[0]` como portada fallback y las imagenes restantes como galeria fallback. La galeria visible deduplica nombres de archivo y excluye la portada.
 
-El script `npm run schema:media` agrega de forma no destructiva `foto_portada` y `galeria_fotos` en `actores`, `productos`, `experiencias` e `imperdibles` si faltan. No borra ni migra el campo `fotos`.
+El script `npm run schema:media` agrega de forma no destructiva `foto_portada` y `galeria_fotos` en las colecciones con multimedia si faltan, y habilita miniaturas en `foto_portada`, `galeria_fotos` y `fotos` legacy cuando esos campos existen. No borra ni migra el campo `fotos`.
+
+El script `npm run schema:department-cover` agrega de forma no destructiva `foto_portada` en `departamentos` si falta y habilita sus miniaturas.
+
+El script `npm run media:prewarm-thumbs` recorre imagenes existentes y solicita cada miniatura configurada para que PocketBase las genere y cachee. El script solo realiza lecturas y pedidos `GET` de archivos; no actualiza registros ni elimina archivos.
 
 El script `npm run schema:actor-social` agrega de forma no destructiva `facebook_url`, `instagram_url` y `pagina_web_url` en `actores` si faltan.
 

@@ -36,6 +36,7 @@ import {
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
 import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendRemoteFile } from '@/lib/entityMediaForm';
+import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 export default function EditImperdiblePage() {
   const { user, isLoading } = useAuth();
@@ -331,12 +332,12 @@ export default function EditImperdiblePage() {
   const galleryImages = getEntityGalleryImages(imperdible);
   const existingCover = imperdible && coverImage ? {
     filename: coverImage,
-    url: pb.files.getURL(imperdible, coverImage),
+    url: getPocketBaseImageUrl(imperdible, coverImage, 'small'),
     label: `Portada de ${imperdible.titulo}`,
   } : null;
   const existingGallery = imperdible ? galleryImages.map((filename, index) => ({
     filename,
-    url: pb.files.getURL(imperdible, filename),
+    url: getPocketBaseImageUrl(imperdible, filename, 'small'),
     label: `Foto de galeria ${index + 1} de ${imperdible.titulo}`,
   })) : [];
 

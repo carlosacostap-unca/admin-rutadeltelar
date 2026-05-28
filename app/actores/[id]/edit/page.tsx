@@ -31,6 +31,7 @@ import {
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
 import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendRemoteFile } from '@/lib/entityMediaForm';
+import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 export default function EditActorPage() {
   const { user, isLoading } = useAuth();
@@ -365,12 +366,12 @@ export default function EditActorPage() {
   const galleryImages = getEntityGalleryImages(actor);
   const existingCover = actor && coverImage ? {
     filename: coverImage,
-    url: pb.files.getURL(actor, coverImage),
+    url: getPocketBaseImageUrl(actor, coverImage, 'small'),
     label: `Portada de ${actor.nombre}`,
   } : null;
   const existingGallery = actor ? galleryImages.map((filename, index) => ({
     filename,
-    url: pb.files.getURL(actor, filename),
+    url: getPocketBaseImageUrl(actor, filename, 'small'),
     label: `Foto de galeria ${index + 1} de ${actor.nombre}`,
   })) : [];
 

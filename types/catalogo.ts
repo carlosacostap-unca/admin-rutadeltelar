@@ -1,8 +1,11 @@
 export interface CatalogoItem {
   id: string;
+  collectionId?: string;
+  collectionName?: string;
   nombre: string;
   activo?: boolean;
   categoria_padre?: string;
+  foto_portada?: string;
   created?: string;
   updated?: string;
   expand?: {

@@ -29,6 +29,7 @@ import {
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
 import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendRemoteFile } from '@/lib/entityMediaForm';
+import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 export default function EditProductoPage() {
   const { user, isLoading } = useAuth();
@@ -247,12 +248,12 @@ export default function EditProductoPage() {
   const galleryImages = getEntityGalleryImages(producto);
   const existingCover = producto && coverImage ? {
     filename: coverImage,
-    url: pb.files.getURL(producto, coverImage),
+    url: getPocketBaseImageUrl(producto, coverImage, 'small'),
     label: `Portada de ${producto.nombre}`,
   } : null;
   const existingGallery = producto ? galleryImages.map((filename, index) => ({
     filename,
-    url: pb.files.getURL(producto, filename),
+    url: getPocketBaseImageUrl(producto, filename, 'small'),
     label: `Foto de galeria ${index + 1} de ${producto.nombre}`,
   })) : [];
 

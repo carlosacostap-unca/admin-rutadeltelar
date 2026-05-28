@@ -1,6 +1,7 @@
 'use client';
 
 import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,12 +9,14 @@ import pb from '@/lib/pocketbase';
 import { hasAnyRole } from '@/lib/permissions';
 import { CATALOGOS_CONFIG, CatalogoCollectionName, CatalogoItem } from '@/types/catalogo';
 import { buildCatalogoSort } from '@/lib/catalogos';
+import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
-type DraftsState = Record<CatalogoCollectionName, { nombre: string; categoria_padre?: string }>;
+type CatalogoDraft = { nombre: string; categoria_padre?: string; foto_portada?: File | null };
+type DraftsState = Record<CatalogoCollectionName, CatalogoDraft>;
 type ItemsState = Record<CatalogoCollectionName, CatalogoItem[]>;
 
 const emptyDrafts = CATALOGOS_CONFIG.reduce((acc, config) => {
-  acc[config.collectionName] = { nombre: '', categoria_padre: '' };
+  acc[config.collectionName] = { nombre: '', categoria_padre: '', foto_portada: null };
   return acc;
 }, {} as DraftsState);
 
@@ -32,6 +35,9 @@ const getPocketBaseErrorMessage = (err: unknown, fallback: string) => {
 
   return asPocketBaseError(err)?.response?.message || fallback;
 };
+
+const getCatalogoCoverUrl = (item: CatalogoItem) =>
+  item.foto_portada ? getPocketBaseImageUrl(item, item.foto_portada, 'thumbnail') : '';
 
 export default function ParametrizacionesPage() {
   const { user, isLoading } = useAuth();
@@ -103,6 +109,14 @@ export default function ParametrizacionesPage() {
     });
   };
 
+  const handleDraftCoverChange = (collectionName: CatalogoCollectionName, file: File | null) => {
+    setDrafts((current) => {
+      const next = { ...current };
+      next[collectionName] = { ...next[collectionName], foto_portada: file };
+      return next;
+    });
+  };
+
   const handleCreate = async (collectionName: CatalogoCollectionName) => {
     const draft = drafts[collectionName];
     if (!draft.nombre.trim()) return;
@@ -110,12 +124,22 @@ export default function ParametrizacionesPage() {
     setSavingKey(`create:${collectionName}`);
     setError(null);
     try {
-      const payload: Record<string, string | boolean> = {
-        nombre: draft.nombre.trim(),
-        activo: true,
-      };
-      if (collectionName === 'subcategorias_producto') {
-        payload.categoria_padre = draft.categoria_padre || '';
+      let payload: Record<string, string | boolean> | FormData = {
+          nombre: draft.nombre.trim(),
+          activo: true,
+        };
+
+      if (collectionName === 'departamentos' && draft.foto_portada) {
+        const formData = new FormData();
+        formData.append('nombre', draft.nombre.trim());
+        formData.append('activo', 'true');
+        formData.append('foto_portada', draft.foto_portada);
+        payload = formData;
+      } else if (collectionName === 'subcategorias_producto') {
+        payload = {
+          ...payload,
+          categoria_padre: draft.categoria_padre || '',
+        };
       }
       const created = await pb.collection(collectionName).create<CatalogoItem>(payload);
 
@@ -125,11 +149,65 @@ export default function ParametrizacionesPage() {
       }));
       setDrafts((current) => ({
         ...current,
-        [collectionName]: { nombre: '', categoria_padre: '' },
+        [collectionName]: { nombre: '', categoria_padre: '', foto_portada: null },
       }));
     } catch (err: unknown) {
       console.error('Error creating catalog item:', err);
       setError(getPocketBaseErrorMessage(err, 'No se pudo crear el parámetro.'));
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
+  const handleCoverUpload = async (
+    collectionName: CatalogoCollectionName,
+    item: CatalogoItem,
+    file: File
+  ) => {
+    if (collectionName !== 'departamentos') return;
+
+    setSavingKey(`cover:${collectionName}:${item.id}`);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('foto_portada', file);
+
+      const updated = await pb.collection(collectionName).update<CatalogoItem>(item.id, formData);
+
+      setItemsByCollection((current) => ({
+        ...current,
+        [collectionName]: current[collectionName].map((existing) =>
+          existing.id === item.id ? updated : existing
+        ),
+      }));
+    } catch (err: unknown) {
+      console.error('Error uploading department cover:', err);
+      setError(getPocketBaseErrorMessage(err, 'No se pudo subir la portada del departamento.'));
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
+  const handleCoverDelete = async (collectionName: CatalogoCollectionName, item: CatalogoItem) => {
+    if (collectionName !== 'departamentos') return;
+
+    setSavingKey(`cover-delete:${collectionName}:${item.id}`);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('foto_portada', '');
+
+      const updated = await pb.collection(collectionName).update<CatalogoItem>(item.id, formData);
+
+      setItemsByCollection((current) => ({
+        ...current,
+        [collectionName]: current[collectionName].map((existing) =>
+          existing.id === item.id ? updated : existing
+        ),
+      }));
+    } catch (err: unknown) {
+      console.error('Error deleting department cover:', err);
+      setError(getPocketBaseErrorMessage(err, 'No se pudo quitar la portada del departamento.'));
     } finally {
       setSavingKey(null);
     }
@@ -254,6 +332,17 @@ export default function ParametrizacionesPage() {
                     ))}
                   </select>
                 )}
+                {section.collectionName === 'departamentos' && (
+                  <label className="block">
+                    <span className="sr-only">Portada del departamento</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="block w-full text-xs text-[var(--color-on-surface-variant)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-primary)] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[var(--color-on-primary)]"
+                      onChange={(e) => handleDraftCoverChange(section.collectionName, e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                )}
                 <button
                   type="button"
                   onClick={() => handleCreate(section.collectionName)}
@@ -271,7 +360,7 @@ export default function ParametrizacionesPage() {
                   section.items.map((item) => (
                     <div
                       key={item.id}
-                      className={`grid grid-cols-1 ${section.collectionName === 'subcategorias_producto' ? 'md:grid-cols-[1fr_1fr_100px_auto_auto]' : 'md:grid-cols-[1fr_100px_auto_auto]'} gap-3 items-center border border-[var(--color-outline-variant)] rounded-md p-3`}
+                      className={`grid grid-cols-1 ${section.collectionName === 'subcategorias_producto' ? 'md:grid-cols-[1fr_1fr_100px_auto_auto]' : section.collectionName === 'departamentos' ? 'md:grid-cols-[1fr_1.5fr_100px_auto_auto]' : 'md:grid-cols-[1fr_100px_auto_auto]'} gap-3 items-center border border-[var(--color-outline-variant)] rounded-md p-3`}
                     >
                       <input
                         type="text"
@@ -279,6 +368,52 @@ export default function ParametrizacionesPage() {
                         onChange={(e) => handleItemChange(section.collectionName, item.id, 'nombre', e.target.value)}
                         className="input-field w-full"
                       />
+                      {section.collectionName === 'departamentos' && (
+                        <div className="flex items-center gap-3">
+                          <div className="h-16 w-24 shrink-0 overflow-hidden rounded-md bg-[var(--color-surface-variant)]">
+                            {item.foto_portada ? (
+                              <Image
+                                unoptimized
+                                width={320}
+                                height={180}
+                                src={getCatalogoCoverUrl(item)}
+                                alt={`Portada de ${item.nombre}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[10px] text-[var(--color-on-surface-variant)]">
+                                Sin portada
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <label className="block">
+                              <span className="sr-only">Subir portada de {item.nombre}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="block w-full text-xs text-[var(--color-on-surface-variant)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-primary)] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[var(--color-on-primary)]"
+                                disabled={savingKey === `cover:${section.collectionName}:${item.id}`}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  e.currentTarget.value = '';
+                                  if (file) handleCoverUpload(section.collectionName, item, file);
+                                }}
+                              />
+                            </label>
+                            {item.foto_portada && (
+                              <button
+                                type="button"
+                                onClick={() => handleCoverDelete(section.collectionName, item)}
+                                className="text-xs font-semibold text-red-600 hover:underline"
+                                disabled={savingKey === `cover-delete:${section.collectionName}:${item.id}`}
+                              >
+                                Quitar portada
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       {section.collectionName === 'subcategorias_producto' && (
                         <select
                           value={item.categoria_padre || ''}

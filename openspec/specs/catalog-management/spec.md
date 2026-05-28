@@ -25,6 +25,11 @@ Cada item de catalogo MUST soportar nombre, estado activo y metadatos temporales
 - **WHEN** se carga un selector de formulario
 - **THEN** el sistema MUST evitar ofrecerlo como opcion para nuevos registros cuando el flujo filtra por activos
 
+#### Scenario: Department cover image
+- **GIVEN** un item del catalogo `departamentos`
+- **WHEN** un usuario autorizado administra sus datos
+- **THEN** el sistema MUST permitir cargar, previsualizar y quitar una imagen de portada opcional
+
 ### Requirement: Parent child catalog relationships
 El sistema MUST soportar relaciones padre-hijo para catalogos que lo requieran, especialmente subcategorias de producto.
 
