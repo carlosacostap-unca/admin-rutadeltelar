@@ -1,0 +1,179 @@
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
+
+const envFile = '.env.local';
+
+if (existsSync(envFile)) {
+  for (const line of readFileSync(envFile, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const separator = trimmed.indexOf('=');
+    if (separator === -1) continue;
+    const key = trimmed.slice(0, separator).trim();
+    let value = trimmed.slice(separator + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] ||= value;
+  }
+}
+
+const pbUrl = (process.env.POCKETBASE_URL || process.env.NEXT_PUBLIC_POCKETBASE_URL || '').replace(/\/$/, '');
+const adminEmail = process.env.POCKETBASE_ADMIN_EMAIL;
+const adminPassword = process.env.POCKETBASE_ADMIN_PASSWORD;
+const planPath = process.env.MEDIA_MIGRATION_PLAN_PATH || findLatestMigrationPlanPath();
+const targetCollection = process.env.MEDIA_MIGRATION_COLLECTION || 'actores';
+const targetRecordId = process.env.MEDIA_MIGRATION_RECORD_ID || 'k02gjnruqg4g0za';
+const apply = process.env.MEDIA_MIGRATION_APPLY === 'true';
+const generatedAt = new Date().toISOString();
+
+if (!pbUrl || !adminEmail || !adminPassword) {
+  throw new Error('Missing PocketBase env vars. Set NEXT_PUBLIC_POCKETBASE_URL, POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD.');
+}
+
+if (!planPath || !existsSync(planPath)) {
+  throw new Error('Missing media migration plan. Run npm run media:migration-plan first or set MEDIA_MIGRATION_PLAN_PATH.');
+}
+
+const plan = JSON.parse(readFileSync(planPath, 'utf8'));
+const recordPlan = plan.recordPlans.find((item) => item.collection === targetCollection && item.recordId === targetRecordId);
+
+if (!recordPlan) {
+  throw new Error(`Record plan not found for ${targetCollection}/${targetRecordId}.`);
+}
+
+const token = await authenticate();
+const before = await pbJson(`/api/collections/${encodeURIComponent(targetCollection)}/records/${encodeURIComponent(targetRecordId)}`);
+const beforeOptimized = normalizeFilenames(before.media_optimizados);
+const beforeMap = isObject(before.media_optimizados_map) ? before.media_optimizados_map : {};
+
+const dryRunResult = {
+  ok: true,
+  mode: apply ? 'apply' : 'dry-run',
+  generatedAt,
+  collection: targetCollection,
+  recordId: targetRecordId,
+  recordLabel: recordPlan.recordLabel,
+  originalFieldsRemainUntouched: true,
+  plannedUploads: recordPlan.uploads.map((upload) => ({
+    originalField: upload.originalField,
+    originalFilename: upload.originalFilename,
+    sourceSamplePath: upload.sourceSamplePath,
+    plannedUploadName: upload.plannedOptimizedFilename,
+    originalMB: upload.originalMB,
+    optimizedMB: upload.optimizedMB,
+    savingsMB: upload.savingsMB,
+    mapKey: `${upload.originalField}:${upload.originalFilename}`,
+    alreadyMapped: Boolean(beforeMap[`${upload.originalField}:${upload.originalFilename}`]),
+  })),
+};
+
+if (!apply) {
+  console.log(JSON.stringify(dryRunResult, null, 2));
+  process.exit(0);
+}
+
+const uploadForm = new FormData();
+for (const upload of recordPlan.uploads) {
+  if (!existsSync(upload.sourceSamplePath)) {
+    throw new Error(`Missing optimized sample: ${upload.sourceSamplePath}`);
+  }
+  const fileBytes = readFileSync(upload.sourceSamplePath);
+  const file = new File([fileBytes], upload.plannedOptimizedFilename, { type: 'image/webp' });
+  uploadForm.append('media_optimizados+', file);
+}
+
+const afterUpload = await pbJson(
+  `/api/collections/${encodeURIComponent(targetCollection)}/records/${encodeURIComponent(targetRecordId)}`,
+  { method: 'PATCH', body: uploadForm }
+);
+
+const afterOptimized = normalizeFilenames(afterUpload.media_optimizados);
+const newlyUploaded = afterOptimized.filter((filename) => !beforeOptimized.includes(filename));
+
+if (newlyUploaded.length !== recordPlan.uploads.length) {
+  throw new Error(`Expected ${recordPlan.uploads.length} new optimized files, got ${newlyUploaded.length}.`);
+}
+
+const nextMap = { ...beforeMap };
+const appliedUploads = recordPlan.uploads.map((upload, index) => {
+  const actualFilename = newlyUploaded[index];
+  const mapKey = `${upload.originalField}:${upload.originalFilename}`;
+  nextMap[mapKey] = actualFilename;
+  return {
+    originalField: upload.originalField,
+    originalFilename: upload.originalFilename,
+    uploadedFilename: actualFilename,
+    originalMB: upload.originalMB,
+    optimizedMB: upload.optimizedMB,
+    savingsMB: upload.savingsMB,
+  };
+});
+
+const mapForm = new FormData();
+mapForm.append('media_optimizados_map', JSON.stringify(nextMap));
+const afterMap = await pbJson(
+  `/api/collections/${encodeURIComponent(targetCollection)}/records/${encodeURIComponent(targetRecordId)}`,
+  { method: 'PATCH', body: mapForm }
+);
+
+const result = {
+  ...dryRunResult,
+  appliedUploads,
+  mediaOptimizadosCountBefore: beforeOptimized.length,
+  mediaOptimizadosCountAfter: normalizeFilenames(afterMap.media_optimizados).length,
+  mapKeysAdded: appliedUploads.map((upload) => `${upload.originalField}:${upload.originalFilename}`),
+  note: 'Original file fields were not modified. Only media_optimizados and media_optimizados_map were updated.',
+};
+
+const resultPath = join('reports', `media-pilot-${targetCollection}-${targetRecordId}-${generatedAt.replace(/[:.]/g, '-')}.json`);
+writeFileSync(resultPath, JSON.stringify(result, null, 2), 'utf8');
+console.log(JSON.stringify({ ...result, resultPath }, null, 2));
+
+async function authenticate() {
+  const body = JSON.stringify({ identity: adminEmail, password: adminPassword });
+  const adminResponse = await fetch(`${pbUrl}/api/admins/auth-with-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+  if (adminResponse.ok) return (await adminResponse.json()).token;
+
+  const superuserResponse = await fetch(`${pbUrl}/api/collections/_superusers/auth-with-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+  if (superuserResponse.ok) return (await superuserResponse.json()).token;
+
+  throw new Error(`PocketBase auth failed: admins=${adminResponse.status}, superusers=${superuserResponse.status}`);
+}
+
+async function pbJson(path, options = {}) {
+  const headers = new Headers(options.headers);
+  headers.set('Authorization', `Bearer ${token}`);
+
+  const response = await fetch(`${pbUrl}${path}`, { ...options, headers });
+  if (!response.ok) {
+    throw new Error(`PocketBase ${response.status}: ${await response.text()}`);
+  }
+  return response.json();
+}
+
+function findLatestMigrationPlanPath() {
+  const reportsDir = 'reports';
+  if (!existsSync(reportsDir)) return null;
+  return readdirSync(reportsDir)
+    .filter((name) => /^media-migration-plan-.*\.json$/.test(name))
+    .map((name) => ({ path: join(reportsDir, name), mtime: statSync(join(reportsDir, name)).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime)[0]?.path || null;
+}
+
+function normalizeFilenames(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean);
+}
+
+function isObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}

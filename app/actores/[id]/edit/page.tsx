@@ -24,9 +24,11 @@ import {
   EntityImageFocus,
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverImageRef,
   getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getEntityGalleryImageRefs,
   getGalleryImageCrop,
   getGalleryImageFocus,
   pruneGalleryFocuses,
@@ -364,16 +366,16 @@ export default function EditActorPage() {
     }
   };
 
-  const coverImage = getEntityCoverImage(actor);
-  const galleryImages = getEntityGalleryImages(actor);
-  const existingCover = actor && coverImage ? {
-    filename: coverImage,
-    url: getPocketBaseImageUrl(actor, coverImage, 'small'),
+  const coverImageRef = getEntityCoverImageRef(actor);
+  const galleryImageRefs = getEntityGalleryImageRefs(actor);
+  const existingCover = actor && coverImageRef ? {
+    filename: coverImageRef.filename,
+    url: getPocketBaseImageUrl(actor, coverImageRef.displayFilename, 'small'),
     label: `Portada de ${actor.nombre}`,
   } : null;
-  const existingGallery = actor ? galleryImages.map((filename, index) => ({
-    filename,
-    url: getPocketBaseImageUrl(actor, filename, 'small'),
+  const existingGallery = actor ? galleryImageRefs.map((image, index) => ({
+    filename: image.filename,
+    url: getPocketBaseImageUrl(actor, image.displayFilename, 'small'),
     label: `Foto de galeria ${index + 1} de ${actor.nombre}`,
   })) : [];
 

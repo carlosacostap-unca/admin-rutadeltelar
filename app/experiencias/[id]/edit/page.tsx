@@ -20,9 +20,11 @@ import {
   EntityImageFocus,
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverImageRef,
   getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getEntityGalleryImageRefs,
   getGalleryImageCrop,
   getGalleryImageFocus,
   pruneGalleryFocuses,
@@ -213,16 +215,16 @@ export default function EditExperienciaPage() {
   const actoresFiltrados = estacionId 
     ? actores.filter(a => a.estacion_id === estacionId)
     : actores;
-  const coverImage = getEntityCoverImage(experiencia);
-  const galleryImages = getEntityGalleryImages(experiencia);
-  const existingCover = experiencia && coverImage ? {
-    filename: coverImage,
-    url: getPocketBaseImageUrl(experiencia, coverImage, 'small'),
+  const coverImageRef = getEntityCoverImageRef(experiencia);
+  const galleryImageRefs = getEntityGalleryImageRefs(experiencia);
+  const existingCover = experiencia && coverImageRef ? {
+    filename: coverImageRef.filename,
+    url: getPocketBaseImageUrl(experiencia, coverImageRef.displayFilename, 'small'),
     label: `Portada de ${experiencia.titulo}`,
   } : null;
-  const existingGallery = experiencia ? galleryImages.map((filename, index) => ({
-    filename,
-    url: getPocketBaseImageUrl(experiencia, filename, 'small'),
+  const existingGallery = experiencia ? galleryImageRefs.map((image, index) => ({
+    filename: image.filename,
+    url: getPocketBaseImageUrl(experiencia, image.displayFilename, 'small'),
     label: `Foto de galeria ${index + 1} de ${experiencia.titulo}`,
   })) : [];
 

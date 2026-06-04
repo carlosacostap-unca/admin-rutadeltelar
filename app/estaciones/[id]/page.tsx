@@ -17,10 +17,10 @@ import FeaturedData from '@/components/FeaturedData';
 import { deleteRecordWithAudit } from '@/lib/audit';
 import {
   getEntityCoverFocus,
-  getEntityCoverImage,
+  getEntityCoverImageRef,
   getEntityCoverZoom,
   getEntityGalleryFocuses,
-  getEntityGalleryImages,
+  getEntityGalleryImageRefs,
   getGalleryImageCrop,
   getGalleryImageFocus,
   getImageCropStyle,
@@ -157,10 +157,10 @@ export default function EstacionDetailPage() {
 
   const canEdit = canEditContent(user);
   const canDelete = hasAnyRole(user, ['admin']);
-  const fotoPortada = getEntityCoverImage(estacion);
+  const fotoPortada = getEntityCoverImageRef(estacion);
   const fotoPortadaFocus = getEntityCoverFocus(estacion);
   const fotoPortadaZoom = getEntityCoverZoom(estacion);
-  const galeriaFotos = getEntityGalleryImages(estacion);
+  const galeriaFotos = getEntityGalleryImageRefs(estacion);
   const galeriaFotosFocus = getEntityGalleryFocuses(estacion);
 
   return (
@@ -286,7 +286,7 @@ export default function EstacionDetailPage() {
                   <div className="max-w-sm">
                     <div className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
                       <Image unoptimized width={800} height={600}
-                        src={getPocketBaseImageUrl(estacion, fotoPortada, 'medium')}
+                        src={getPocketBaseImageUrl(estacion, fotoPortada.displayFilename, 'medium')}
                         alt={`Portada de ${estacion.nombre}`}
                         className="object-cover w-full h-full"
                         style={getImageCropStyle(fotoPortadaFocus, fotoPortadaZoom)}
@@ -309,12 +309,12 @@ export default function EstacionDetailPage() {
                 {galeriaFotos.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {galeriaFotos.map((foto, index) => (
-                      <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
+                      <div key={foto.filename} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
                         <Image unoptimized width={800} height={600}
-                          src={getPocketBaseImageUrl(estacion, foto, 'medium')}
+                          src={getPocketBaseImageUrl(estacion, foto.displayFilename, 'medium')}
                           alt={`Foto de galería ${index + 1} de ${estacion.nombre}`}
                           className="object-cover w-full h-full"
-                          style={getImageCropStyle(getGalleryImageFocus(galeriaFotosFocus, foto), getGalleryImageCrop(galeriaFotosFocus, foto).zoom)}
+                          style={getImageCropStyle(getGalleryImageFocus(galeriaFotosFocus, foto.filename), getGalleryImageCrop(galeriaFotosFocus, foto.filename).zoom)}
                         />
                       </div>
                     ))}
@@ -377,3 +377,4 @@ export default function EstacionDetailPage() {
     </div>
   );
 }
+

@@ -20,9 +20,11 @@ import {
   EntityImageFocus,
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverImageRef,
   getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getEntityGalleryImageRefs,
   getGalleryImageCrop,
   getGalleryImageFocus,
   getImageCropStyle,
@@ -189,7 +191,8 @@ export default function EditEstacionPage() {
   }
 
   const fotoPortadaActual = !fotoPortadaParaEliminar ? getEntityCoverImage(estacion) : null;
-  const galeriaActual = getEntityGalleryImages(estacion).filter((foto) => !galeriaFotosParaEliminar.includes(foto));
+  const fotoPortadaActualRef = !fotoPortadaParaEliminar ? getEntityCoverImageRef(estacion) : null;
+  const galeriaActual = getEntityGalleryImageRefs(estacion).filter((foto) => !galeriaFotosParaEliminar.includes(foto.filename));
 
   return (
     <div className="h-full bg-[var(--color-surface)] flex flex-col">
@@ -384,7 +387,7 @@ export default function EditEstacionPage() {
                 {fotoPortadaActual ? (
                   <div className="aspect-square w-40 bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
                     <Image unoptimized width={800} height={600}
-                      src={getPocketBaseImageUrl(estacion!, fotoPortadaActual, 'small')}
+                      src={getPocketBaseImageUrl(estacion!, fotoPortadaActualRef?.displayFilename || fotoPortadaActual!, 'small')}
                       alt={`Portada de ${estacion?.nombre}`}
                       className="object-cover w-full h-full"
                       style={getImageCropStyle(fotoPortadaFocus, fotoPortadaZoom)}
@@ -477,14 +480,14 @@ export default function EditEstacionPage() {
                     {galeriaActual.map((foto, index) => (
                       <div key={index} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)] group">
                         <Image unoptimized width={800} height={600}
-                          src={getPocketBaseImageUrl(estacion!, foto, 'small')}
+                          src={getPocketBaseImageUrl(estacion!, foto.displayFilename, 'small')}
                           alt={`Foto de galería ${index + 1} de ${estacion?.nombre}`}
                           className="object-cover w-full h-full"
-                          style={getImageCropStyle(getGalleryImageFocus(galeriaFotosFocus, foto), getGalleryImageCrop(galeriaFotosFocus, foto).zoom)}
+                          style={getImageCropStyle(getGalleryImageFocus(galeriaFotosFocus, foto.filename), getGalleryImageCrop(galeriaFotosFocus, foto.filename).zoom)}
                         />
                         <button
                           type="button"
-                          onClick={() => setGaleriaFotosParaEliminar([...galeriaFotosParaEliminar, foto])}
+                          onClick={() => setGaleriaFotosParaEliminar([...galeriaFotosParaEliminar, foto.filename])}
                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Eliminar foto de galería"
                         >
@@ -495,16 +498,16 @@ export default function EditEstacionPage() {
                   </div>
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {galeriaActual.map((foto, index) => (
-                      <details key={`${foto}-focus`} className="rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] p-3">
+                      <details key={`${foto.filename}-focus`} className="rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface)] p-3">
                         <summary className="cursor-pointer text-xs font-medium text-[var(--color-primary)]">
                           Ajustar foco foto {index + 1}
                         </summary>
                         <div className="mt-2">
                           <ImageFocusControls
-                            focus={getGalleryImageFocus(galeriaFotosFocus, foto)}
-                            onChange={(focus) => setGaleriaFotosFocus((current) => ({ ...current, [foto]: { ...getGalleryImageCrop(current, foto), ...focus } }))}
-                            zoom={getGalleryImageCrop(galeriaFotosFocus, foto).zoom}
-                            onZoomChange={(zoom) => setGaleriaFotosFocus((current) => ({ ...current, [foto]: { ...getGalleryImageCrop(current, foto), zoom } }))}
+                            focus={getGalleryImageFocus(galeriaFotosFocus, foto.filename)}
+                            onChange={(focus) => setGaleriaFotosFocus((current) => ({ ...current, [foto.filename]: { ...getGalleryImageCrop(current, foto.filename), ...focus } }))}
+                            zoom={getGalleryImageCrop(galeriaFotosFocus, foto.filename).zoom}
+                            onZoomChange={(zoom) => setGaleriaFotosFocus((current) => ({ ...current, [foto.filename]: { ...getGalleryImageCrop(current, foto.filename), zoom } }))}
                           />
                         </div>
                       </details>

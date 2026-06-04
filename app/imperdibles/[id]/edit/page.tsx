@@ -29,9 +29,11 @@ import {
   EntityImageFocus,
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverImageRef,
   getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getEntityGalleryImageRefs,
   getGalleryImageCrop,
   getGalleryImageFocus,
   pruneGalleryFocuses,
@@ -330,16 +332,16 @@ export default function EditImperdiblePage() {
   const experienciasFiltradas = estacionId
     ? experiencias.filter(e => e.estacion_id === estacionId)
     : experiencias;
-  const coverImage = getEntityCoverImage(imperdible);
-  const galleryImages = getEntityGalleryImages(imperdible);
-  const existingCover = imperdible && coverImage ? {
-    filename: coverImage,
-    url: getPocketBaseImageUrl(imperdible, coverImage, 'small'),
+  const coverImageRef = getEntityCoverImageRef(imperdible);
+  const galleryImageRefs = getEntityGalleryImageRefs(imperdible);
+  const existingCover = imperdible && coverImageRef ? {
+    filename: coverImageRef.filename,
+    url: getPocketBaseImageUrl(imperdible, coverImageRef.displayFilename, 'small'),
     label: `Portada de ${imperdible.titulo}`,
   } : null;
-  const existingGallery = imperdible ? galleryImages.map((filename, index) => ({
-    filename,
-    url: getPocketBaseImageUrl(imperdible, filename, 'small'),
+  const existingGallery = imperdible ? galleryImageRefs.map((image, index) => ({
+    filename: image.filename,
+    url: getPocketBaseImageUrl(imperdible, image.displayFilename, 'small'),
     label: `Foto de galeria ${index + 1} de ${imperdible.titulo}`,
   })) : [];
 

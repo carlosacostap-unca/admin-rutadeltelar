@@ -37,6 +37,7 @@ const imageMimeTypes = [
   'image/avif',
   'image/svg+xml',
 ];
+const optimizedImageMimeTypes = ['image/webp'];
 
 const token = await authenticate();
 const results = [];
@@ -71,6 +72,18 @@ for (const collectionName of collections) {
 
   if (fieldNames.has('fotos') && ensureFileFieldConfig(nextFields.find((field) => field.name === 'fotos'))) {
     added.push('fotos:config');
+  }
+
+  if (!fieldNames.has('media_optimizados')) {
+    nextFields.push(fileField('media_optimizados', 99, optimizedImageMimeTypes));
+    added.push('media_optimizados');
+  } else if (ensureFileFieldConfig(nextFields.find((field) => field.name === 'media_optimizados'), optimizedImageMimeTypes)) {
+    added.push('media_optimizados:config');
+  }
+
+  if (!fieldNames.has('media_optimizados_map')) {
+    nextFields.push(jsonField('media_optimizados_map'));
+    added.push('media_optimizados_map');
   }
 
   if (added.length > 0) {
@@ -116,7 +129,7 @@ async function pb(path, options = {}) {
   return response.json();
 }
 
-function fileField(name, maxSelect) {
+function fileField(name, maxSelect, mimeTypes = imageMimeTypes) {
   return {
     name,
     type: 'file',
@@ -126,13 +139,25 @@ function fileField(name, maxSelect) {
     system: false,
     maxSelect,
     maxSize: imageMaxSize,
-    mimeTypes: imageMimeTypes,
+    mimeTypes,
     thumbs: imageThumbs,
     protected: false,
   };
 }
 
-function ensureFileFieldConfig(field) {
+function jsonField(name) {
+  return {
+    name,
+    type: 'json',
+    required: false,
+    presentable: false,
+    hidden: false,
+    system: false,
+    maxSize: 0,
+  };
+}
+
+function ensureFileFieldConfig(field, mimeTypes = imageMimeTypes) {
   if (!field || field.type !== 'file') return false;
   let changed = false;
   const currentThumbs = Array.isArray(field.thumbs) ? field.thumbs : [];
@@ -147,6 +172,15 @@ function ensureFileFieldConfig(field) {
 
   if (field.maxSize !== imageMaxSize) {
     field.maxSize = imageMaxSize;
+    changed = true;
+  }
+
+  const currentMimeTypes = Array.isArray(field.mimeTypes) ? field.mimeTypes : [];
+  const hasSameMimeTypes =
+    currentMimeTypes.length === mimeTypes.length &&
+    mimeTypes.every((mimeType) => currentMimeTypes.includes(mimeType));
+  if (!hasSameMimeTypes) {
+    field.mimeTypes = mimeTypes;
     changed = true;
   }
 

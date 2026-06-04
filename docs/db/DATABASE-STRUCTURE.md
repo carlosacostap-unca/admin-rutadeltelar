@@ -569,14 +569,20 @@ Las entidades con imagenes usan campos separados para evitar que la portada qued
 - `galeria_fotos_focus`: JSON opcional por nombre de archivo. Cada entrada puede guardar `x`, `y` y `zoom`; el zoom 100 muestra la imagen completa.
 - `galeria_fotos`: archivos opcionales, maximo 5 imagenes para `actores`, `productos`, `experiencias` e `imperdibles`.
 - `fotos`: campo legacy de compatibilidad cuando existe.
+- `media_optimizados`: archivos WebP opcionales para copias optimizadas generadas en migraciones conservadoras.
+- `media_optimizados_map`: JSON opcional que mapea `campo:nombre_original` hacia el archivo equivalente en `media_optimizados`.
 
 Los campos de imagen conservan el archivo original y habilitan miniaturas de PocketBase en `320x0`, `768x0`, `1280x0` y `1600x0`. La aplicacion debe pedir estas variantes con `thumb` para listados, vistas de edicion y detalles, sin reemplazar ni borrar el original subido por el usuario.
 
 Las cargas nuevas desde el administrador se optimizan en el navegador antes de enviarse a PocketBase: se redimensionan hasta un lado maximo de 1920 px y se convierten a WebP cuando el resultado pesa menos que el archivo original. Los scripts de esquema configuran un limite de 3 MB por archivo para nuevas cargas; ese limite no borra ni modifica archivos existentes.
 
+Para migrar imagenes existentes sin borrar originales, se deben subir las versiones WebP a `media_optimizados` y registrar el mapeo en `media_optimizados_map`. Las pantallas del administrador prefieren la copia optimizada cuando el mapa existe, pero mantienen `foto_portada`, `galeria_fotos` y `fotos` intactos como fuente original y fallback.
+
+El plan de migracion se genera con `npm run media:migration-plan` despues de `npm run media:shadow-optimize`. Ese plan es un dry-run: produce JSON/CSV en `reports/`, describe los archivos a subir y declara que los campos originales permanecen sin cambios. La aplicacion de migracion se ejecuta con `npm run media:apply-optimized-batch`: sin variables de entorno funciona en dry-run y selecciona hasta 5 registros pendientes; con `MEDIA_MIGRATION_APPLY=true` sube las copias WebP a `media_optimizados` y actualiza solo `media_optimizados_map`. Se puede acotar con `MEDIA_MIGRATION_RECORD_LIMIT`, `MEDIA_MIGRATION_FILE_LIMIT` o `MEDIA_MIGRATION_COLLECTION`.
+
 Para registros existentes que solo tengan `fotos`, la aplicacion trata `fotos[0]` como portada fallback y las imagenes restantes como galeria fallback. La galeria visible deduplica nombres de archivo y excluye la portada.
 
-El script `npm run schema:media` agrega de forma no destructiva `foto_portada` y `galeria_fotos` en las colecciones con multimedia si faltan, y habilita miniaturas y limite de 3 MB en `foto_portada`, `galeria_fotos` y `fotos` legacy cuando esos campos existen. No borra ni migra el campo `fotos`.
+El script `npm run schema:media` agrega de forma no destructiva `foto_portada`, `galeria_fotos`, `media_optimizados` y `media_optimizados_map` en las colecciones con multimedia si faltan, y habilita miniaturas y limite de 3 MB en los campos de archivo cuando esos campos existen. No borra ni migra el campo `fotos`.
 
 El script `npm run schema:department-cover` agrega de forma no destructiva `foto_portada` en `departamentos` si falta y habilita sus miniaturas y limite de 3 MB.
 

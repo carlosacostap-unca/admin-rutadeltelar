@@ -4,10 +4,10 @@ import Image from 'next/image';
 import {
   EntityMediaRecord,
   getEntityCoverFocus,
-  getEntityCoverImage,
+  getEntityCoverImageRef,
   getEntityCoverZoom,
   getEntityGalleryFocuses,
-  getEntityGalleryImages,
+  getEntityGalleryImageRefs,
   getGalleryImageCrop,
   getGalleryImageFocus,
   getImageCropStyle,
@@ -25,10 +25,10 @@ export default function EntityMediaDisplay<T extends EntityMediaRecord>({
   title,
   emptyLabel,
 }: EntityMediaDisplayProps<T>) {
-  const cover = getEntityCoverImage(record);
+  const cover = getEntityCoverImageRef(record);
   const coverFocus = getEntityCoverFocus(record);
   const coverZoom = getEntityCoverZoom(record);
-  const gallery = getEntityGalleryImages(record);
+  const gallery = getEntityGalleryImageRefs(record);
   const galleryFocuses = getEntityGalleryFocuses(record);
 
   return (
@@ -40,7 +40,7 @@ export default function EntityMediaDisplay<T extends EntityMediaRecord>({
         {cover ? (
           <div className="max-w-sm">
             <div className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-              <Image unoptimized width={800} height={600} src={getPocketBaseImageUrl(record, cover, 'medium')} alt={`Portada de ${title}`} className="object-cover w-full h-full" style={getImageCropStyle(coverFocus, coverZoom)} />
+              <Image unoptimized width={800} height={600} src={getPocketBaseImageUrl(record, cover.displayFilename, 'medium')} alt={`Portada de ${title}`} className="object-cover w-full h-full" style={getImageCropStyle(coverFocus, coverZoom)} />
             </div>
           </div>
         ) : (
@@ -54,9 +54,9 @@ export default function EntityMediaDisplay<T extends EntityMediaRecord>({
         </h3>
         {gallery.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {gallery.map((filename, index) => (
-              <div key={filename} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
-                <Image unoptimized width={800} height={600} src={getPocketBaseImageUrl(record, filename, 'medium')} alt={`Foto de galeria ${index + 1} de ${title}`} className="object-cover w-full h-full" style={getImageCropStyle(getGalleryImageFocus(galleryFocuses, filename), getGalleryImageCrop(galleryFocuses, filename).zoom)} />
+            {gallery.map((image, index) => (
+              <div key={image.filename} className="aspect-square bg-[var(--color-surface-container)] rounded-md overflow-hidden relative border border-[var(--color-outline-variant)]">
+                <Image unoptimized width={800} height={600} src={getPocketBaseImageUrl(record, image.displayFilename, 'medium')} alt={`Foto de galeria ${index + 1} de ${title}`} className="object-cover w-full h-full" style={getImageCropStyle(getGalleryImageFocus(galleryFocuses, image.filename), getGalleryImageCrop(galleryFocuses, image.filename).zoom)} />
               </div>
             ))}
           </div>

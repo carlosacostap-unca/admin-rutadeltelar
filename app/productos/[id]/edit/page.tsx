@@ -22,9 +22,11 @@ import {
   EntityImageFocus,
   getEntityCoverFocus,
   getEntityCoverImage,
+  getEntityCoverImageRef,
   getEntityCoverZoom,
   getEntityGalleryFocuses,
   getEntityGalleryImages,
+  getEntityGalleryImageRefs,
   getGalleryImageCrop,
   getGalleryImageFocus,
   pruneGalleryFocuses,
@@ -246,16 +248,16 @@ export default function EditProductoPage() {
   const actoresFiltrados = estacionesRelacionadas.length > 0
     ? actores.filter(a => estacionesRelacionadas.includes(a.estacion_id))
     : actores;
-  const coverImage = getEntityCoverImage(producto);
-  const galleryImages = getEntityGalleryImages(producto);
-  const existingCover = producto && coverImage ? {
-    filename: coverImage,
-    url: getPocketBaseImageUrl(producto, coverImage, 'small'),
+  const coverImageRef = getEntityCoverImageRef(producto);
+  const galleryImageRefs = getEntityGalleryImageRefs(producto);
+  const existingCover = producto && coverImageRef ? {
+    filename: coverImageRef.filename,
+    url: getPocketBaseImageUrl(producto, coverImageRef.displayFilename, 'small'),
     label: `Portada de ${producto.nombre}`,
   } : null;
-  const existingGallery = producto ? galleryImages.map((filename, index) => ({
-    filename,
-    url: getPocketBaseImageUrl(producto, filename, 'small'),
+  const existingGallery = producto ? galleryImageRefs.map((image, index) => ({
+    filename: image.filename,
+    url: getPocketBaseImageUrl(producto, image.displayFilename, 'small'),
     label: `Foto de galeria ${index + 1} de ${producto.nombre}`,
   })) : [];
 

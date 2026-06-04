@@ -6,6 +6,8 @@ export type EntityMediaRecord = {
   galeria_fotos?: string[] | null;
   galeria_fotos_focus?: EntityStoredGalleryFocus | null;
   fotos?: string[] | null;
+  media_optimizados?: string[] | null;
+  media_optimizados_map?: EntityOptimizedMediaMap | null;
 };
 
 export type EntityImageFocus = {
@@ -21,15 +23,31 @@ export type EntityStoredGalleryFocus = Record<string, Partial<EntityImageCrop>>;
 
 export type EntityGalleryFocus = Record<string, EntityImageCrop>;
 
+export type EntityOptimizedMediaMap = Record<string, string | null | undefined>;
+
+export type EntityMediaImageRef = {
+  filename: string;
+  sourceField: 'foto_portada' | 'galeria_fotos' | 'fotos';
+  displayFilename: string;
+};
+
 export const DEFAULT_IMAGE_FOCUS: EntityImageFocus = { x: 50, y: 50 };
 export const DEFAULT_IMAGE_ZOOM = 100;
 export const DEFAULT_IMAGE_CROP: EntityImageCrop = { ...DEFAULT_IMAGE_FOCUS, zoom: DEFAULT_IMAGE_ZOOM };
 
 export function getEntityCoverImage(record?: EntityMediaRecord | null): string | null {
+  return getEntityCoverImageRef(record)?.filename ?? null;
+}
+
+export function getEntityCoverImageRef(record?: EntityMediaRecord | null): EntityMediaImageRef | null {
   if (!record) return null;
   const explicitCover = firstFilename(record.foto_portada);
-  if (explicitCover) return explicitCover;
-  return firstFilename(record.fotos);
+  if (explicitCover) return buildImageRef(record, 'foto_portada', explicitCover);
+
+  const legacyCover = firstFilename(record.fotos);
+  if (legacyCover) return buildImageRef(record, 'fotos', legacyCover);
+
+  return null;
 }
 
 export function getEntityCoverFocus(record?: EntityMediaRecord | null): EntityImageFocus {
@@ -108,20 +126,25 @@ export function normalizeImageZoom(value: unknown): number {
 }
 
 export function getEntityGalleryImages(record?: EntityMediaRecord | null): string[] {
+  return getEntityGalleryImageRefs(record).map((image) => image.filename);
+}
+
+export function getEntityGalleryImageRefs(record?: EntityMediaRecord | null): EntityMediaImageRef[] {
   if (!record) return [];
-  const cover = getEntityCoverImage(record);
+  const cover = getEntityCoverImageRef(record);
   const legacyFotos = normalizeFilenames(record.fotos);
   const legacyGallery = firstFilename(record.foto_portada) ? legacyFotos : legacyFotos.slice(1);
+  const refs = [
+    ...normalizeFilenames(record.galeria_fotos).map((filename) => buildImageRef(record, 'galeria_fotos', filename)),
+    ...legacyGallery.map((filename) => buildImageRef(record, 'fotos', filename)),
+  ];
 
-  return dedupeFilenames([
-    ...normalizeFilenames(record.galeria_fotos),
-    ...legacyGallery,
-  ]).filter((filename) => filename !== cover);
+  return dedupeImageRefs(refs).filter((image) => image.filename !== cover?.filename);
 }
 
 export function getEntityMediaImages(record?: EntityMediaRecord | null) {
-  const cover = getEntityCoverImage(record);
-  const gallery = getEntityGalleryImages(record);
+  const cover = getEntityCoverImageRef(record);
+  const gallery = getEntityGalleryImageRefs(record);
   return { cover, gallery };
 }
 
@@ -137,6 +160,32 @@ function firstFilename(value?: string | string[] | null): string | null {
 function normalizeFilenames(value?: string | string[] | null): string[] {
   if (!value) return [];
   return Array.isArray(value) ? value.filter(Boolean) : [value];
+}
+
+function buildImageRef(record: EntityMediaRecord, sourceField: EntityMediaImageRef['sourceField'], filename: string): EntityMediaImageRef {
+  return {
+    filename,
+    sourceField,
+    displayFilename: getOptimizedFilename(record, sourceField, filename) || filename,
+  };
+}
+
+function getOptimizedFilename(record: EntityMediaRecord, sourceField: EntityMediaImageRef['sourceField'], filename: string) {
+  if (!record.media_optimizados_map || typeof record.media_optimizados_map !== 'object') return null;
+  const mapped = record.media_optimizados_map[`${sourceField}:${filename}`];
+  if (!mapped || !normalizeFilenames(record.media_optimizados).includes(mapped)) return null;
+  return mapped;
+}
+
+function dedupeImageRefs(values: EntityMediaImageRef[]): EntityMediaImageRef[] {
+  const seen = new Set<string>();
+  const deduped: EntityMediaImageRef[] = [];
+  for (const value of values) {
+    if (seen.has(value.filename)) continue;
+    seen.add(value.filename);
+    deduped.push(value);
+  }
+  return deduped;
 }
 
 function clampFocus(value: unknown): number {

@@ -39,6 +39,12 @@ yarn-error.log*
 # local reports
 /reports/media-inventory-*.csv
 /reports/media-inventory-*.json
+/reports/media-shadow-*/
+/reports/media-visual-compare-*/
+/reports/media-migration-plan-*.csv
+/reports/media-migration-plan-*.json
+/reports/media-pilot-*.json
+/reports/media-batch-*.json
 
 # env files (can opt-in for committing if needed)
 .env*
