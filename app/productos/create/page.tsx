@@ -1,6 +1,6 @@
 'use client';
 
-import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import { asPocketBaseError, getErrorMessage } from '@/lib/pocketbaseErrors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
@@ -14,6 +14,7 @@ import { CatalogoItem } from '@/types/catalogo';
 import CatalogSelect from '@/components/CatalogSelect';
 import CatalogTagSelector from '@/components/CatalogTagSelector';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
+import { MediaSubmitFeedback, getMediaSubmitButtonLabel, hasPendingImageUploads } from '@/components/MediaSubmitFeedback';
 import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, EntityImageFocus } from '@/lib/entityMedia';
 import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
 
@@ -44,6 +45,7 @@ function CreateProductoForm() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasPendingImages = hasPendingImageUploads(fotoPortada, galeriaFotos);
 
   const getActorDisplayLabel = (actor: Actor) => {
     const estacionNombre = actor.expand?.estacion_id?.nombre || '';
@@ -150,7 +152,7 @@ function CreateProductoForm() {
         });
       }
 
-      appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
+      await appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
       appendImageFocusFields(formData, fotoPortadaFocus, {}, fotoPortadaZoom);
       
       await createRecordWithAudit('productos', formData, user);
@@ -165,7 +167,7 @@ function CreateProductoForm() {
           .join(' | ');
         setError(`Error de validación: ${errorMessages}`);
       } else {
-        setError(asPocketBaseError(err)?.response?.message || 'Error al crear el producto. Verifica que la colección "productos" esté correctamente configurada en PocketBase.');
+        setError(getErrorMessage(err, 'Error al crear el producto. Verifica que la colección "productos" esté correctamente configurada en PocketBase.'));
       }
     } finally {
       setIsSubmitting(false);
@@ -391,6 +393,7 @@ function CreateProductoForm() {
             </div>
 
             <div className="pt-6 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-[var(--color-outline-variant)] mt-8">
+              <MediaSubmitFeedback isSubmitting={isSubmitting} hasPendingImages={hasPendingImages} />
               <button
                 type="button"
                 onClick={() => router.push('/productos')}
@@ -405,7 +408,7 @@ function CreateProductoForm() {
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar'}
+                {getMediaSubmitButtonLabel(isSubmitting, hasPendingImages, 'Guardar')}
               </button>
             </div>
           </form>

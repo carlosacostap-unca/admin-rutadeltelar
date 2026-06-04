@@ -1,6 +1,6 @@
 'use client';
 
-import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import { asPocketBaseError, getErrorMessage } from '@/lib/pocketbaseErrors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -12,6 +12,7 @@ import { Actor } from '@/types/actor';
 import { Experiencia, ExperienciaCategoria, ExperienciaEstado } from '@/types/experiencia';
 import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
+import { MediaSubmitFeedback, getMediaSubmitButtonLabel, hasPendingImageUploads } from '@/components/MediaSubmitFeedback';
 import {
   DEFAULT_IMAGE_FOCUS,
   DEFAULT_IMAGE_ZOOM,
@@ -26,7 +27,7 @@ import {
   getGalleryImageFocus,
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
-import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendRemoteFile } from '@/lib/entityMediaForm';
+import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendOptimizedImageFile, appendRemoteFile } from '@/lib/entityMediaForm';
 import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 export default function EditExperienciaPage() {
@@ -61,6 +62,7 @@ export default function EditExperienciaPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasPendingImages = hasPendingImageUploads(fotoPortada, fotos);
 
   useEffect(() => {
     if (!isLoading && (!user || !canEditContent(user))) {
@@ -169,7 +171,7 @@ export default function EditExperienciaPage() {
       }
 
       if (fotoPortada) {
-        formData.append('foto_portada', fotoPortada);
+        await appendOptimizedImageFile(formData, 'foto_portada', fotoPortada);
       } else if (portadaExistenteSeleccionada && portadaExistenteSeleccionada !== currentExplicitCover && experiencia) {
         await appendRemoteFile(formData, 'foto_portada', pb.files.getURL(experiencia, portadaExistenteSeleccionada), portadaExistenteSeleccionada);
         galleryRemovals.add(portadaExistenteSeleccionada);
@@ -177,7 +179,7 @@ export default function EditExperienciaPage() {
 
       appendFileRemovals(formData, 'galeria_fotos', Array.from(galleryRemovals));
       appendFileRemovals(formData, 'fotos', Array.from(galleryRemovals));
-      appendGalleryFileUpdates(formData, fotos);
+      await appendGalleryFileUpdates(formData, fotos);
       appendImageFocusFields(
         formData,
         fotoPortadaFocus,
@@ -200,7 +202,7 @@ export default function EditExperienciaPage() {
           .join(' | ');
         setError(`Error de validación: ${errorMessages}`);
       } else {
-        setError(asPocketBaseError(err)?.response?.message || 'Error al actualizar la experiencia. Verifica la configuración en PocketBase.');
+        setError(getErrorMessage(err, 'Error al actualizar la experiencia. Verifica la configuración en PocketBase.'));
       }
     } finally {
       setIsSubmitting(false);
@@ -485,6 +487,7 @@ export default function EditExperienciaPage() {
             </div>
 
             <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
+              <MediaSubmitFeedback isSubmitting={isSubmitting} hasPendingImages={hasPendingImages} />
               <button
                 type="button"
                 onClick={() => router.push(`/experiencias/${id}`)}
@@ -499,7 +502,7 @@ export default function EditExperienciaPage() {
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md w-full md:w-auto"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                {getMediaSubmitButtonLabel(isSubmitting, hasPendingImages, 'Guardar Cambios')}
               </button>
             </div>
           </form>

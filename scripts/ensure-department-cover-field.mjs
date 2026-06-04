@@ -22,6 +22,7 @@ const adminEmail = process.env.POCKETBASE_ADMIN_EMAIL;
 const adminPassword = process.env.POCKETBASE_ADMIN_PASSWORD;
 const collectionName = 'departamentos';
 const imageThumbs = ['320x0', '768x0', '1280x0', '1600x0'];
+const imageMaxSize = 3 * 1024 * 1024;
 const imageMimeTypes = [
   'image/png',
   'image/jpeg',
@@ -46,8 +47,8 @@ const added = [];
 if (!fieldNames.has('foto_portada')) {
   nextFields.push(fileField('foto_portada', 1));
   added.push('foto_portada');
-} else if (ensureFileFieldThumbs(nextFields.find((field) => field.name === 'foto_portada'))) {
-  added.push('foto_portada:thumbs');
+} else if (ensureFileFieldConfig(nextFields.find((field) => field.name === 'foto_portada'))) {
+  added.push('foto_portada:config');
 }
 
 if (added.length > 0) {
@@ -99,21 +100,30 @@ function fileField(name, maxSelect) {
     hidden: false,
     system: false,
     maxSelect,
-    maxSize: 20 * 1024 * 1024,
+    maxSize: imageMaxSize,
     mimeTypes: imageMimeTypes,
     thumbs: imageThumbs,
     protected: false,
   };
 }
 
-function ensureFileFieldThumbs(field) {
+function ensureFileFieldConfig(field) {
   if (!field || field.type !== 'file') return false;
+  let changed = false;
   const currentThumbs = Array.isArray(field.thumbs) ? field.thumbs : [];
   const hasSameThumbs =
     currentThumbs.length === imageThumbs.length &&
     imageThumbs.every((thumb) => currentThumbs.includes(thumb));
 
-  if (hasSameThumbs) return false;
-  field.thumbs = imageThumbs;
-  return true;
+  if (!hasSameThumbs) {
+    field.thumbs = imageThumbs;
+    changed = true;
+  }
+
+  if (field.maxSize !== imageMaxSize) {
+    field.maxSize = imageMaxSize;
+    changed = true;
+  }
+
+  return changed;
 }

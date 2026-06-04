@@ -1,6 +1,6 @@
 'use client';
 
-import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import { asPocketBaseError, getErrorMessage } from '@/lib/pocketbaseErrors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -14,6 +14,7 @@ import { Producto } from '@/types/producto';
 import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
+import { MediaSubmitFeedback, getMediaSubmitButtonLabel, hasPendingImageUploads } from '@/components/MediaSubmitFeedback';
 import { CatalogoItem } from '@/types/catalogo';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 import {
@@ -30,7 +31,7 @@ import {
   getGalleryImageFocus,
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
-import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendRemoteFile } from '@/lib/entityMediaForm';
+import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendOptimizedImageFile, appendRemoteFile } from '@/lib/entityMediaForm';
 import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 export default function EditActorPage() {
@@ -101,6 +102,7 @@ export default function EditActorPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasPendingImages = hasPendingImageUploads(fotoPortada, fotos);
 
   useEffect(() => {
     if (!isLoading && (!user || !canEditContent(user))) {
@@ -332,7 +334,7 @@ export default function EditActorPage() {
       }
 
       if (fotoPortada) {
-        formData.append('foto_portada', fotoPortada);
+        await appendOptimizedImageFile(formData, 'foto_portada', fotoPortada);
       } else if (portadaExistenteSeleccionada && portadaExistenteSeleccionada !== currentExplicitCover && actor) {
         await appendRemoteFile(formData, 'foto_portada', pb.files.getURL(actor, portadaExistenteSeleccionada), portadaExistenteSeleccionada);
         galleryRemovals.add(portadaExistenteSeleccionada);
@@ -340,7 +342,7 @@ export default function EditActorPage() {
 
       appendFileRemovals(formData, 'galeria_fotos', Array.from(galleryRemovals));
       appendFileRemovals(formData, 'fotos', Array.from(galleryRemovals));
-      appendGalleryFileUpdates(formData, fotos);
+      await appendGalleryFileUpdates(formData, fotos);
       appendImageFocusFields(
         formData,
         fotoPortadaFocus,
@@ -356,7 +358,7 @@ export default function EditActorPage() {
       router.push('/actores');
     } catch (err: unknown) {
       console.error('Error actualizando actor:', err);
-      setError(asPocketBaseError(err)?.response?.message || 'Error al actualizar el actor.');
+      setError(getErrorMessage(err, 'Error al actualizar el actor.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -929,10 +931,11 @@ export default function EditActorPage() {
                 </select>
               </div>
 
-              <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
-                <Link
-                  href={`/actores/${id}`}
-                  className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
+            <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
+              <MediaSubmitFeedback isSubmitting={isSubmitting} hasPendingImages={hasPendingImages} />
+              <Link
+                href={`/actores/${id}`}
+                className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
                 >
                   Cancelar
                 </Link>
@@ -941,9 +944,9 @@ export default function EditActorPage() {
                   disabled={isSubmitting}
                   className="btn-primary px-6 py-2 text-sm shadow-md"
                 >
-                  {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                  {getMediaSubmitButtonLabel(isSubmitting, hasPendingImages, 'Guardar Cambios')}
                 </button>
-              </div>
+            </div>
             </form>
           </div>
         )}

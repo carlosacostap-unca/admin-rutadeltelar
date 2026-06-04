@@ -1,6 +1,6 @@
 'use client';
 
-import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import { asPocketBaseError, getErrorMessage } from '@/lib/pocketbaseErrors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
@@ -17,6 +17,7 @@ import { CatalogoItem } from '@/types/catalogo';
 import dynamic from 'next/dynamic';
 import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
+import { MediaSubmitFeedback, getMediaSubmitButtonLabel, hasPendingImageUploads } from '@/components/MediaSubmitFeedback';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 import { getBrowserTimeZoneLabel, localDateTimeInputToUtc } from '@/lib/datetime';
 import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, EntityImageFocus } from '@/lib/entityMedia';
@@ -64,6 +65,7 @@ function CreateImperdibleForm() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasPendingImages = hasPendingImageUploads(fotoPortada, galeriaFotos);
 
   useEffect(() => {
     if (!isLoading && (!user || !canEditContent(user))) {
@@ -168,7 +170,7 @@ function CreateImperdibleForm() {
       if (estacionalidad) formData.append('estacionalidad', estacionalidad);
       if (videosEnlaces) formData.append('videos_enlaces', videosEnlaces);
       
-      appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
+      await appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
       appendImageFocusFields(formData, fotoPortadaFocus, {}, fotoPortadaZoom);
       
       await createRecordWithAudit('imperdibles', formData, user);
@@ -183,7 +185,7 @@ function CreateImperdibleForm() {
           .join(' | ');
         setError(`Error de validación: ${errorMessages}`);
       } else {
-        setError(asPocketBaseError(err)?.response?.message || 'Error al crear el imperdible. Verifica que la colección "imperdibles" esté correctamente configurada en PocketBase.');
+        setError(getErrorMessage(err, 'Error al crear el imperdible. Verifica que la colección "imperdibles" esté correctamente configurada en PocketBase.'));
       }
     } finally {
       setIsSubmitting(false);
@@ -596,6 +598,7 @@ function CreateImperdibleForm() {
               onGalleryFilesChange={setGaleriaFotos}
             />
             <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
+              <MediaSubmitFeedback isSubmitting={isSubmitting} hasPendingImages={hasPendingImages} />
               <Link
                 href="/imperdibles"
                 className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
@@ -608,7 +611,7 @@ function CreateImperdibleForm() {
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar'}
+                {getMediaSubmitButtonLabel(isSubmitting, hasPendingImages, 'Guardar')}
               </button>
             </div>
           </form>

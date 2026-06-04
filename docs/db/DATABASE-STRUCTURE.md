@@ -572,11 +572,13 @@ Las entidades con imagenes usan campos separados para evitar que la portada qued
 
 Los campos de imagen conservan el archivo original y habilitan miniaturas de PocketBase en `320x0`, `768x0`, `1280x0` y `1600x0`. La aplicacion debe pedir estas variantes con `thumb` para listados, vistas de edicion y detalles, sin reemplazar ni borrar el original subido por el usuario.
 
+Las cargas nuevas desde el administrador se optimizan en el navegador antes de enviarse a PocketBase: se redimensionan hasta un lado maximo de 1920 px y se convierten a WebP cuando el resultado pesa menos que el archivo original. Los scripts de esquema configuran un limite de 3 MB por archivo para nuevas cargas; ese limite no borra ni modifica archivos existentes.
+
 Para registros existentes que solo tengan `fotos`, la aplicacion trata `fotos[0]` como portada fallback y las imagenes restantes como galeria fallback. La galeria visible deduplica nombres de archivo y excluye la portada.
 
-El script `npm run schema:media` agrega de forma no destructiva `foto_portada` y `galeria_fotos` en las colecciones con multimedia si faltan, y habilita miniaturas en `foto_portada`, `galeria_fotos` y `fotos` legacy cuando esos campos existen. No borra ni migra el campo `fotos`.
+El script `npm run schema:media` agrega de forma no destructiva `foto_portada` y `galeria_fotos` en las colecciones con multimedia si faltan, y habilita miniaturas y limite de 3 MB en `foto_portada`, `galeria_fotos` y `fotos` legacy cuando esos campos existen. No borra ni migra el campo `fotos`.
 
-El script `npm run schema:department-cover` agrega de forma no destructiva `foto_portada` en `departamentos` si falta y habilita sus miniaturas.
+El script `npm run schema:department-cover` agrega de forma no destructiva `foto_portada` en `departamentos` si falta y habilita sus miniaturas y limite de 3 MB.
 
 El script `npm run media:prewarm-thumbs` recorre imagenes existentes y solicita cada miniatura configurada para que PocketBase las genere y cachee. El script solo realiza lecturas y pedidos `GET` de archivos; no actualiza registros ni elimina archivos.
 

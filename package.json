@@ -16,6 +16,7 @@
     "schema:image-focus": "node scripts/ensure-image-focus-fields.mjs",
     "schema:dato-destacado": "node scripts/ensure-featured-data-field.mjs",
     "schema:department-cover": "node scripts/ensure-department-cover-field.mjs",
+    "media:inventory": "node scripts/inventory-media-files.mjs",
     "media:prewarm-thumbs": "node scripts/prewarm-media-thumbs.mjs",
     "playwright:install": "node node_modules/@playwright/test/cli.js install",
     "test:e2e": "node scripts/run-playwright.mjs",

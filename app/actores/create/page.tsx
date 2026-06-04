@@ -1,6 +1,6 @@
 'use client';
 
-import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import { asPocketBaseError, getErrorMessage } from '@/lib/pocketbaseErrors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
@@ -14,6 +14,7 @@ import { Producto } from '@/types/producto';
 import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
+import { MediaSubmitFeedback, getMediaSubmitButtonLabel, hasPendingImageUploads } from '@/components/MediaSubmitFeedback';
 import { CatalogoItem } from '@/types/catalogo';
 import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, EntityImageFocus } from '@/lib/entityMedia';
@@ -81,6 +82,7 @@ function CreateActorForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasPendingImages = hasPendingImageUploads(fotoPortada, galeriaFotos);
 
   useEffect(() => {
     if (!isLoading && (!user || !canEditContent(user))) {
@@ -250,7 +252,7 @@ function CreateActorForm() {
         formData.append('disponibilidad', disponibilidad);
       }
 
-      appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
+      await appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
       appendImageFocusFields(formData, fotoPortadaFocus, {}, fotoPortadaZoom);
       
       const record = await createRecordWithAudit('actores', formData, user);
@@ -259,7 +261,7 @@ function CreateActorForm() {
       router.push('/actores');
     } catch (err: unknown) {
       console.error('Error creando actor:', err);
-      setError(asPocketBaseError(err)?.response?.message || 'Error al crear el actor.');
+      setError(getErrorMessage(err, 'Error al crear el actor.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -758,6 +760,7 @@ function CreateActorForm() {
             </div>
 
             <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
+              <MediaSubmitFeedback isSubmitting={isSubmitting} hasPendingImages={hasPendingImages} />
               <Link
                 href="/actores"
                 className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
@@ -770,7 +773,7 @@ function CreateActorForm() {
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar'}
+                {getMediaSubmitButtonLabel(isSubmitting, hasPendingImages, 'Guardar')}
               </button>
             </div>
           </form>

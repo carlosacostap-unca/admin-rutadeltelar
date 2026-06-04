@@ -1,23 +1,28 @@
 import type { EntityGalleryFocus, EntityImageFocus } from './entityMedia';
 import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, normalizeImageFocus, normalizeImageZoom } from './entityMedia';
+import { optimizeImageUpload, optimizeImageUploadList } from './imageOptimization';
 
 export const MAX_GALLERY_IMAGES = 5;
 
-export function appendCreateMediaFiles(
+export async function appendCreateMediaFiles(
   formData: FormData,
   coverFile: File | null,
   galleryFiles: FileList | null,
 ) {
-  if (coverFile) formData.append('foto_portada', coverFile);
-  appendFiles(formData, 'galeria_fotos', galleryFiles);
+  if (coverFile) formData.append('foto_portada', await optimizeImageUpload(coverFile));
+  await appendFiles(formData, 'galeria_fotos', galleryFiles);
 }
 
-export function appendGalleryFileUpdates(
+export async function appendGalleryFileUpdates(
   formData: FormData,
   galleryFiles: FileList | null,
   mode: 'create' | 'append' = 'append',
 ) {
-  appendFiles(formData, mode === 'append' ? 'galeria_fotos+' : 'galeria_fotos', galleryFiles);
+  await appendFiles(formData, mode === 'append' ? 'galeria_fotos+' : 'galeria_fotos', galleryFiles);
+}
+
+export async function appendOptimizedImageFile(formData: FormData, fieldName: string, file: File) {
+  formData.append(fieldName, await optimizeImageUpload(file));
 }
 
 export function appendFileRemovals(formData: FormData, fieldName: string, filenames: string[]) {
@@ -45,12 +50,13 @@ export async function appendRemoteFile(formData: FormData, fieldName: string, ur
     throw new Error(`No se pudo leer la imagen existente ${filename}.`);
   }
   const blob = await response.blob();
-  formData.append(fieldName, new File([blob], filename, { type: blob.type || 'application/octet-stream' }));
+  const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+  formData.append(fieldName, await optimizeImageUpload(file));
 }
 
-function appendFiles(formData: FormData, fieldName: string, files: FileList | null) {
-  if (!files) return;
-  for (let i = 0; i < files.length; i++) {
-    formData.append(fieldName, files[i]);
+async function appendFiles(formData: FormData, fieldName: string, files: FileList | null) {
+  const optimizedFiles = await optimizeImageUploadList(files);
+  for (const file of optimizedFiles) {
+    formData.append(fieldName, file);
   }
 }

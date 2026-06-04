@@ -1,6 +1,6 @@
 'use client';
 
-import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import { asPocketBaseError, getErrorMessage } from '@/lib/pocketbaseErrors';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
 import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
+import { MediaSubmitFeedback, getMediaSubmitButtonLabel, hasPendingImageUploads } from '@/components/MediaSubmitFeedback';
 import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, EntityImageFocus, getImageCropStyle, normalizeImageFocus, normalizeImageZoom } from '@/lib/entityMedia';
 import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
 
@@ -34,6 +35,7 @@ export default function CreateEstacionPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasPendingImages = hasPendingImageUploads(fotoPortada, galeriaFotos);
 
   useEffect(() => {
     if (!isLoading && (!user || !canEditContent(user))) {
@@ -68,7 +70,7 @@ export default function CreateEstacionPage() {
         formData.append('updated_by', user.id);
       }
 
-      appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
+      await appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
       appendImageFocusFields(formData, fotoPortadaFocus, {}, fotoPortadaZoom);
       
       await createRecordWithAudit('estaciones', formData, user);
@@ -76,7 +78,7 @@ export default function CreateEstacionPage() {
       router.push('/estaciones');
     } catch (err: unknown) {
       console.error('Error creando estación:', err);
-      setError(asPocketBaseError(err)?.response?.message || 'Error al crear la estación.');
+      setError(getErrorMessage(err, 'Error al crear la estación.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -423,6 +425,7 @@ export default function CreateEstacionPage() {
             </div>
 
             <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
+              <MediaSubmitFeedback isSubmitting={isSubmitting} hasPendingImages={hasPendingImages} />
               <Link
                 href="/estaciones"
                 className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
@@ -435,7 +438,7 @@ export default function CreateEstacionPage() {
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar'}
+                {getMediaSubmitButtonLabel(isSubmitting, hasPendingImages, 'Guardar')}
               </button>
             </div>
           </form>

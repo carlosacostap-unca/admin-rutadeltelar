@@ -1,6 +1,6 @@
 'use client';
 
-import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import { asPocketBaseError, getErrorMessage } from '@/lib/pocketbaseErrors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
@@ -13,6 +13,7 @@ import { Actor } from '@/types/actor';
 import { ExperienciaCategoria, ExperienciaEstado } from '@/types/experiencia';
 import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
+import { MediaSubmitFeedback, getMediaSubmitButtonLabel, hasPendingImageUploads } from '@/components/MediaSubmitFeedback';
 import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, EntityImageFocus } from '@/lib/entityMedia';
 import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
 
@@ -42,6 +43,7 @@ function CreateExperienciaForm() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasPendingImages = hasPendingImageUploads(fotoPortada, galeriaFotos);
 
   useEffect(() => {
     if (!isLoading && (!user || !canEditContent(user))) {
@@ -105,7 +107,7 @@ function CreateExperienciaForm() {
       if (ubicacion) formData.append('ubicacion', ubicacion);
       if (responsable) formData.append('responsable', responsable);
 
-      appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
+      await appendCreateMediaFiles(formData, fotoPortada, galeriaFotos);
       appendImageFocusFields(formData, fotoPortadaFocus, {}, fotoPortadaZoom);
       
       await createRecordWithAudit('experiencias', formData, user);
@@ -120,7 +122,7 @@ function CreateExperienciaForm() {
           .join(' | ');
         setError(`Error de validación: ${errorMessages}`);
       } else {
-        setError(asPocketBaseError(err)?.response?.message || 'Error al crear la experiencia. Verifica que la colección "experiencias" esté correctamente configurada en PocketBase.');
+        setError(getErrorMessage(err, 'Error al crear la experiencia. Verifica que la colección "experiencias" esté correctamente configurada en PocketBase.'));
       }
     } finally {
       setIsSubmitting(false);
@@ -327,6 +329,7 @@ function CreateExperienciaForm() {
             </div>
 
             <div className="pt-8 flex flex-col md:flex-row justify-end gap-4 border-t border-[var(--color-surface-variant)] mt-8">
+              <MediaSubmitFeedback isSubmitting={isSubmitting} hasPendingImages={hasPendingImages} />
               <Link
                 href="/experiencias"
                 className="btn-secondary px-6 py-2 text-sm shadow-sm text-center"
@@ -339,7 +342,7 @@ function CreateExperienciaForm() {
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar'}
+                {getMediaSubmitButtonLabel(isSubmitting, hasPendingImages, 'Guardar')}
               </button>
             </div>
           </form>

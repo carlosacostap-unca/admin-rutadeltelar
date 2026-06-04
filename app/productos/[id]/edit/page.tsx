@@ -1,6 +1,6 @@
 'use client';
 
-import { asPocketBaseError } from '@/lib/pocketbaseErrors';
+import { asPocketBaseError, getErrorMessage } from '@/lib/pocketbaseErrors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -14,6 +14,7 @@ import { CatalogoItem } from '@/types/catalogo';
 import CatalogSelect from '@/components/CatalogSelect';
 import CatalogTagSelector from '@/components/CatalogTagSelector';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
+import { MediaSubmitFeedback, getMediaSubmitButtonLabel, hasPendingImageUploads } from '@/components/MediaSubmitFeedback';
 import {
   DEFAULT_IMAGE_FOCUS,
   DEFAULT_IMAGE_ZOOM,
@@ -28,7 +29,7 @@ import {
   getGalleryImageFocus,
   pruneGalleryFocuses,
 } from '@/lib/entityMedia';
-import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendRemoteFile } from '@/lib/entityMediaForm';
+import { appendFileRemovals, appendGalleryFileUpdates, appendImageFocusFields, appendOptimizedImageFile, appendRemoteFile } from '@/lib/entityMediaForm';
 import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 export default function EditProductoPage() {
@@ -63,6 +64,7 @@ export default function EditProductoPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasPendingImages = hasPendingImageUploads(fotoPortada, fotos);
 
   const getActorDisplayLabel = (actor: Actor) => {
     const estacionNombre = actor.expand?.estacion_id?.nombre || '';
@@ -204,7 +206,7 @@ export default function EditProductoPage() {
       }
 
       if (fotoPortada) {
-        formData.append('foto_portada', fotoPortada);
+        await appendOptimizedImageFile(formData, 'foto_portada', fotoPortada);
       } else if (portadaExistenteSeleccionada && portadaExistenteSeleccionada !== currentExplicitCover && producto) {
         await appendRemoteFile(formData, 'foto_portada', pb.files.getURL(producto, portadaExistenteSeleccionada), portadaExistenteSeleccionada);
         galleryRemovals.add(portadaExistenteSeleccionada);
@@ -212,7 +214,7 @@ export default function EditProductoPage() {
 
       appendFileRemovals(formData, 'galeria_fotos', Array.from(galleryRemovals));
       appendFileRemovals(formData, 'fotos', Array.from(galleryRemovals));
-      appendGalleryFileUpdates(formData, fotos);
+      await appendGalleryFileUpdates(formData, fotos);
       appendImageFocusFields(
         formData,
         fotoPortadaFocus,
@@ -234,7 +236,7 @@ export default function EditProductoPage() {
           .join(' | ');
         setError(`Error de validación: ${errorMessages}`);
       } else {
-        setError(asPocketBaseError(err)?.response?.message || 'Error al actualizar el producto. Verifica la configuración en PocketBase.');
+        setError(getErrorMessage(err, 'Error al actualizar el producto. Verifica la configuración en PocketBase.'));
       }
     } finally {
       setIsSubmitting(false);
@@ -545,6 +547,7 @@ export default function EditProductoPage() {
             </div>
 
             <div className="pt-6 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-[var(--color-outline-variant)] mt-8">
+              <MediaSubmitFeedback isSubmitting={isSubmitting} hasPendingImages={hasPendingImages} />
               <button
                 type="button"
                 onClick={() => router.push(`/productos/${id}`)}
@@ -557,7 +560,7 @@ export default function EditProductoPage() {
                 disabled={isSubmitting}
                 className="btn-primary px-6 py-2 text-sm shadow-md"
               >
-                {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                {getMediaSubmitButtonLabel(isSubmitting, hasPendingImages, 'Guardar Cambios')}
               </button>
             </div>
           </form>

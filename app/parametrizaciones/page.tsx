@@ -9,6 +9,7 @@ import pb from '@/lib/pocketbase';
 import { hasAnyRole } from '@/lib/permissions';
 import { CATALOGOS_CONFIG, CatalogoCollectionName, CatalogoItem } from '@/types/catalogo';
 import { buildCatalogoSort } from '@/lib/catalogos';
+import { optimizeImageUpload } from '@/lib/imageOptimization';
 import { getPocketBaseImageUrl } from '@/lib/mediaUrls';
 
 type CatalogoDraft = { nombre: string; categoria_padre?: string; foto_portada?: File | null };
@@ -133,7 +134,7 @@ export default function ParametrizacionesPage() {
         const formData = new FormData();
         formData.append('nombre', draft.nombre.trim());
         formData.append('activo', 'true');
-        formData.append('foto_portada', draft.foto_portada);
+        formData.append('foto_portada', await optimizeImageUpload(draft.foto_portada));
         payload = formData;
       } else if (collectionName === 'subcategorias_producto') {
         payload = {
@@ -170,7 +171,7 @@ export default function ParametrizacionesPage() {
     setError(null);
     try {
       const formData = new FormData();
-      formData.append('foto_portada', file);
+      formData.append('foto_portada', await optimizeImageUpload(file));
 
       const updated = await pb.collection(collectionName).update<CatalogoItem>(item.id, formData);
 
