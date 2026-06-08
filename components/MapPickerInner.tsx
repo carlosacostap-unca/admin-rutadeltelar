@@ -22,7 +22,18 @@ function LocationMarker({ lat, lng, onLocationSelect, label, icon }: { lat: numb
   });
 
   return lat !== null && lng !== null ? (
-    <Marker position={[lat, lng]} icon={icon}>
+    <Marker
+      position={[lat, lng]}
+      icon={icon}
+      draggable
+      eventHandlers={{
+        dragend(event) {
+          const marker = event.target as L.Marker;
+          const position = marker.getLatLng();
+          onLocationSelect(position.lat, position.lng);
+        },
+      }}
+    >
       <Popup>{label}</Popup>
     </Marker>
   ) : null;

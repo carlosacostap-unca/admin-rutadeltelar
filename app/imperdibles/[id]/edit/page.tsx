@@ -7,10 +7,8 @@ import { useEffect, useState } from 'react';
 import pb from '@/lib/pocketbase';
 import { updateRecordWithAudit } from '@/lib/audit';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import { canEditContent, canReviewContent } from '@/lib/permissions';
-
-const Map = dynamic(() => import('@/components/Map'), { ssr: false }) as React.FC<{ lat: number; lng: number; zoom?: number; label?: string }>;
+import MapPicker from '@/components/MapPicker';
 import { Estacion } from '@/types/estacion';
 import { Actor } from '@/types/actor';
 import { Producto } from '@/types/producto';
@@ -610,11 +608,23 @@ export default function EditImperdiblePage() {
                   />
                 </div>
               </div>
-              {(latitud && longitud && !isNaN(Number(latitud)) && !isNaN(Number(longitud))) && (
-                <div className="mt-4 mb-4">
-                  <Map lat={Number(latitud)} lng={Number(longitud)} label={titulo || 'Ubicación actual'} />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Seleccionar ubicación en el mapa
+                </label>
+                <p className="text-sm text-[var(--color-outline)] mb-3">
+                  Haz clic en el mapa para establecer las coordenadas automáticamente.
+                </p>
+                <MapPicker
+                  lat={latitud !== '' ? parseFloat(latitud) : null}
+                  lng={longitud !== '' ? parseFloat(longitud) : null}
+                  label={titulo || 'Ubicación actual'}
+                  onLocationSelect={(lat, lng) => {
+                    setLatitud(lat.toString());
+                    setLongitud(lng.toString());
+                  }}
+                />
+              </div>
               
               <div className="grid grid-cols-1 gap-6">
                 <div>

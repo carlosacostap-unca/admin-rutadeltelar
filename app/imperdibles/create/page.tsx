@@ -14,7 +14,7 @@ import { Producto } from '@/types/producto';
 import { Experiencia } from '@/types/experiencia';
 import { ImperdibleTipo, ImperdiblePrioridad, ImperdibleEstado } from '@/types/imperdible';
 import { CatalogoItem } from '@/types/catalogo';
-import dynamic from 'next/dynamic';
+import MapPicker from '@/components/MapPicker';
 import CatalogSelect from '@/components/CatalogSelect';
 import EntityMediaUpload from '@/components/EntityMediaUpload';
 import { MediaSubmitFeedback, getMediaSubmitButtonLabel, hasPendingImageUploads } from '@/components/MediaSubmitFeedback';
@@ -22,8 +22,6 @@ import { buildCatalogoSort, normalizeCatalogName } from '@/lib/catalogos';
 import { getBrowserTimeZoneLabel, localDateTimeInputToUtc } from '@/lib/datetime';
 import { DEFAULT_IMAGE_FOCUS, DEFAULT_IMAGE_ZOOM, EntityImageFocus } from '@/lib/entityMedia';
 import { appendCreateMediaFiles, appendImageFocusFields } from '@/lib/entityMediaForm';
-
-const Map = dynamic(() => import('@/components/Map'), { ssr: false }) as React.FC<{ lat: number; lng: number; zoom?: number; label?: string }>;
 
 function CreateImperdibleForm() {
   const { user, isLoading } = useAuth();
@@ -436,11 +434,23 @@ function CreateImperdibleForm() {
                 </div>
               </div>
 
-              {(latitud && longitud && !isNaN(Number(latitud)) && !isNaN(Number(longitud))) && (
-                <div>
-                  <Map lat={Number(latitud)} lng={Number(longitud)} label={titulo || 'Nueva ubicación'} />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-bold text-[var(--color-on-surface)] mb-2 uppercase tracking-[0.05em]">
+                  Seleccionar ubicación en el mapa
+                </label>
+                <p className="text-sm text-[var(--color-outline)] mb-3">
+                  Haz clic en el mapa para establecer las coordenadas automáticamente.
+                </p>
+                <MapPicker
+                  lat={latitud !== '' ? parseFloat(latitud) : null}
+                  lng={longitud !== '' ? parseFloat(longitud) : null}
+                  label={titulo || 'Nueva ubicación'}
+                  onLocationSelect={(lat, lng) => {
+                    setLatitud(lat.toString());
+                    setLongitud(lng.toString());
+                  }}
+                />
+              </div>
               
               <div className="grid grid-cols-1 gap-6">
                 <div>
