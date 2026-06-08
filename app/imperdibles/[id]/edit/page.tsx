@@ -330,6 +330,7 @@ export default function EditImperdiblePage() {
   const experienciasFiltradas = estacionId
     ? experiencias.filter(e => e.estacion_id === estacionId)
     : experiencias;
+  const estacionSeleccionada = estaciones.find((estacion) => estacion.id === estacionId);
   const coverImageRef = getEntityCoverImageRef(imperdible);
   const galleryImageRefs = getEntityGalleryImageRefs(imperdible);
   const existingCover = imperdible && coverImageRef ? {
@@ -618,6 +619,8 @@ export default function EditImperdiblePage() {
                 <MapPicker
                   lat={latitud !== '' ? parseFloat(latitud) : null}
                   lng={longitud !== '' ? parseFloat(longitud) : null}
+                  centerLat={estacionSeleccionada?.latitud ?? null}
+                  centerLng={estacionSeleccionada?.longitud ?? null}
                   label={titulo || 'Ubicación actual'}
                   onLocationSelect={(lat, lng) => {
                     setLatitud(lat.toString());

@@ -201,6 +201,7 @@ function CreateImperdibleForm() {
   const experienciasFiltradas = estacionId
     ? experiencias.filter(e => e.estacion_id === estacionId)
     : experiencias;
+  const estacionSeleccionada = estaciones.find((estacion) => estacion.id === estacionId);
 
   if (isLoading || !user || !canEditContent(user) || loadingData) {
     return (
@@ -444,6 +445,8 @@ function CreateImperdibleForm() {
                 <MapPicker
                   lat={latitud !== '' ? parseFloat(latitud) : null}
                   lng={longitud !== '' ? parseFloat(longitud) : null}
+                  centerLat={estacionSeleccionada?.latitud ?? null}
+                  centerLng={estacionSeleccionada?.longitud ?? null}
                   label={titulo || 'Nueva ubicación'}
                   onLocationSelect={(lat, lng) => {
                     setLatitud(lat.toString());
