@@ -10,6 +10,7 @@ import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityCoverThumbnail from '@/components/EntityCoverThumbnail';
+import { matchesSearchFields } from '@/lib/search';
 
 type ProductoActor = NonNullable<NonNullable<Producto['expand']>['actores_relacionados']>[number];
 
@@ -99,7 +100,11 @@ function ProductosContent() {
 
   // Aplicar filtros
   const filteredProductos = productos.filter((p) => {
-    const matchesSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = matchesSearchFields(searchTerm, [
+      p.nombre,
+      p.descripcion,
+      p.dato_destacado,
+    ]);
     const matchesCategoria = categoriaFilter ? p.categoria === categoriaFilter : true;
     const matchesEstado = estadoFilter ? p.estado === estadoFilter : true;
     const estacionesProducto = p.estaciones_relacionadas && p.estaciones_relacionadas.length > 0
@@ -136,7 +141,7 @@ function ProductosContent() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Buscar por nombre..."
+              placeholder="Buscar por nombre o descripción..."
               className="input-field w-full text-[var(--color-on-surface-variant)] placeholder:text-[var(--color-surface-variant)]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

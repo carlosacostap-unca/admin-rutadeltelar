@@ -10,6 +10,7 @@ import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel, normalizeCatalogName } from '@/lib/catalogos';
 import EntityCoverThumbnail from '@/components/EntityCoverThumbnail';
+import { matchesSearchFields } from '@/lib/search';
 
 export default function ImperdiblesPage() {
   return (
@@ -84,7 +85,14 @@ function ImperdiblesContent() {
 
   // Aplicar filtros
   const filteredImperdibles = imperdibles.filter((i) => {
-    const matchesSearch = i.titulo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = matchesSearchFields(searchTerm, [
+      i.titulo,
+      i.subtitulo,
+      i.descripcion,
+      i.dato_destacado,
+      i.recomendaciones,
+      i.accesibilidad,
+    ]);
     const matchesTipo = tipoFilter ? i.tipo === tipoFilter : true;
     const matchesPrioridad = prioridadFilter ? i.prioridad === prioridadFilter : true;
     const matchesEstado = estadoFilter ? i.estado === estadoFilter : true;
@@ -114,7 +122,7 @@ function ImperdiblesContent() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Buscar por título..."
+              placeholder="Buscar por título o descripción..."
               className="input-field w-full text-[var(--color-on-surface-variant)] placeholder:text-[var(--color-surface-variant)]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

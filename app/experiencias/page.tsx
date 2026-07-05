@@ -10,6 +10,7 @@ import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityCoverThumbnail from '@/components/EntityCoverThumbnail';
+import { matchesSearchFields } from '@/lib/search';
 
 export default function ExperienciasPage() {
   return (
@@ -83,7 +84,12 @@ function ExperienciasContent() {
 
   // Aplicar filtros
   const filteredExperiencias = experiencias.filter((e) => {
-    const matchesSearch = e.titulo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = matchesSearchFields(searchTerm, [
+      e.titulo,
+      e.descripcion,
+      e.dato_destacado,
+      e.recomendaciones,
+    ]);
     const matchesCategoria = categoriaFilter ? e.categoria === categoriaFilter : true;
     const matchesEstado = estadoFilter ? e.estado === estadoFilter : true;
     const matchesEstacion = estacionFilter ? e.estacion_id === estacionFilter : true;
@@ -112,7 +118,7 @@ function ExperienciasContent() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Buscar por título..."
+              placeholder="Buscar por título o descripción..."
               className="input-field w-full text-[var(--color-on-surface-variant)] placeholder:text-[var(--color-surface-variant)]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

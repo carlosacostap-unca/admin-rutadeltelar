@@ -10,6 +10,7 @@ import { canEditContent } from '@/lib/permissions';
 import CatalogSelect from '@/components/CatalogSelect';
 import { getCatalogoLabel } from '@/lib/catalogos';
 import EntityCoverThumbnail from '@/components/EntityCoverThumbnail';
+import { matchesSearchFields } from '@/lib/search';
 
 export default function ActoresPage() {
   return (
@@ -83,7 +84,11 @@ function ActoresContent() {
 
   // Aplicar filtros
   const filteredActores = actores.filter((a) => {
-    const matchesSearch = a.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = matchesSearchFields(searchTerm, [
+      a.nombre,
+      a.descripcion,
+      a.dato_destacado,
+    ]);
     const matchesTipo = tipoFilter ? a.tipo === tipoFilter : true;
     const matchesEstado = estadoFilter ? a.estado === estadoFilter : true;
     const matchesEstacion = estacionFilter ? a.estacion_id === estacionFilter : true;
@@ -115,7 +120,7 @@ function ActoresContent() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Buscar por nombre..."
+              placeholder="Buscar por nombre o descripción..."
               className="input-field w-full text-[var(--color-on-surface-variant)] placeholder:text-[var(--color-surface-variant)]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

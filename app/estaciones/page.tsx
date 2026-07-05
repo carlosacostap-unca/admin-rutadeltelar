@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Estacion } from '@/types/estacion';
 import { canEditContent } from '@/lib/permissions';
 import { getCatalogoLabel } from '@/lib/catalogos';
+import { matchesSearchFields } from '@/lib/search';
 
 export default function EstacionesPage() {
   const { user, isLoading } = useAuth();
@@ -61,18 +62,16 @@ export default function EstacionesPage() {
 
   const canEdit = canEditContent(user);
 
-  // Normalizar texto quitando acentos
-  const normalizeText = (str: string) => {
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  };
-
   // Apply filters
   const filteredEstaciones = estaciones.filter((e) => {
-    const normalizedSearch = normalizeText(searchTerm);
-    const matchesSearch = normalizeText(e.nombre).includes(normalizedSearch) || 
-                          normalizeText(e.eslogan || '').includes(normalizedSearch) ||
-                          normalizeText(e.localidad || '').includes(normalizedSearch) ||
-                          normalizeText(getCatalogoLabel(e.expand?.departamento, e.departamento)).includes(normalizedSearch);
+    const matchesSearch = matchesSearchFields(searchTerm, [
+      e.nombre,
+      e.eslogan,
+      e.localidad,
+      e.descripcion_general,
+      e.dato_destacado,
+      getCatalogoLabel(e.expand?.departamento, e.departamento),
+    ]);
     const matchesLocalidad = localidadFilter ? e.localidad === localidadFilter : true;
     const matchesStatus = statusFilter ? e.estado === statusFilter : true;
     return matchesSearch && matchesLocalidad && matchesStatus;
@@ -100,7 +99,7 @@ export default function EstacionesPage() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Buscar por nombre, eslogan, localidad o departamento..."
+              placeholder="Buscar por nombre, descripción, localidad o departamento..."
               className="input-field w-full text-[var(--color-on-surface-variant)] placeholder:text-[var(--color-surface-variant)]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
