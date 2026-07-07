@@ -30,6 +30,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     if (pathname.startsWith('/productos')) return 'Gestión de Productos';
     if (pathname.startsWith('/experiencias')) return 'Gestión de Experiencias';
     if (pathname.startsWith('/imperdibles')) return 'Gestión de Imperdibles';
+    if (pathname.startsWith('/metricas')) return 'Metricas de Visitas';
     if (pathname.startsWith('/usuarios')) return 'Administración de Usuarios';
     if (pathname.startsWith('/carga-masiva')) return 'Carga Masiva';
     return '';

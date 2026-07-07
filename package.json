@@ -16,6 +16,8 @@
     "schema:image-focus": "node scripts/ensure-image-focus-fields.mjs",
     "schema:dato-destacado": "node scripts/ensure-featured-data-field.mjs",
     "schema:department-cover": "node scripts/ensure-department-cover-field.mjs",
+    "schema:metrics": "node scripts/ensure-metrics-views-collection.mjs",
+    "schema:metrics:dry-run": "node scripts/ensure-metrics-views-collection.mjs --dry-run",
     "media:inventory": "node scripts/inventory-media-files.mjs",
     "media:shadow-optimize": "node scripts/shadow-optimize-media.mjs",
     "media:compare-shadow": "node scripts/compare-shadow-samples.mjs",
