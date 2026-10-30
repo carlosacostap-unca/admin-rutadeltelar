@@ -9,7 +9,7 @@ test('admin user sees dashboard metrics and administration navigation', async ({
     productos: [{ id: 'prod-1' }, { id: 'prod-2' }, { id: 'prod-3' }],
     experiencias: [],
     imperdibles: [{ id: 'imp-1' }],
-    users: [adminUser],
+    users: [{ ...adminUser }],
   });
 
   await page.goto('/');
